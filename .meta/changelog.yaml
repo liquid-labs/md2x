@@ -1,0 +1,16 @@
+- startTimestamp: 2022-03-21T19:12:29.943Z
+  startEpochMillis: 1647889949943
+  issues:
+    - https://github.com/liquid-labs/policy-core/issues/43
+  branch: 2022.03.21-zane@liquid-labs.com-relocate_md2x_to_its
+  branchFrom: 1f775c2d6639249aa093ef63a9abd0623fbe283c
+  workInitiator: zane@liquid-labs.com
+  branchInitiator: zane@liquid-labs.com
+  involvedProjects:
+    - "@liquid-labs/policy-core"
+    - "@liquid-labs/md2x"
+  changeNotes:
+    - Relocate md2x to its own project
+  securityNotes: []
+  drpBcpNotes: []
+  backoutNotes: []
