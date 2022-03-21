@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/Liquid-Labs/md2x/issues"
   },
-  "homepage": "https://github.com/Liquid-Labs/md2x#readme"
+  "homepage": "https://github.com/Liquid-Labs/md2x#readme",
+  "liq": {
+    "orgBase": "git@github.com:Liquid-Labs/Liquid-Labs.git"
+  }
 }
