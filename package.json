@@ -7,7 +7,8 @@
     "liq-gen-roles-ref": "bin/liq-gen-roles-ref.sh"
   },
   "scripts": {
-    "build": "make",
+    "build": "make all",
+    "test": "make test",
     "preversion": "make all && make qa",
     "postversion": "git push upstream v${npm_package_version}"
   },
