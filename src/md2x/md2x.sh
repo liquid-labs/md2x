@@ -30,7 +30,7 @@ done
 
 # extract options
 # TODO: SET_TITLE should be just TITLE, but we use that var and don't want to change it just now.
-eval "$(setSimpleOptions --script KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT= SET_TITLE:t= SINGLE_PAGE QUIET LIST_FILES -- "$@")"
+eval "$(setSimpleOptions --script KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT= SET_TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s -- "$@")"
 
 # process options
 test_formats() {
@@ -44,6 +44,8 @@ test_formats() {
 test_formats || echoerrandexit "Unsupported output format '${OUTPUT_FORMAT}'."
 
 [[ -n "${OUTPUT_PATH}" ]] || OUTPUT_PATH='.'
+
+[[ -z "${TO_STDOUT}" ]] || QUIET=true
 
 SEARCH_DIRS=''
 MD_FILES=''

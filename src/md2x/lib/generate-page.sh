@@ -87,6 +87,10 @@ EOF
     [[ -n "${KEEP_INTERMEDIATE}" ]] || rm "${OVERLAY_OUTPUT}"
   fi
   
+  if [[ -n "${TO_STDOUT}" ]]; then
+    cat "${BASE_OUTPUT}"
+  fi
+  
   [[ -n "${QUIET}" ]] || {
     [[ -n "${LIST_FILES}" ]] && echo "${BASE_OUTPUT}" || echo "Created ${BASE_OUTPUT}"
   }
