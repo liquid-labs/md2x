@@ -7,7 +7,7 @@
   workInitiator: zane@liquid-labs.com
   branchInitiator: zane@liquid-labs.com
   involvedProjects:
-    - "@liquid-labs/policy-core"
+    - "@liquid-labs/liq-core"
     - "@liquid-labs/md2x"
   changeNotes:
     - Relocate md2x to its own project
@@ -16,3 +16,19 @@
   backoutNotes: []
   contributors:
     - Zane Rockenbaugh <zane@liquid-labs.com>
+- startTimestamp: 2022-03-22T14:23:02.471Z
+  startEpochMillis: 1647958982471
+  issues:
+    - https://github.com/Liquid-Labs/liq-core/issues/49
+  branch: 2022.03.21-zane@liquid-labs.com-add_print
+  branchFrom: 57351dcc43a79807f142758e75547aa91812f88d
+  workInitiator: zane@liquid-labs.com
+  branchInitiator: zane@liquid-labs.com
+  involvedProjects:
+    - "@liquid-labs/liq-core"
+    - "@liquid-labs/md2x"
+  changeNotes:
+    - Add print
+  securityNotes: []
+  drpBcpNotes: []
+  backoutNotes: []

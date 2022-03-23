@@ -29,8 +29,7 @@ done
 # $(npm bin)/gucci ./cloud/auths/environment/devops-admin-auths.yaml.tmpl
 
 # extract options
-# TODO: SET_TITLE should be just TITLE, but we use that var and don't want to change it just now.
-eval "$(setSimpleOptions --script KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT= SET_TITLE:t= SINGLE_PAGE QUIET LIST_FILES -- "$@")"
+eval "$(setSimpleOptions --script KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s -- "$@")"
 
 # process options
 test_formats() {
@@ -45,19 +44,28 @@ test_formats || echoerrandexit "Unsupported output format '${OUTPUT_FORMAT}'."
 
 [[ -n "${OUTPUT_PATH}" ]] || OUTPUT_PATH='.'
 
+[[ -z "${TO_STDOUT}" ]] || QUIET=true
+
 SEARCH_DIRS=''
 MD_FILES=''
 # process args
-while (( $# > 0 )); do
-  TEST_PATH="${1}"; shift
-  if [[ -d "${TEST_PATH}" ]]; then
-    list-add-item SEARCH_DIRS "${TEST_PATH}"
-  elif [[ -f "${TEST_PATH}" ]]; then
-    list-add-item MD_FILES "${TEST_PATH}"
-  else
-    echoerrandexit "'${TEST_PATH}' is neither a file nor a directory. Bailing out."
-  fi
-done
+INPUT=''
+if (( $# == 1 )) && [[ ${1} == '-' ]]; then
+  while read LINE; do
+    INPUT="${INPUT}${LINE}"$'\n'
+  done < /dev/stdin
+else
+  while (( $# > 0 )); do
+    TEST_PATH="${1}"; shift
+    if [[ -d "${TEST_PATH}" ]]; then
+      list-add-item SEARCH_DIRS "${TEST_PATH}"
+    elif [[ -f "${TEST_PATH}" ]]; then
+      list-add-item MD_FILES "${TEST_PATH}"
+    else
+      echoerrandexit "'${TEST_PATH}' is neither a file nor a directory. Bailing out."
+    fi
+  done
+fi
 
 # used in the 'generate-page' call later
 VERSION=$(OUTPUT=$(git status --porcelain) && [ -z "${OUTPUT}" ] && cat package.json | jq '.version' || echo 'working')
@@ -70,31 +78,33 @@ case "${OUTPUT_FORMAT}" in
 esac
 
 if [[ -n "${SINGLE_PAGE}" ]]; then
-  COMBINED_FILE="${SET_TITLE:-input}.md"
+  COMBINED_FILE="${TITLE:-input}.md"
   ! [[ -f "${COMBINED_FILE}" ]] || rm "${COMBINED_FILE}"
 fi
 
 {
-  while read -r MD_FILE; do
-    [[ -n "${MD_FILE}" ]] || continue
-    # --to html5 : uses the HTML 5 engine. Yes, even when rendering PDF. It renders and
-    #              prints and saves us the hassle of having to install pdflatex
+  if [[ -z "${INPUT}" ]]; then
+    while read -r MD_FILE; do
+      [[ -n "${MD_FILE}" ]] || continue
+      # --to html5 : uses the HTML 5 engine. Yes, even when rendering PDF. It renders and
+      #              prints and saves us the hassle of having to install pdflatex
 
-    if [[ -n "${SINGLE_PAGE}" ]]; then
-      { cat "${MD_FILE}"; echo; } >> "${COMBINED_FILE}"
-    else
-      TITLE=$(basename "${MD_FILE}" .md)
-      
-      BASE_OUTPUT="${OUTPUT_PATH}/${TITLE}"
-      if [[ "${OUTPUT_FORMAT}" == 'html' ]]; then BASE_OUTPUT="${BASE_OUTPUT}-base"; fi
-      BASE_OUTPUT="${BASE_OUTPUT}.${OUTPUT_FORMAT}"
-      
-      generate-page
-    fi
-  done
+      if [[ -n "${SINGLE_PAGE}" ]]; then
+        { cat "${MD_FILE}"; echo; } >> "${COMBINED_FILE}"
+      else
+        TITLE=$(basename "${MD_FILE}" .md)
+        
+        BASE_OUTPUT="${OUTPUT_PATH}/${TITLE}"
+        if [[ "${OUTPUT_FORMAT}" == 'html' ]]; then BASE_OUTPUT="${BASE_OUTPUT}-base"; fi
+        BASE_OUTPUT="${BASE_OUTPUT}.${OUTPUT_FORMAT}"
+        
+        generate-page
+      fi
+    done
+  fi
   
-  if [[ -n "${SINGLE_PAGE}" ]]; then
-    TITLE="${SET_TITLE:-output}"
+  if [[ -n "${SINGLE_PAGE}" ]] || [[ -n "${INPUT}" ]]; then
+    TITLE="${TITLE:-output}"
     BASE_OUTPUT="${OUTPUT_PATH}/${TITLE:-output}.${OUTPUT_FORMAT}"
     MD_FILE="${TITLE:-input}.md"
     generate-page

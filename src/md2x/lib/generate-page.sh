@@ -14,20 +14,35 @@ source ./github.css # bash-rollup-no-recur
 EOF
 )
 
-  pandoc \
-    $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo '--toc' ) \
-    --quiet \
-    --standalone \
-    --from gfm \
-    --to ${INTERMEDIDATE_FORMAT} \
-    --css <(echo "${CSS}") \
-    --metadata-file <(echo "${SETTINGS}") \
-    "${MD_FILE}" \
-    -o "${BASE_OUTPUT}" \
-    --log 'pandoc-log.log' \
-    2>&1 | { grep -vE '(\(\d+/\d+\)\s*$|Done)' || true; }
-  # ^^ the 'grep' removes the 'Loading pages (1/6)' messages sent to stderr, while hopefully allowing actual error
-  # messages through.
+  if [[ -z "${INPUT}" ]]; then
+    pandoc \
+      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo '--toc' ) \
+      --quiet \
+      --standalone \
+      --from gfm \
+      --to ${INTERMEDIDATE_FORMAT} \
+      --css <(echo "${CSS}") \
+      --metadata-file <(echo "${SETTINGS}") \
+      "${MD_FILE}" \
+      -o "${BASE_OUTPUT}" \
+      --log 'pandoc-log.log' \
+      2>&1 | { grep -vE '(\(\d+/\d+\)\s*$|Done)' || true; }
+    # ^^ the 'grep' removes the 'Loading pages (1/6)' messages sent to stderr, while hopefully allowing actual error
+    # messages through.
+  else
+    pandoc \
+      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo '--toc' ) \
+      --quiet \
+      --standalone \
+      --from gfm \
+      --to ${INTERMEDIDATE_FORMAT} \
+      --css <(echo "${CSS}") \
+      --metadata-file <(echo "${SETTINGS}") \
+      <(echo "${INPUT}") \
+      -o "${BASE_OUTPUT}" \
+      --log 'pandoc-log.log' \
+      2>&1 | { grep -vE '(\(\d+/\d+\)\s*$|Done)' || true; }
+  fi
   [[ -n "${KEEP_INTERMEDIATE}" ]] || rm pandoc-log.log
 
   if [[ "${OUTPUT_FORMAT}" == 'pdf' ]]; then
@@ -85,6 +100,10 @@ EOF
     # mv "${COMBINED_FILE}" "${OUTPUT_PATH}/${TITLE}.${OUTPUT_FORMAT}"
     mv "${COMBINED_FILE}" "${BASE_OUTPUT}"
     [[ -n "${KEEP_INTERMEDIATE}" ]] || rm "${OVERLAY_OUTPUT}"
+  fi
+  
+  if [[ -n "${TO_STDOUT}" ]]; then
+    cat "${BASE_OUTPUT}"
   fi
   
   [[ -n "${QUIET}" ]] || {
