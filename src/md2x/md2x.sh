@@ -29,7 +29,7 @@ done
 # $(npm bin)/gucci ./cloud/auths/environment/devops-admin-auths.yaml.tmpl
 
 # extract options
-eval "$(setSimpleOptions --script KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s -- "$@")"
+eval "$(setSimpleOptions --script KEEP_INTERMEDIATE: PRESERVE_DIRECTORY_STRUCTURE:d OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s -- "$@")"
 
 # process options
 test_formats() {
@@ -94,7 +94,13 @@ fi
       else
         TITLE=$(basename "${MD_FILE}" .md)
         
-        BASE_OUTPUT="${OUTPUT_PATH}/${TITLE}"
+        BASE_OUTPUT="${OUTPUT_PATH}"
+        [[ -z "${PRESERVE_DIRECTORY_STRUCTURE}" ]] || {
+          REL_DIR=$(dirname "${MD_FILE#*/policy/}")
+          BASE_OUTPUT="${BASE_OUTPUT}/${REL_DIR}"
+          mkdir -p "${BASE_OUTPUT}"
+        }
+        BASE_OUTPUT="${BASE_OUTPUT}/${TITLE}"
         if [[ "${OUTPUT_FORMAT}" == 'html' ]]; then BASE_OUTPUT="${BASE_OUTPUT}-base"; fi
         BASE_OUTPUT="${BASE_OUTPUT}.${OUTPUT_FORMAT}"
         
