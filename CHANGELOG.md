@@ -7,3 +7,6 @@
 
 ## Release 1.0.0-alpha.2
 * Add print _(zane@liquid-labs.com; 2022-03-22T14:23:02.471Z)_
+
+## Release 1.0.0-alpha.3
+* [CLOSED] Migrate policy compilation and export here _(zane@liquid-labs.com; 2022-03-28T13:57:34.731Z)_
