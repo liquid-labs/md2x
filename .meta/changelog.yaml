@@ -7,8 +7,11 @@
   workInitiator: zane@liquid-labs.com
   branchInitiator: zane@liquid-labs.com
   involvedProjects:
-    - "@liquid-labs/liq-core"
+    - "@liquid-labs/liq-policy"
+    - "@liquid-labs/liq-handlers-lib"
     - "@liquid-labs/md2x"
+    - "@liquid-labs/liq-core"
+    - "@liquid-labs/liq-cli"
   changeNotes:
     - Relocate md2x to its own project
   securityNotes: []
