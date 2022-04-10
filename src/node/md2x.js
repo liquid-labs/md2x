@@ -6,7 +6,7 @@
 import shell from 'shelljs'
 
 shell.config.silent = true
-const execOptions = { shell: '/bin/bash' }
+const execOptions = { shell : '/bin/bash' }
 
 const md2x = ({ markdown, format = 'pdf', outputPath, preserveDirectoryStructure, title, singlePage = false, sources }) => {
   const sourceSpec = `${sources ? `'${sources.join("' '")}'` : '-'}`
@@ -26,9 +26,9 @@ const md2x = ({ markdown, format = 'pdf', outputPath, preserveDirectoryStructure
   if (preserveDirectoryStructure) {
     options.push('--preserve-directory-structure')
   }
-  
+
   const command = `npm bin >&2; $(npm bin)/md2x ${options.join(' ')} ${sourceSpec}`
-  
+
   const result = markdown
     ? shell.ShellString(markdown)
       .exec(command, execOptions)
