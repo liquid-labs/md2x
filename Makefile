@@ -1,6 +1,6 @@
 SHELL=/bin/bash -o pipefail
 .DELETE_ON_ERROR:
-.PHONY: all clean qa test
+.PHONY: all clean lint lint-fix qa test
 
 NPM_BIN:=$(shell npm bin)
 CATALYST_SCRIPTS:=$(NPM_BIN)/catalyst-scripts
@@ -42,8 +42,15 @@ test: all $(CLI_TEST_OUT) $(CLI_TEST_DATA)
 	mkdir -p $(dir $(CLI_TEST_OUT))
 	rm -f ./test-out/tiny-doc.*
 	$(CLI_TEST_OUT)
-	
-qa: test
+
+# lint rules
+lint:
+	JS_SRC=$(NODE_SRC) $(CATALYST_SCRIPTS) lint
+
+lint-fix:
+	JS_SRC=$(NODE_SRC) $(CATALYST_SCRIPTS) lint-fix
+
+qa: test lint
 	
 clean:
 	rm -rf $(BUILD_TARGETS)
