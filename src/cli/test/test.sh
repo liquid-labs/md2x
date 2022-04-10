@@ -4,11 +4,11 @@ import strict
 
 import lists
 
-source ../src/md2x/lib/parameters.sh
+source ../lib/parameters.sh
 
 MD2X=./bin/md2x
 TEST_OUTPUT="test-out"
-TINY_DOC=./src/md2x/test/tiny-doc.md
+TINY_DOC=./src/cli/test/tiny-doc.md
 
 [[ -f ${MD2X} ]] || { echo "Did not find '${MD2X}'; bailing out of test."; exit 2; }
 
