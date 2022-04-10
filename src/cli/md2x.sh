@@ -14,7 +14,7 @@ source ./lib/index.sh
 
 for EXEC in gs pandoc pdftk; do
   type "${EXEC}" >/dev/null || {
-    echo "Required executable '${EXEC}' not found for 'md2x'. Add to 'PATH' or install."
+    echo "Required executable '${EXEC}' not found for 'md2x'. Add to 'PATH' or install." >&2
     exit 2
   }
 done

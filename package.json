@@ -2,6 +2,7 @@
   "name": "@liquid-labs/md2x",
   "version": "1.0.0-alpha.3",
   "description": "A command line utility to print Mardown documents to PDF, HTML, and other formats.",
+  "main": "dist/md2x.js",
   "bin": {
     "md2x": "bin/md2x",
     "liq-gen-roles-ref": "bin/liq-gen-roles-ref.sh"
@@ -27,10 +28,15 @@
   },
   "homepage": "https://github.com/Liquid-Labs/md2x#readme",
   "liq": {
-    "orgBase": "git@github.com:Liquid-Labs/Liquid-Labs.git"
+    "orgBase": "git@github.com:Liquid-Labs/Liquid-Labs.git",
+    "packageType": "node|library"
   },
   "devDependencies": {
     "@liquid-labs/bash-rollup": "^1.0.0-alpha.6",
-    "@liquid-labs/bash-toolkit": "^1.0.0-alpha.57"
+    "@liquid-labs/bash-toolkit": "^1.0.0-alpha.57",
+    "@liquid-labs/catalyst-scripts": "^1.0.0-alpha.53"
+  },
+  "dependencies": {
+    "shelljs": "^0.8.5"
   }
 }
