@@ -10,3 +10,8 @@
 
 ## Release 1.0.0-alpha.3
 * [CLOSED] Migrate policy compilation and export here _(zane@liquid-labs.com; 2022-03-28T13:57:34.731Z)_
+
+## Release 1.0.0-alpha.4
+* Implement basic list with visible roles support _(zane@liquid-labs.com; 2022-04-08T15:46:36.268Z)_
+* _**hotfix**_: add lint support _(zane@liquid-labs.com; 2022-04-10T01:33:22.000Z)_
+* _**hotfix**_: lint fixes _(zane@liquid-labs.com; 2022-04-10T01:34:27.000Z)_
