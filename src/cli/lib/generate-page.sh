@@ -3,10 +3,10 @@ generate-page() {
   SETTINGS=$(cat <<EOF
 ---
 title: '${TITLE}'
-author: 'TODO: Author Name'
 ...
 EOF
 )
+# TODO: support 'author' if known
 
   # slurp in default CSS
   CSS=$(cat <<'EOF'
