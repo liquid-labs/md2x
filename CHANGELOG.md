@@ -15,3 +15,6 @@
 * Implement basic list with visible roles support _(zane@liquid-labs.com; 2022-04-08T15:46:36.268Z)_
 * _**hotfix**_: add lint support _(zane@liquid-labs.com; 2022-04-10T01:33:22.000Z)_
 * _**hotfix**_: lint fixes _(zane@liquid-labs.com; 2022-04-10T01:34:27.000Z)_
+
+## Release 1.0.0-alpha.5
+* _**hotfix**_: removed currently unused 'author' page setting _(zane@liquid-labs.com; 2022-04-14T00:04:01.000Z)_
