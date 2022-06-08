@@ -18,3 +18,6 @@
 
 ## Release 1.0.0-alpha.5
 * _**hotfix**_: removed currently unused 'author' page setting _(zane@liquid-labs.com; 2022-04-14T00:04:01.000Z)_
+
+## Release 1.0.0-alpha.6
+* _**hotfix**_: convert links to semi-workable when converting to different formats _(zane@liquid-labs.com; 2022-06-08T13:14:09.000Z)_
