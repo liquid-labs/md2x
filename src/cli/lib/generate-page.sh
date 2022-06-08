@@ -7,12 +7,18 @@ title: '${TITLE}'
 EOF
 )
 # TODO: support 'author' if known
-
+  # echo "generate-page for ${MD_FILE}..."
   # slurp in default CSS
   CSS=$(cat <<'EOF'
 source ./github.css # bash-rollup-no-recur
 EOF
 )
+
+  # matches a linky thing; captures from '[...](' in $1, skips './' if present, and captures rest up but excluding '.md'
+  #                   [....]      link not abs or ext                       add './' back in place
+  #     link opening  vvvvvv       vvvvvvvvvvvvvvvv                           vv
+  # perl -pe 's/(\[[^\]]+\]\()(?!\/|https?:\/\/)(?:\.\/)?(.*)\.md\s*\)$/$1.\/$2.docx)/g'
+  LINK_CONVERTER='perl -pe '"'"'s/(\[[^\]]+\]\()(?!\/|https?:\/\/)(?:\.\/)?(.*)\.md\s*\)$/$1.\/$2.'${OUTPUT_FORMAT}")/g'"
 
   if [[ -z "${INPUT}" ]]; then
     pandoc \
@@ -23,7 +29,7 @@ EOF
       --to ${INTERMEDIDATE_FORMAT} \
       --css <(echo "${CSS}") \
       --metadata-file <(echo "${SETTINGS}") \
-      "${MD_FILE}" \
+      <(cat "${MD_FILE}" | eval $LINK_CONVERTER) \
       -o "${BASE_OUTPUT}" \
       --log 'pandoc-log.log' \
       2>&1 | { grep -vE '(\(\d+/\d+\)\s*$|Done)' || true; }
@@ -38,7 +44,7 @@ EOF
       --to ${INTERMEDIDATE_FORMAT} \
       --css <(echo "${CSS}") \
       --metadata-file <(echo "${SETTINGS}") \
-      <(echo "${INPUT}") \
+      <(echo "${INPUT}" | eval $LINK_CONVERTER) \
       -o "${BASE_OUTPUT}" \
       --log 'pandoc-log.log' \
       2>&1 | { grep -vE '(\(\d+/\d+\)\s*$|Done)' || true; }
