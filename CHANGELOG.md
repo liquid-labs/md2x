@@ -21,3 +21,7 @@
 
 ## Release 1.0.0-alpha.6
 * _**hotfix**_: convert links to semi-workable when converting to different formats _(zane@liquid-labs.com; 2022-06-08T13:14:09.000Z)_
+
+## Release 1.0.0-alpha.7
+* _**hotfix**_: add support for --no-toc and --infer-title options _(zane@liquid-labs.com; 2022-10-30T16:02:50.000Z)_
+* _**hotfix**_: support 'infer version' option; change 'preserveDirectoryStructure' to 'flattenDirs' _(zane@liquid-labs.com; 2022-10-30T18:34:31.000Z)_
