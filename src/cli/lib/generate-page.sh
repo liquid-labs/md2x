@@ -1,11 +1,13 @@
 generate-page() {
-  local SETTINGS
-  SETTINGS=$(cat <<EOF
----
-title: '${TITLE}'
-...
-EOF
-)
+  local SETTINGS='---
+'
+  if [[ -n "${INFER_TITLE}" ]]; then
+    SETTINGS="${SETTINGS}title: '${TITLE}'
+"
+  fi
+  SETTINGS="${SETTINGS}...
+"
+
 # TODO: support 'author' if known
   # echo "generate-page for ${MD_FILE}..."
   # slurp in default CSS
@@ -22,7 +24,7 @@ EOF
 
   if [[ -z "${INPUT}" ]]; then
     pandoc \
-      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo '--toc' ) \
+      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
       --quiet \
       --standalone \
       --from gfm \
@@ -37,7 +39,7 @@ EOF
     # messages through.
   else
     pandoc \
-      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo '--toc' ) \
+      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
       --quiet \
       --standalone \
       --from gfm \

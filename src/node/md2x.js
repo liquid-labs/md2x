@@ -8,12 +8,28 @@ import shell from 'shelljs'
 shell.config.silent = true
 const execOptions = { shell : '/bin/bash' }
 
-const md2x = ({ markdown, format = 'pdf', outputPath, preserveDirectoryStructure, title, singlePage = false, sources }) => {
+const md2x = ({
+  markdown,
+  format = 'pdf',
+  inferTitle,
+  noToc,
+  outputPath,
+  preserveDirectoryStructure,
+  title,
+  singlePage = false,
+  sources
+}) => {
   const sourceSpec = `${sources ? `'${sources.join("' '")}'` : '-'}`
   if (!title && sourceSpec === '-') {
     title = 'Report'
   }
   const options = ['--list-files', `--output-format ${format}`]
+  if (inferTitle) {
+    options.push('--infer-title')
+  }
+  if (noToc) {
+    options.push('--no-toc')
+  }
   if (title) {
     options.push(`--title '${title}'`)
   }
@@ -27,7 +43,7 @@ const md2x = ({ markdown, format = 'pdf', outputPath, preserveDirectoryStructure
     options.push('--preserve-directory-structure')
   }
 
-  const command = `npm bin >&2; $(npm bin)/md2x ${options.join(' ')} ${sourceSpec}`
+  const command = `$(npm bin)/md2x ${options.join(' ')} ${sourceSpec}`
 
   const result = markdown
     ? shell.ShellString(markdown)

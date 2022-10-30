@@ -29,7 +29,7 @@ done
 # $(npm bin)/gucci ./cloud/auths/environment/devops-admin-auths.yaml.tmpl
 
 # extract options
-eval "$(setSimpleOptions --script KEEP_INTERMEDIATE: PRESERVE_DIRECTORY_STRUCTURE:d OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s -- "$@")"
+eval "$(setSimpleOptions --script INFER_TITLE KEEP_INTERMEDIATE: PRESERVE_DIRECTORY_STRUCTURE:d OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s NO_TOC -- "$@")"
 
 # process options
 test_formats() {
