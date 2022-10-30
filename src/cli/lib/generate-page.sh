@@ -83,10 +83,14 @@ EOF
       (Page ) show              \
       PageNo 3 string cvs       \
       show                      \
-      ( of ${PAGE_COUNT}) show  \
-      ${VERSION_X_OFFSET} ${FOOTER_Y_OFFSET} moveto \
-      ( Version: ${VERSION} ) show \
-      PageNo 1 gt \
+      ( of ${PAGE_COUNT}) show  "
+
+    if [[ -n "${INFER_VERSION}" ]]; then
+      FOOTER_STRING="${FOOTER_STRING}${VERSION_X_OFFSET} ${FOOTER_Y_OFFSET} moveto \
+      ( Version: ${VERSION} ) show "
+    fi
+
+    FOOTER_STRING="${FOOTER_STRING}PageNo 1 gt \
       { /Helvetica-Oblique findfont \
         ${HF_FONT_SIZE} scalefont setfont \
         ${TITLE_X_OFFSET} ${HEADER_Y_OFFSET} moveto \

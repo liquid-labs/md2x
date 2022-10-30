@@ -11,10 +11,11 @@ const execOptions = { shell : '/bin/bash' }
 const md2x = ({
   markdown,
   format = 'pdf',
+  flattenDirs,
   inferTitle,
+  inferVersion,
   noToc,
   outputPath,
-  preserveDirectoryStructure,
   title,
   singlePage = false,
   sources
@@ -24,8 +25,14 @@ const md2x = ({
     title = 'Report'
   }
   const options = ['--list-files', `--output-format ${format}`]
+  if (flattenDirs) {
+    options.push('--flatten-dirs')
+  }
   if (inferTitle) {
     options.push('--infer-title')
+  }
+  if (inferVersion) {
+    options.push('--infer-version')
   }
   if (noToc) {
     options.push('--no-toc')
@@ -38,9 +45,6 @@ const md2x = ({
   }
   if (outputPath) {
     options.push(`--output-path '${outputPath}'`)
-  }
-  if (preserveDirectoryStructure) {
-    options.push('--preserve-directory-structure')
   }
 
   const command = `$(npm bin)/md2x ${options.join(' ')} ${sourceSpec}`

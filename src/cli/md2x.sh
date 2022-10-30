@@ -29,7 +29,7 @@ done
 # $(npm bin)/gucci ./cloud/auths/environment/devops-admin-auths.yaml.tmpl
 
 # extract options
-eval "$(setSimpleOptions --script INFER_TITLE KEEP_INTERMEDIATE: PRESERVE_DIRECTORY_STRUCTURE:d OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s NO_TOC -- "$@")"
+eval "$(setSimpleOptions --script FLATTEN_DIRS:D INFER_TITLE: INFER_VERSION KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s NO_TOC -- "$@")"
 
 # process options
 test_formats() {
@@ -95,7 +95,7 @@ fi
         TITLE=$(basename "${MD_FILE}" .md)
         
         BASE_OUTPUT="${OUTPUT_PATH}"
-        [[ -z "${PRESERVE_DIRECTORY_STRUCTURE}" ]] || {
+        [[ -n "${FLATTEN_DIRS}" ]] || {
           REL_DIR=$(dirname "${MD_FILE#*/policy/}")
           BASE_OUTPUT="${BASE_OUTPUT}/${REL_DIR}"
           mkdir -p "${BASE_OUTPUT}"
