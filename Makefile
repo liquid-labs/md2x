@@ -2,9 +2,9 @@ SHELL=/bin/bash -o pipefail
 .DELETE_ON_ERROR:
 .PHONY: all clean lint lint-fix qa test
 
-NPM_BIN:=$(shell npm bin)
-CATALYST_SCRIPTS:=$(NPM_BIN)/catalyst-scripts
-BASH_ROLLUP:=$(NPM_BIN)/bash-rollup
+NPM_BIN:=npm exec
+CATALYST_SCRIPTS:=$(NPM_BIN) catalyst-scripts
+BASH_ROLLUP:=$(NPM_BIN) bash-rollup
 
 NODE_SRC=src/node
 NODE_FILES:=$(shell find $(NODE_SRC) -name "*.js" -not -path "*/test/*" -not -name "*.test.js")

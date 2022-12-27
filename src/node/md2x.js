@@ -47,7 +47,7 @@ const md2x = ({
     options.push(`--output-path '${outputPath}'`)
   }
 
-  const command = `$(npm bin)/md2x ${options.join(' ')} ${sourceSpec}`
+  const command = `npm exec md2x ${options.join(' ')} ${sourceSpec}`
 
   const result = markdown
     ? shell.ShellString(markdown)
