@@ -45,10 +45,10 @@ test: all $(CLI_TEST_OUT) $(CLI_TEST_DATA)
 
 # lint rules
 lint:
-	JS_SRC=$(NODE_SRC) $(CATALYST_SCRIPTS) lint
+	JS_LINT_TARGET=$(NODE_SRC) $(CATALYST_SCRIPTS) lint
 
 lint-fix:
-	JS_SRC=$(NODE_SRC) $(CATALYST_SCRIPTS) lint-fix
+	JS_LINT_TARGET=$(NODE_SRC) $(CATALYST_SCRIPTS) lint-fix
 
 qa: test lint
 	
