@@ -27,3 +27,9 @@
 * _**hotfix**_: support 'infer version' option; change 'preserveDirectoryStructure' to 'flattenDirs' _(zane@liquid-labs.com; 2022-10-30T18:34:31.000Z)_
 
 ## Release 1.0.0-alpha.8
+
+## Release 1.0.0-alpha.9
+* _**hotfix**_: update to use 'npm exec' rather than 'npm bin' _(zane@liquid-labs.com; 2022-12-27T14:15:07.000Z)_
+* _**hotfix**_: simplify 'npm exec' to 'npx' _(zane@liquid-labs.com; 2023-01-03T20:13:37.000Z)_
+* _**hotfix**_: update catalyst script and lint target _(zane@liquid-labs.com; 2023-01-03T20:18:26.000Z)_
+* _**hotfix**_: audit fixes _(zane@liquid-labs.com; 2023-01-03T20:18:45.000Z)_
