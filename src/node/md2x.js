@@ -51,7 +51,6 @@ const md2x = ({
 
   const command = `npx md2x ${options.join(' ')} ${sourceSpec}`
 
-
   let result
   if (markdown === undefined) { // we're working with a file
     result = shell.exec(command, execOptions)
@@ -59,7 +58,7 @@ const md2x = ({
   else { // we have a string; initially tried to go straight from string to file, but that was causing problems:
     // shell.ShellString(markdown).exec(command, execOptions) was causing all leading spaces to be lost for some reason
     // testing with 'node -e 'const shell = require("shelljs"); console.log(shell.ShellString("  foo\n  bar").cat().toString())' looked OK, so the problem is with pandoc maybe?
-    const stagingDir = fsPath.join(shell.tempdir(), 'md2x', (Math.random() + "").slice(2))
+    const stagingDir = fsPath.join(shell.tempdir(), 'md2x', (Math.random() + '').slice(2))
     shell.mkdir('-p', stagingDir)
     const stagingFile = fsPath.join(stagingDir, `${title}.md`)
     shell.ShellString(markdown).to(stagingFile)
