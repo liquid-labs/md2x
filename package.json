@@ -1,6 +1,6 @@
 {
   "name": "@liquid-labs/md2x",
-  "version": "1.0.0-alpha.9",
+  "version": "1.0.0-alpha.10",
   "description": "A command line utility to print Mardown documents to PDF, HTML, and other formats.",
   "main": "dist/md2x.js",
   "bin": {
