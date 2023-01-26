@@ -33,3 +33,7 @@
 * _**hotfix**_: simplify 'npm exec' to 'npx' _(zane@liquid-labs.com; 2023-01-03T20:13:37.000Z)_
 * _**hotfix**_: update catalyst script and lint target _(zane@liquid-labs.com; 2023-01-03T20:18:26.000Z)_
 * _**hotfix**_: audit fixes _(zane@liquid-labs.com; 2023-01-03T20:18:45.000Z)_
+
+## Release 1.0.0-alpha.10
+* _**hotfix**_: workaround for the 'eating leading spaces' bug when sending strings directly to md2x _(zane@liquid-labs.com; 2023-01-25T19:18:07.000Z)_
+* _**hotfix**_: lint fixes _(zane@liquid-labs.com; 2023-01-26T22:00:46.000Z)_
