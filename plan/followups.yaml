@@ -24,7 +24,7 @@ items:
         - type:bug
         - priority:unspecified
         - effort:unspecified
-      text: 'Flagged by the planning agent for plan `test-coverage-bugfix`. In `src/node/md2x.js`, the condition `if (!title && sourceSpec === ''-'')` can never be true: `sourceSpec` is always constructed pre-quoted (the literal string `''-''` with surrounding quote characters), never the bare string `-`, so the identity comparison against `''-''` never matches and the intended `title = ''Report''` default is dead code. Worth a maintainer fix: compare against the quoted form, or normalize before comparing.'
+      text: 'Flagged by the planning agent for plan `test-coverage-bugfix`. In `src/node/md2x.js`, the condition `if (!title && sourceSpec === ''-'')` can never be true: `sourceSpec` is always constructed pre-quoted (the literal string `''-''` with surrounding quote characters), never the bare string `-`, so the identity comparison against `''-''` never matches and the intended `title = ''Report''` default is dead code. Worth a maintainer fix: compare against the quoted form, or normalize before comparing. Confirmed still present by phase-01 task 004 (test-coverage-bugfix plan), which added an explicit regression test documenting this current behavior (see src/node/md2x.test.js) without fixing it, as it was out of that task''s scope.'
     - title: markdown-string staging produces undefined.md
       id: egcc
       date: "2026-07-29"
@@ -32,7 +32,7 @@ items:
         - type:bug
         - priority:unspecified
         - effort:unspecified
-      text: Flagged by the planning agent for plan `test-coverage-bugfix`. In `src/node/md2x.js`, when `md2x()` is called with a `markdown` string and no `title`, the staging file is built as `` `${title}.md` `` before any default is applied, producing a literal `undefined.md` file and, downstream, an `undefined.<format>` output file. Related to the unreachable-default-title followup (`udVi`) in the same file — fixing that branch's reachability may also need this staging-path construction reordered to apply the title default first. Worth a maintainer fix.
+      text: Flagged by the planning agent for plan `test-coverage-bugfix`. In `src/node/md2x.js`, when `md2x()` is called with a `markdown` string and no `title`, the staging file is built as `` `${title}.md` `` before any default is applied, producing a literal `undefined.md` file and, downstream, an `undefined.<format>` output file. Related to the unreachable-default-title followup (`udVi`) in the same file — fixing that branch's reachability may also need this staging-path construction reordered to apply the title default first. Worth a maintainer fix. Confirmed still present by phase-01 task 004 (test-coverage-bugfix plan), which added an explicit regression test documenting this current behavior (see src/node/md2x.test.js) without fixing it, as it was out of that task's scope.
     - title: Unquoted path expansion breaks on spaces
       id: 95ND
       date: "2026-07-29"
@@ -49,3 +49,110 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Flagged by the planning agent for plan `pdf-engine-weasyprint`. The new WeasyPrint bootstrap (src/cli/lib/ensure-weasyprint.sh, introduced by that plan) creates `~/.md2x/venv` in place on first PDF conversion (python3 -m venv + ensurepip + pip install weasyprint), gated by a simple `[[ -x ~/.md2x/venv/bin/weasyprint ]]` existence check. If two `md2x` processes race a cold bootstrap concurrently (e.g. two PDF conversions kicked off at once on a machine that has never run md2x before), their venv-creation and pip-install steps can interleave and corrupt the shared `~/.md2x/venv` directory. The plan deliberately deferred hardening this (no staging-dir build + atomic rename, no lockfile) in favor of matching the repo''s plain-bash style; a partially-built venv is expected to self-heal on a later run since the `-x` gate simply fails again and retries the bootstrap, but a genuinely concurrent race during the initial cold start is not guarded against. Worth a maintainer decision: accept the risk (probably fine given cold-start is a one-time, human-triggered event) or add a lockfile/staging-dir mechanism.'
+    - title: package.json bin references missing file
+      id: IxJH
+      date: "2026-07-28"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+      text: 'package.json declares a second bin entrypoint, "liq-gen-roles-ref": "bin/liq-gen-roles-ref.sh", but no such file exists anywhere in the repo (only bin/md2x is present). Found while authoring docs/project-structure.md during this session''s doc-authoring round. Looks like leftover/incorrect package.json content — either the file was never added, was removed without updating package.json, or the entry belongs to a different package. Worth a maintainer review: either restore/add the script or remove the stale bin entry.'
+    - title: md2x_run helper exists because git status --p
+      id: eCzQ
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: 'md2x_run helper exists because git status --porcelain emits ''fatal: not a git repository'' stderr noise on every invocation outside a repo; tasks 002-005 should use md2x_run not bare run'
+    - title: bin/md2x hard-requires Homebrew on macOS (bre
+      id: H7ej
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: bin/md2x hard-requires Homebrew on macOS (brew --prefix gnu-getopt) - undocumented, possible followup, out of scope here
+    - title: aI57 mirrored-output bug visible in smoke-tes
+      id: ZQ0m
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: aI57 mirrored-output bug visible in smoke-test output (test-out/./src/cli/test/tiny-doc.docx) - pre-existing, task 002 owns the fix per plan
+    - title: 'docs/project-structure.md and AGENTS.md have '
+      id: LPg7
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: docs/project-structure.md and AGENTS.md have minor stale doc references (smoke-test target missing from table, docs marked '(planned)' though they exist) - out of this task's scope, phase-02 task 001 owns architecture doc updates
+    - title: --single-page and stdin still do not create -
+      id: MPHT
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: --single-page and stdin still do not create --output-path when missing (same class of bug as the flatten-dirs fix, one-line mkdir -p, but explicitly out of this task's scope per requirement 6) - candidate followup for consistency
+    - title: --flatten-dirs help text in src/cli/md2x.sh n
+      id: rm3a
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: --flatten-dirs help text in src/cli/md2x.sh not updated to match the more precise README.md/spec wording (task named only README and spec) - trivial, candidate followup
+    - title: --output-format html on a per-file conversion
+      id: c2s9
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: --output-format html on a per-file conversion produces <title>-base.html rather than <title>.html - undocumented in docs/md2x-spec.md or README.md - candidate followup
+    - title: md2x.js shell injection risk
+      id: arUf
+      date: "2026-07-29"
+      tags:
+        - plan/phase:automated-test-coverage
+        - type:security
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 security review (test-coverage-bugfix plan) found: src/node/md2x.js builds its shell command by naively single-quoting caller-supplied values with no escaping of embedded single quotes (options.push(`--title ''${title}''`) at md2x.js:43, `--output-path ''${outputPath}''` at md2x.js:49, sourceSpec join at md2x.js:25), then executes via shell.exec(command, { shell: ''/bin/bash'' }) (md2x.js:56, 66). Any of title/outputPath/sources containing a single quote breaks out of the quoting; a crafted value can execute arbitrary shell commands with the Node process''s privileges. md2x() is the exported library API and docs/md2x-spec.md documents these as plain caller-supplied strings (e.g. a document title), so externally-influenced input is plausible. Not introduced by the test-coverage-bugfix diff (src/node/md2x.js is unchanged), but task 004''s new src/node/md2x.test.js (lines 74-88) now asserts the exact unescaped command string as correct/expected behavior with no accompanying caveat, unlike the same file''s explicit "documents CURRENT buggy behavior" treatment of followups udVi/egcc. Worth a maintainer fix: escape embedded single quotes in title/outputPath/each sources entry, or switch to an argv-array invocation (child_process.execFile) that never round-trips through a shell.'
+    - title: md2x.sh find-pipe abort shift
+      id: 8ZmD
+      date: "2026-07-29"
+      tags:
+        - plan/phase:automated-test-coverage
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 correctness review (test-coverage-bugfix plan) found: the aI57 fix''s file-discovery process substitution in src/cli/md2x.sh now nests a per-root inner pipe (find ${ROOT_DIR} -name "*.md" | while IFS= read -r FOUND_FILE; do ...; done) inside the existing outer for-loop | sort pipe. Under set -o pipefail/errexit, a find failure on one search root now surfaces only after that root''s already-discovered files drain through the inner while loop, rather than aborting the instant the bare find command failed as in the pre-fix code. Net abort-or-not behavior is likely unchanged, but the abort point and how much partial file-list reaches the loop first has shifted. Low confidence, minor severity - worth a one-line comment or a targeted bats case (an existing-but-unreadable search root) if the maintainer wants to pin down or preserve the original immediate-abort semantics.'
+    - title: md2x.sh discovery pipe overhead
+      id: r38C
+      date: "2026-07-29"
+      tags:
+        - plan/phase:automated-test-coverage
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 efficiency review (test-coverage-bugfix plan) found: the aI57 fix''s file-discovery change (tab-separated <md-file><tab><search-root> records for the mirrored-output derivation) adds one extra piped while/read/printf subshell per search-root iteration versus the prior direct `find | sort`. Still O(n) in matched files, no new fork-per-file, but a real (if small) constant-factor increase for many search roots or very large *.md trees. Suggestion severity, low confidence - no action needed unless profiling on realistic input-tree sizes shows this pass is material to CLI runtime. If it ever is, consider `find ... -printf ''%p\t${ROOT_DIR}\n''` instead of piping through read/printf.'
+    - title: e2e suite always runs in make test
+      id: EWuE
+      date: "2026-07-29"
+      tags:
+        - plan/phase:automated-test-coverage
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 efficiency review (test-coverage-bugfix plan) found: task 005''s four real-toolchain e2e cases are wired into the default make test/test-cli path (by design, per the task doc) rather than behind a separate opt-in target, so any machine with a working pandoc on PATH performs 2-3 real Pandoc/Ghostscript/pdftk conversions on every make test invocation, raising wall-clock from ~12.4s to ~13.9-17.5s (measured by task 005 itself). Deliberate, pre-accepted trade-off, not a correctness problem. Suggestion severity - optional enhancement: an environment-variable escape hatch (e.g. MD2X_SKIP_E2E=1) that bats setup checks to skip the e2e-tagged cases during rapid local iteration, while leaving make test unchanged by default for CI/gate purposes.'

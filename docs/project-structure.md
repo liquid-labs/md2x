@@ -31,7 +31,12 @@ md2x/
 │   ├── cli/              # Bash CLI, rolled up into bin/md2x
 │   │   ├── md2x.sh       # CLI entrypoint / argument parsing
 │   │   ├── lib/          # CLI library modules (page generation, GitHub CSS, parameters)
-│   │   └── test/         # Bash CLI test script and fixtures
+│   │   └── test/         # Bash CLI test suite
+│   │       ├── bats/     # bats-core cases (*.bats), run by `make test-cli`
+│   │       ├── helpers/  # Shared bash helpers loaded by the cases
+│   │       ├── stubs/    # Fake pandoc/gs/pdftk put on the tests' PATH
+│   │       ├── manual/   # Interactive visual smoke test (`make smoke-test`)
+│   │       └── tiny-doc.md  # Fixture document
 │   └── node/             # Thin Node.js wrapper (shells out to bin/md2x via shelljs)
 ├── .claude/              # Claude Code local settings
 ├── .flow/                # Flow session-binding metadata (mostly gitignored)
@@ -48,9 +53,15 @@ md2x/
 
 ## `src/`
 
-The CLI (`src/cli/`) is the actual conversion engine: Bash source rolled up by `@liquid-labs/bash-rollup` into the single-file `bin/md2x` executable per the `Makefile`. `src/cli/md2x.sh` is the entrypoint that parses options and dispatches to the library. `src/cli/lib/` holds `generate-page.sh` (the Pandoc → Ghostscript → `pdftk` conversion pipeline), the bundled stylesheet `github.css`, and small option/parameter definitions (`parameters.sh`, `index.sh`). `src/cli/test/` holds the CLI's test script (`test.sh`) and a fixture document (`tiny-doc.md`) exercised against the built `bin/md2x` binary.
+The CLI (`src/cli/`) is the actual conversion engine: Bash source rolled up by `@liquid-labs/bash-rollup` into the single-file `bin/md2x` executable per the `Makefile`. `src/cli/md2x.sh` is the entrypoint that parses options and dispatches to the library. `src/cli/lib/` holds `generate-page.sh` (the Pandoc → Ghostscript → `pdftk` conversion pipeline), the bundled stylesheet `github.css`, and small option/parameter definitions (`parameters.sh`, `index.sh`). `src/cli/test/` holds the CLI's test suite, all of it exercising the built `bin/md2x` binary rather than the sources, so nothing under it goes through `bash-rollup` except the manual smoke test:
 
-The Node wrapper (`src/node/`) is a thin package (`index.js`, `md2x.js`) that shells out to the built `bin/md2x` CLI via `shelljs` and returns the generated file paths; it is what `@liquid-labs/md2x`'s Node library entrypoint (`dist/md2x.js`) is built from.
+- `bats/` — the automated [bats-core](https://github.com/bats-core/bats-core) cases (`*.bats`) that `make test-cli` runs.
+- `helpers/` — shared bash helpers a case pulls in with `load '../helpers/common'`: per-case temporary working directory and stubbed `PATH` setup/teardown, generic assertions, and stub-invocation-log assertions.
+- `stubs/` — stand-in `pandoc`, `gs`, and `pdftk` executables the helpers put on `PATH`. They record their argument vectors and fabricate the files the CLI expects, so the suite needs no real conversion toolchain.
+- `manual/visual-smoke-test.sh` — the interactive, macOS-only "does the output actually look right" check, rolled up into `test-out/visual-smoke-test.sh` and run by the opt-in `make smoke-test` target. It is not part of `make test`.
+- `tiny-doc.md` — a small fixture document, used by both the smoke test and the automated cases.
+
+The Node wrapper (`src/node/`) is a thin package (`index.js`, `md2x.js`) that shells out to the built `bin/md2x` CLI via `shelljs` and returns the generated file paths; it is what `@liquid-labs/md2x`'s Node library entrypoint (`dist/md2x.js`) is built from. Its Jest cases are colocated as `src/node/*.test.js`, which the `Makefile`'s build inputs deliberately exclude; `make test-node` Babel-compiles the whole directory into `test-staging/` and runs Jest there.
 
 ## `docs/`
 
@@ -72,7 +83,7 @@ Flow's planning directory. Currently holds only `followups.yaml`, which tracks s
 
 | File | Purpose |
 | --- | --- |
-| `Makefile` | Build/test/lint driver invoked by the npm scripts (`make all`, `make test`, `make qa`, `make clean`). |
+| `Makefile` | Build/test/lint driver invoked by the npm scripts (`make all`, `make test` — which runs `make test-cli` and `make test-node` — `make qa`, `make clean`); also exposes the opt-in, interactive `make smoke-test` check. |
 | `package.json` | npm package manifest; declares the `md2x` CLI bin entrypoint and delegates `build`/`test` scripts to `make`. |
 | `package-lock.json` | npm dependency lockfile. |
 | `.gitignore` | Excludes build outputs (`bin/`, `dist/`, `test-out/`, ...), `node_modules/`, and most of `.flow/` from version control. |

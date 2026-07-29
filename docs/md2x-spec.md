@@ -33,7 +33,7 @@ This spec covers both of md2x's external surfaces — the `md2x` CLI and the thi
 
 - **Actor:** A developer with a directory tree of `*.md` files (for example, a documentation set).
 - **Action:** Runs `md2x --output-path ./out ./docs`, optionally adding `--flatten-dirs`.
-- **Outcome:** Every `*.md` file found recursively under `./docs` is converted individually. Without `--flatten-dirs`, each output file is written under `./out` at a path that mirrors the file's location in the input tree. With `--flatten-dirs`, every output file is written directly into `./out`, discarding the input directory structure.
+- **Outcome:** Every `*.md` file found recursively under `./docs` is converted individually. Without `--flatten-dirs`, each output file is written under `./out` at the path the input file occupies *relative to the search root it was found under* — the directory argument given on the command line (`./docs` here), so `./docs/guide/b.md` becomes `./out/guide/b.pdf`. A file named directly on the command line is rooted at its own directory and is written straight into `./out`. With `--flatten-dirs`, every output file is written directly into `./out`, discarding the input directory structure.
 
 ### UC4: Concatenate multiple Markdown files into one document
 
@@ -76,7 +76,7 @@ md2x has two external surfaces: the CLI (`md2x`) and the Node library function (
 
 | Flag | Required behavior |
 | --- | --- |
-| `-D`, `--flatten-dirs` | Write every output file directly into `--output-path`, discarding input directory structure, instead of mirroring the input directory tree. |
+| `-D`, `--flatten-dirs` | Write every output file directly into `--output-path`, discarding input directory structure, instead of mirroring each input file's path relative to the search root it was found under. |
 | `--infer-title` | Embed the title (`--title`, or otherwise the filename) as document metadata via Pandoc (e.g. the HTML `<title>` element). |
 | `--infer-version` | Add the inferred version string (see [General features](#general-features)) to the PDF footer. |
 | `--keep-intermediate` | Retain the Pandoc log and PDF overlay file instead of deleting them after conversion. |
