@@ -86,3 +86,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: docs/architecture.md's Pointers section still calls docs/project-structure.md '(planned)' — pre-existing staleness, unrelated to this plan, not in the task's Requirements list.
+    - title: AGENTS.md (two spots) and docs/project-struct
+      id: tTl2
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:doc-updates
+        - priority:unspecified
+        - effort:unspecified
+      text: AGENTS.md (two spots) and docs/project-structure.md (one spot) still describe docs/architecture.md as '(planned)'/not-yet-existing, contradicting reality — those three files belong to Phase 01 task 002's file set, out of this task's boundaries.
