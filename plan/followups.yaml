@@ -77,3 +77,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Flagged by the phase-01 (weasyprint-pdf-engine) phase-review security lens, minor/low-confidence. Pinning --pdf-engine to WeasyPrint (this phase) makes WeasyPrint the actual PDF renderer again (previously this path errored on Pandoc >= 3.4, so it was unreachable in practice). WeasyPrint''s default posture fetches external resources referenced in rendered HTML (image src, @import/url() in CSS, including file:// URLs) with no built-in allowlist. md2x is a CLI a user runs against their own documents (low risk there), but it''s also published as an npm library (src/node/md2x.js, md2x({ markdown, ... })) that a consuming application could embed to render externally-supplied Markdown — in which case resource references in that content could be used for SSRF or local file disclosure via WeasyPrint''s fetch behavior. Nothing in this phase''s diff changes or introduces that fetch behavior (intrinsic to WeasyPrint, and was already true of the previous wkhtmltopdf-based path when it worked), but this phase is what makes it reachable again. Worth a maintainer decision: document the caveat for library consumers (a caller embedding md2x against externally-authored content should apply the same precautions as any other SSRF-capable rendering path — network egress restrictions, or a WeasyPrint URL fetcher override), or decide it''s out of scope / the caller''s responsibility.'
+    - title: docs/architecture.md's Pointers section still
+      id: yn0V
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:doc-updates
+        - priority:unspecified
+        - effort:unspecified
+      text: docs/architecture.md's Pointers section still calls docs/project-structure.md '(planned)' — pre-existing staleness, unrelated to this plan, not in the task's Requirements list.
