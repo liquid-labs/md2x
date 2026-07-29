@@ -16,3 +16,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: update-consumer-and-contributor-docs
+          title: Update Consumer And Contributor Docs
+          path: phase-01-weasyprint-pdf-engine/002-update-consumer-and-contributor-docs.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
