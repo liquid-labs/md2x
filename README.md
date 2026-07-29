@@ -85,6 +85,13 @@ md2x accepts one or more file paths, one or more directory paths (searched recur
 
 Every PDF md2x generates gets a footer with page numbers ("Page X of Y"), and, on every page after the first, a header with the document title (from `--title`, or inferred from the filename). With `--infer-version`, the footer also shows the version string described above. This overlay is produced by rendering a standalone PostScript document with Ghostscript (`gs`) and merging it onto the Pandoc-generated PDF with `pdftk ... multistamp`.
 
+## Additional documentation
+
+- Working on this project (build, test, conventions): [AGENTS.md](./AGENTS.md)
+- Full specification: [docs/md2x-spec.md](./docs/md2x-spec.md)
+- Architecture and conversion pipeline: [docs/architecture.md](./docs/architecture.md)
+- Project structure and file layout: [docs/project-structure.md](./docs/project-structure.md)
+
 ## License
 
 This package is marked `"license": "UNLICENSED"` in `package.json`. It is Liquid-Labs internal tooling and is not published for external or open-source use.
