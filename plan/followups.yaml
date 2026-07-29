@@ -16,3 +16,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'package.json declares a second bin entrypoint, "liq-gen-roles-ref": "bin/liq-gen-roles-ref.sh", but no such file exists anywhere in the repo (only bin/md2x is present). Found while authoring docs/project-structure.md during this session''s doc-authoring round. Looks like leftover/incorrect package.json content — either the file was never added, was removed without updating package.json, or the entry belongs to a different package. Worth a maintainer review: either restore/add the script or remove the stale bin entry.'
+    - title: weasyprint missing locally for PDF conv.
+      id: BfN6
+      date: "2026-07-28"
+      tags:
+        - plan/phase:cli-help-option
+        - type:ambiguity
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Flagged by a task agent implementing the md2x --help option (worktree 2026-07-28-cli-help-option). While smoke-testing, HTML conversion worked end-to-end but a PDF conversion attempt failed with "''weasyprint'' not found" — pandoc''s PDF engine on this dev machine. AGENTS.md''s build/test prerequisites list only pandoc, gs (Ghostscript), and pdftk; weasyprint isn''t mentioned. Unrelated to the --help change itself (confirmed pre-existing, not a regression). Worth a maintainer check: is weasyprint a real hidden prerequisite that should be documented (and checked in the CLI''s binary preflight), or is this specific to this machine''s pandoc/PATH configuration?'
