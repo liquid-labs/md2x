@@ -40,7 +40,7 @@ phases:
           slug: update-architecture-docs
           title: Update Architecture Docs
           path: phase-02-doc-updates/001-update-architecture-docs.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: 'Brought docs/architecture.md and docs/md2x-spec.md into line with the shipped Phase 01 WeasyPrint bootstrap: both now state the accurate, asymmetric contract — pandoc/gs/pdftk/python3 are operator-installed and preflight-verified, WeasyPrint alone is md2x-managed in ~/.md2x/venv. Architecture doc''s system diagram and prose now show the PDF-gated bootstrap step; Tech stack names the one piece of persistent local state instead of claiming statelessness; a new ''WeasyPrint bootstrap'' component subsection documents ensure-weasyprint.sh; Key decisions carries the asymmetry rationale. Spec gained a parallel ''Automatic WeasyPrint bootstrap'' feature, extended exit-2 description, corrected Node-library/Constraints/Non-goals sections. A handful of adjacent, pre-existing staleness items were identified but deliberately left unedited per task boundaries, flagged for the manager.'
           git:
