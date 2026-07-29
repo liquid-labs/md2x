@@ -25,6 +25,7 @@ EOF
   if [[ -z "${INPUT}" ]]; then
     pandoc \
       $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
+      $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
       --quiet \
       --standalone \
       --from gfm \
@@ -40,6 +41,7 @@ EOF
   else
     pandoc \
       $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
+      $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
       --quiet \
       --standalone \
       --from gfm \
