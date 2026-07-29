@@ -50,3 +50,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: PDF output currently ships with NO GitHub-markdown CSS styling — WeasyPrint rejects the --css process-substitution file outright (no .css extension to sniff MIME type), so the stylesheet never loads for PDF output (HTML/DOCX unaffected). Fixed only the stdout-purity symptom (filtered the resulting stderr message); did not restructure CSS delivery — a real temp .css file does make WeasyPrint load styles but then emits ~10 non-fatal multi-line WARNING lines per conversion with no reliable machine-parseable boundary for stdout-purity filtering. Recommend a small dedicated follow-up task to restore PDF styling and decide how to handle WeasyPrint's CSS-compatibility warnings, ideally with a visual check of rendered output. Not caught by any of the 8 written Validation checks.
+    - title: Validation check 6 (python3 preflight failure
+      id: egW0
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:weasyprint-pdf-engine
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Validation check 6 (python3 preflight failure) was not exercised live: brew''s self-location depends on /opt/homebrew/bin staying on PATH, which also hosts python3/gs/pandoc on this dev machine, so a live PATH-exclusion test could not be safely constructed. Verified by code inspection (identical preflight-loop idiom as gs/pandoc/pdftk) instead. Recommend re-verifying live in an environment where python3 is not colocated with brew/gs/pandoc.'
