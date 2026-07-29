@@ -101,3 +101,39 @@ Update `docs/project-structure.md`'s description of `src/cli/test/` to match the
 - After the `Makefile` / `package.json` wiring makes `make test` green end to end.
 - After relocating the interactive script and adding `make smoke-test`.
 - After the `AGENTS.md` and `docs/project-structure.md` updates.
+
+## Status
+
+**Outcome: succeeded** — 2026-07-29.
+
+`bats` installed cleanly (`bats@^1.13.0`, Bats 1.13.0); the pre-authorized in-repo-harness fallback was **not** needed. Later tasks write bats syntax.
+
+### Landed layout
+
+- `src/cli/test/bats/harness-smoke.bats` — 10 cases that verify the harness itself. Tasks 002–005 add sibling `*.bats` files here.
+- `src/cli/test/helpers/common.bash` — the single entry point a case loads (`load '../helpers/common'`); it sources the other two helper files. Holds `md2x_setup` / `md2x_teardown`, `md2x_bin`, `md2x_run`, `md2x_use_stub_path` / `md2x_path_without`, and the fixture builders `md2x_write_doc` / `md2x_copy_fixture` / `md2x_make_fixture_tree`.
+- `src/cli/test/helpers/assertions.bash` — generic assertions (`assert_success`, `assert_failure`, `assert_output_contains`, `assert_stderr_contains`, `assert_file_exists`, …).
+- `src/cli/test/helpers/stub-log.bash` — stub-invocation-log assertions (`assert_stub_called`, `assert_stub_call_count`, `assert_last_call_has_arg`, `assert_any_call_contains`, …) plus `md2x_pandoc_capture` for the process-substitution content.
+- `src/cli/test/stubs/{pandoc,gs,pdftk}` — the stand-in binaries.
+- `src/cli/test/manual/visual-smoke-test.sh` — the relocated interactive script (was `src/cli/test/test.sh`), run by the opt-in `make smoke-test`.
+
+### Decisions later tasks should know about
+
+- **The per-case `PATH` is minimal and hermetic**, not "stubs prepended to the ambient `PATH`": it is the case's stub directory plus `/usr/bin:/bin:/usr/sbin:/sbin`. That is what lets `md2x_path_without pandoc` genuinely reproduce the missing-binary case — the real `pandoc`/`gs`/`pdftk` are unreachable throughout. `bash`, `brew`, `git`, `jq`, and `perl` are re-exposed through exec wrappers because the CLI needs them (`brew --prefix gnu-getopt` is how the rolled-in bash-toolkit option parser finds GNU `getopt` on macOS).
+- **Use `md2x_run`, not bats' bare `run`.** Running outside a git work tree — which is the whole point of the temp cwd — makes the version probe on `src/cli/md2x.sh` line 135 emit `fatal: not a git repository` on stderr on every invocation. bats' own `run` merges stderr into `$output`, which would break any exact-output assertion (e.g. `--list-files`). `md2x_run` keeps stdout in `$output`, puts filtered stderr in `$stderr`, and still sets `$status` and `$lines`. It inherits stdin, so the CLI's `-` mode is driven with `md2x_run - <<< '# Heading'`.
+- **The pandoc stub captures process-substitution content.** `--metadata-file`, `--css`, and the link-rewritten input document never appear in the argument log (they are `/dev/fd/N`), so the stub copies each into `${MD2X_TEST_STUB_CAPTURE_DIR}`; read them with `md2x_pandoc_capture metadata|css|input [n]`.
+- The stub log is tab-separated, one line per invocation, first field the command name. `MD2X_TEST_STUB_PAGE_COUNT` / `MD2X_TEST_STUB_PAGE_DIMENSIONS` override what the `pdftk` stub reports for `dump_data`.
+
+### Validation
+
+All checks in `## Validation` passed: `npx bats --version`, `make all`, `make test < /dev/null` (green, non-interactive, no viewer opened), deliberate-breakage run (`make test` exited 2 and stopped at `test-cli`), `make test-node` alone, `make lint`, `make qa`, clean `git status`, and no remaining reference to the old default-test path. `make smoke-test` rolls up and starts; its `docx` and `html` conversions succeed against the real toolchain and its `pdf` conversion fails for the pre-existing reason recorded in `## Assumptions` (no Pandoc `weasyprint` engine on this machine — followup `BfN6`), which is exactly why it is no longer on the default test path.
+
+### Affected files
+
+- `Makefile`, `package.json`, `package-lock.json`
+- `src/cli/test/bats/harness-smoke.bats`
+- `src/cli/test/helpers/common.bash`, `src/cli/test/helpers/assertions.bash`, `src/cli/test/helpers/stub-log.bash`
+- `src/cli/test/stubs/pandoc`, `src/cli/test/stubs/gs`, `src/cli/test/stubs/pdftk`
+- `src/cli/test/manual/visual-smoke-test.sh` (moved from `src/cli/test/test.sh`)
+- `src/node/md2x.test.js`
+- `AGENTS.md`, `docs/project-structure.md`

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+#
+# Test stub for 'gs' (Ghostscript), used by the md2x CLI test suite.
+# See ../helpers/common.bash.
+#
+# It renders nothing. It exists to (a) record what the CLI asked for -- notably the
+# '-c' PostScript string carrying the header/footer text and the inferred version --
+# and (b) create the file named by '-o' (the '${OUTPUT_PATH}/${TITLE}-overlay.pdf'
+# that 'src/cli/lib/generate-page.sh' hands to pdftk and then 'rm's unless
+# '--keep-intermediate' is given). Without that file the CLI aborts under
+# 'set -o errexit'.
+#
+# The invocation (argv[0] basename plus the full argument vector, tab separated) is
+# appended to "${MD2X_TEST_STUB_LOG}" when that variable is set.
+#
+# Kept compatible with bash 3.2: the test PATH is deliberately minimal.
+
+STUB_NAME='gs'
+
+# --- record the invocation ---------------------------------------------------------
+if [[ -n "${MD2X_TEST_STUB_LOG:-}" ]]; then
+  RECORD="${STUB_NAME}"
+  for FIELD in "$@"; do
+    RECORD="${RECORD}"$'\t'"${FIELD}"
+  done
+  printf '%s\n' "${RECORD}" >> "${MD2X_TEST_STUB_LOG}"
+fi
+
+# --- parse the arguments we have to act on -----------------------------------------
+OUTPUT_FILE=''
+
+ARGS=("$@")
+I=0
+while (( I < ${#ARGS[@]} )); do
+  case "${ARGS[I]}" in
+    -o)
+      OUTPUT_FILE="${ARGS[I + 1]:-}"; I=$(( I + 2 ));;
+    -o*)
+      OUTPUT_FILE="${ARGS[I]#-o}"; I=$(( I + 1 ));;
+    *)
+      I=$(( I + 1 ));;
+  esac
+done
+
+# --- reproduce the side effect the CLI depends on ----------------------------------
+[[ -z "${OUTPUT_FILE}" ]] || printf 'md2x-test-stub: gs overlay\n' > "${OUTPUT_FILE}"
+
+exit 0
