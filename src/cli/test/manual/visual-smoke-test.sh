@@ -1,10 +1,22 @@
 #!/usr/bin/env bash
+#
+# INTERACTIVE, MANUAL SMOKE TEST -- NOT part of 'make test'.
+#
+# Run it with 'make smoke-test'. It converts the tiny-doc fixture to every supported
+# output format using the REAL pandoc/gs/pdftk toolchain, opens each result in a
+# viewer, and then blocks on stdin until a human confirms the output looks right.
+#
+# It is macOS-specific ('open -Fn' to launch the viewer, 'lsof' to find the viewer's
+# PID afterwards), it requires a fully working Pandoc PDF pipeline, and it cannot be
+# automated. The automated suite lives in '../bats' and runs against stub external
+# binaries instead; this script is the complement to it -- the "does the output
+# actually look right" check that stubs can never make.
 
 import strict
 
 import lists
 
-source ../lib/parameters.sh
+source ../../lib/parameters.sh
 
 MD2X=./bin/md2x
 TEST_OUTPUT="test-out"
