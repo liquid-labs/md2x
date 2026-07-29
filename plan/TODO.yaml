@@ -5,6 +5,7 @@ phases:
     - number: 1
       slug: automated-test-coverage
       title: Automated Test Coverage
+      diff_base: c8635b32251b22f7883cc691ce5cdac470350ff1
       tasks:
         - number: 1
           slug: stand-up-test-infrastructure
