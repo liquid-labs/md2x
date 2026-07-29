@@ -41,3 +41,11 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Flagged by the planning agent for plan `test-coverage-bugfix`. In `src/node/md2x.js`, the condition `if (!title && sourceSpec === ''-'')` can never be true: `sourceSpec` is always constructed pre-quoted (the literal string `''-''` with surrounding quote characters), never the bare string `-`, so the identity comparison against `''-''` never matches and the intended `title = ''Report''` default is dead code. Worth a maintainer fix: compare against the quoted form, or normalize before comparing.'
+    - title: markdown-string staging produces undefined.md
+      id: egcc
+      date: "2026-07-29"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+      text: Flagged by the planning agent for plan `test-coverage-bugfix`. In `src/node/md2x.js`, when `md2x()` is called with a `markdown` string and no `title`, the staging file is built as `` `${title}.md` `` before any default is applied, producing a literal `undefined.md` file and, downstream, an `undefined.<format>` output file. Related to the unreachable-default-title followup (`udVi`) in the same file — fixing that branch's reachability may also need this staging-path construction reordered to apply the title default first. Worth a maintainer fix.
