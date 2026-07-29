@@ -5,4 +5,14 @@ phases:
     - number: 1
       slug: automated-test-coverage
       title: Automated Test Coverage
-      tasks: []
+      tasks:
+        - number: 1
+          slug: stand-up-test-infrastructure
+          title: Stand Up Test Infrastructure
+          path: phase-01-automated-test-coverage/001-stand-up-test-infrastructure.md
+          done: false
+          tier: opus-med
+          git:
+            branch: null
+            commit: []
+            merge: null
