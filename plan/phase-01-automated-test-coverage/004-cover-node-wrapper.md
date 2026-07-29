@@ -61,3 +61,37 @@ If you find further divergences from `docs/md2x-spec.md` § Node library, handle
 - After the argument-marshaling cases.
 - After the return-value and error-propagation cases.
 - After the `markdown` staging-path cases.
+
+## Status
+
+**Outcome: succeeded** — 2026-07-29.
+
+Filled in `src/node/md2x.test.js` (task 001's trivial case retained as the first `test`) with 17 Jest cases covering all five requirements. `shelljs` is mocked with the manual factory shape the task doc's guidance suggested (`__esModule: true, default: { config, exec, tempdir, mkdir, rm, ShellString }`); no case shells out, and `jest.mock('shelljs', …)` is written *after* the `import shell from 'shelljs'` / `import { md2x } from './md2x'` lines to satisfy the project's `import/first` lint rule — this is safe because `babel-plugin-jest-hoist` (bundled in `babel-jest`) hoists `jest.mock` calls above all imports at compile time regardless of source order, so the mock is still installed before `shelljs` is required.
+
+### Requirement → case mapping
+
+1. **Argument marshaling** — `describe('argument marshaling', …)`: defaults-only; non-default `format`; `test.each` over the five boolean flags (`flattenDirs`, `inferTitle`, `inferVersion`, `noToc`, `singlePage`) individually; `title`/`outputPath` quoting and ordering; multiple `sources` space-joining/quoting; plus the followup-`udVi` documentation case below.
+2. **Return value** — `describe('return value', …)`: multi-line stdout with a blank line, asserts the blank entry is dropped.
+3. **Error propagation** — `describe('error propagation', …)`: non-zero `code`, asserts the thrown `Error`'s message contains both the format, the exit code, and the mocked `stderr`.
+4. **Non-fatal stderr** — `describe('non-fatal stderr', …)`: `code === 0` with non-empty `stderr`; asserts the normal return value and a `console.error` spy call with the stderr text.
+5. **`markdown` staging path** — `describe('markdown staging path', …)`: success case (staging dir created under the mocked `shell.tempdir()`, `ShellString(...).to(...)` called with the staging file, `shell.exec` command asserted verbatim including the staging-file append, `shell.rm('-r', stagingDir)` called once) and a failure case (`shell.exec` mocked to a non-zero result; asserts the call throws **and** that `shell.rm` still fires with the same staging directory — the `finally` cleanup).
+
+### Spec discrepancies encountered (candidate followups — not fixed here)
+
+Both were already tracked as followups per the dispatch context; each got its own test case with an in-code comment documenting **current** (buggy) behavior rather than presumed-intended behavior:
+
+- **`udVi`** — `sourceSpec` is always the quoted string `'${sources.join("' '")}'`, so `sources: ['-']` never equals the bare `-` string the guard `if (!title && sourceSpec === '-')` checks for. The `title = 'Report'` default is unreachable. Test: `'never applies the unreachable default title for a lone "-" source (followup udVi)'`. This is also why the branch's assignment (`src/node/md2x.js` line 27) shows up as the sole uncovered line in the coverage report (97.43% stmts / 94.73% branch / 100% funcs) — it cannot be exercised without changing the production code, which is out of this task's scope.
+- **`egcc`** — on the `markdown` path with no `title`, the staging filename is built as `` `${title}.md` `` before any title default could apply, so it is literally `undefined.md`. Test: `'stages to "undefined.md" when no title is given (followup egcc)'`.
+
+No further divergences from `docs/md2x-spec.md` § Node library were found beyond the two flagged above.
+
+### Validation
+
+- `make test-node` and `make test`: both pass, all 17 cases reported as run (none skipped), zero exit status.
+- No real subprocess: `shell.exec` is the Jest mock throughout (never the real shelljs implementation); confirmed no `bin/md2x`, `dist/`, `test-out/`, or stray temp output — `test-staging/` and `coverage/` are the only artifacts `make test-node` produces and both are already `.gitignore`d.
+- `git diff --stat` (in this worktree) shows only `src/node/md2x.test.js` changed; `src/node/md2x.js`, `src/node/index.js`, `Makefile`, and `package.json` are untouched.
+- `make lint` passes (initial draft had two `key-spacing` alignment errors and an `import/first` ordering error on the `jest.mock` factory object/placement; both fixed by hand, no `--fix` run needed in the end).
+
+### Affected files
+
+- `src/node/md2x.test.js`
