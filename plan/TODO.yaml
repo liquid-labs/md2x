@@ -63,7 +63,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-05-add-gated-end-to-end-tests
-            commit: []
+            commit:
+                - c5ac86c
             merge: null
     - number: 2
       slug: doc-updates
