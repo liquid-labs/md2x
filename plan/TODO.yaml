@@ -30,7 +30,7 @@ phases:
             branch: phase-01-task-02-update-consumer-and-contributo
             commit:
                 - 75038b7
-            merge: null
+            merge: 44783a6f99daa93074d1a2c2fb3b1d88929876e0
     - number: 2
       slug: doc-updates
       title: Documentation Updates
