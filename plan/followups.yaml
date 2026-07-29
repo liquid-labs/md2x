@@ -88,3 +88,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: --output-format html produces a <title>-base.html suffix undocumented in docs/md2x-spec.md or README.md - observed and test-commented, not fixed, candidate followup
+    - title: --output-format html on a per-file conversion
+      id: c2s9
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: --output-format html on a per-file conversion produces <title>-base.html rather than <title>.html - undocumented in docs/md2x-spec.md or README.md - candidate followup
