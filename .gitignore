@@ -7,3 +7,14 @@
 /.yalc
 /test-out
 /.build
+status.md
+
+CLAUDE.md
+!.claude/CLAUDE.md
+
+.flow/*
+!.flow/plans
+!.flow/project-analysis.json
+!.flow/what-next-cache.json
+
+/.mcp.json
