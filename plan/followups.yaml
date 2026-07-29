@@ -134,3 +134,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Phase-01 efficiency review (test-coverage-bugfix plan) found: task 005''s four real-toolchain e2e cases are wired into the default make test/test-cli path (by design, per the task doc) rather than behind a separate opt-in target, so any machine with a working pandoc on PATH performs 2-3 real Pandoc/Ghostscript/pdftk conversions on every make test invocation, raising wall-clock from ~12.4s to ~13.9-17.5s (measured by task 005 itself). Deliberate, pre-accepted trade-off, not a correctness problem. Suggestion severity - optional enhancement: an environment-variable escape hatch (e.g. MD2X_SKIP_E2E=1) that bats setup checks to skip the e2e-tagged cases during rapid local iteration, while leaving make test unchanged by default for CI/gate purposes.'
+    - title: Pre-existing doc self-contradiction (docs/pro
+      id: borG
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:doc-updates
+        - priority:unspecified
+        - effort:unspecified
+      text: Pre-existing doc self-contradiction (docs/project-structure.md and docs/architecture.md marked '(planned)' in AGENTS.md/architecture.md despite existing since the doc set's initial commit) - already tracked as followup LPg7, confirmed still present, left untouched as unrelated to this task's phase-01-conformance scope
