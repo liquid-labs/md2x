@@ -84,3 +84,102 @@ Read the merged Phase 01 source changes directly before writing; document what s
 - After updating `docs/architecture.md`'s system overview (diagram plus the numbered prose walkthrough).
 - After updating `docs/architecture.md`'s tech stack, components, and key decisions.
 - After updating `docs/md2x-spec.md`.
+
+## Status
+
+**Outcome: succeeded.** Implemented 2026-07-29.
+
+Both `docs/architecture.md` and `docs/md2x-spec.md` now state the accurate, asymmetric dependency
+contract: `pandoc`, `gs`, `pdftk`, and `python3` are operator-installed and preflight-verified;
+WeasyPrint alone is md2x-managed in `~/.md2x/venv`. `git diff --name-only` shows exactly these two
+files.
+
+**`docs/architecture.md`:**
+- Mermaid diagram: preflight node now lists all four binaries; added a `PdfCheck`/`Bootstrap` branch
+  between preflight and the link-rewrite step, gated on PDF output, showing the `ensure-weasyprint`
+  cheap-check-then-install sequence; the Pandoc node now notes the pinned `--pdf-engine`. Rendered
+  successfully with `mmdc` (Chrome via `PUPPETEER_EXECUTABLE_PATH`) — no syntax errors.
+- Prose walkthrough renumbered to 5 steps, adding the bootstrap step in lockstep with the diagram.
+- Tech stack: replaced the "holds no state between invocations" claim with an accurate statement of
+  the one persistent artifact (`~/.md2x/venv`); added `python3` to the operator-installed binaries
+  bullet and a new bullet distinguishing WeasyPrint as the sole md2x-managed dependency.
+- Major components: added a new `### WeasyPrint bootstrap` subsection (what it owns, warm/cold path,
+  stderr-only discipline, exit-`2` contract, pinned `weasyprint==69.0`); updated *CLI entry point* and
+  *Page generation* to reference the preflight/bootstrap/pin.
+- Key decisions: rewrote *Minimal, mature external dependency set* with the asymmetry rationale and
+  stated trade-offs (python3 requirement, first-run latency/network, persistent state, an install path
+  md2x must maintain); fixed the now-stale "three widely-available binaries" / "three external
+  binaries" numeric claims in the *HTML5 intermediate* and *Bash + bash-rollup* bullets (the latter
+  wasn't named explicitly in Requirements but is the same class of staleness, fixed as a same-diff
+  self-fix within the Key decisions section already being edited).
+- Purpose and scope: corrected the "three external tools" framing to name all four operator binaries
+  plus the self-managed WeasyPrint install.
+- Table of contents: unchanged — no `##`-level headings were added or renamed (the new subsection is
+  `###`, matching the existing pattern of not listing `###` headings in the TOC).
+
+**`docs/md2x-spec.md`:**
+- Binary preflight check bullet: added `python3`.
+- Added a new **Automatic WeasyPrint bootstrap (PDF output only)** bullet to General features, stating
+  the spec-level behavior (install on first PDF conversion, stderr notice, exit `2` on failure, stdout
+  purity, `--quiet` does not suppress it).
+- Exit behavior: extended to cover a failed WeasyPrint bootstrap alongside a missing binary.
+- Node library: `Requires` bullet now lists `python3` and notes the bootstrap applies through the
+  wrapper.
+- Constraints and assumptions: replaced "md2x does not install these dependencies itself" with the
+  accurate split contract, the `~/.md2x/venv` per-user (not project-relative, not XDG) location, and
+  the network-access note for the first PDF conversion.
+- Non-goals: corrected to name `pandoc`/`gs`/`pdftk`/`python3` as the operator's responsibility while
+  naming the single WeasyPrint exception; the non-goal is preserved, not deleted, per the task's
+  explicit instruction.
+- Purpose-and-scope / Pointers: fixed the "future `docs/architecture.md`, not yet written" /
+  "does not yet exist" claims in place (small in-place corrections in sentences already being touched
+  for other reasons) and converted the dangling Pointers paragraph into a proper pointer bullet.
+
+**Validation summary** (all against the merged Phase 01 sources — `src/cli/lib/ensure-weasyprint.sh`,
+`src/cli/md2x.sh`, `src/cli/lib/generate-page.sh` — and the already-merged Phase 01 docs):
+
+1. Passed — `grep -n 'does not install these dependencies\|installation is the operator'
+   docs/md2x-spec.md` and `grep -n 'holds no state between invocations\|three widely-available
+   binaries\|Three external binaries' docs/architecture.md` both return no hits.
+2. Passed — every `pdftk`-containing line that enumerates required binaries also names `python3`; the
+   remaining `pdftk` hits (the PDF header/footer overlay mechanism specifically) don't claim to
+   enumerate the full binary set and are unchanged/accurate as scoped statements about `gs`+`pdftk`.
+3. Passed — diagram and the 5-step prose agree; `mmdc` rendered the diagram to SVG with no errors
+   (Chrome resolved via `PUPPETEER_EXECUTABLE_PATH` since the cached `chrome-headless-shell` version
+   mismatched what this `mmdc` install expected).
+4. Passed — every path (`~/.md2x/venv`, `~/.md2x/venv/bin/weasyprint`), exit code (`2`), pinned version
+   (`weasyprint==69.0`), and behavioral claim (stderr-only output, gated on PDF format, `-x` warm-path
+   check, `rm -rf` cleanup on failure) was checked directly against the three named source files.
+5. Passed — cross-checked `python3`/`pdftk` prerequisite lists and the `~/.md2x/venv` path and
+   "not a manual prerequisite" framing against `README.md` and `AGENTS.md`; no contradictions found.
+6. Passed — both documents' tables of contents are unchanged and still match their `##` headings; all
+   in-document anchor links (verified programmatically by slugifying every heading and checking every
+   `(#...)` link resolves) and cross-document relative links (`./md2x-spec.md`, `./architecture.md`,
+   `../AGENTS.md`, `./project-structure.md`) resolve.
+7. Passed — `git status --porcelain` shows only `docs/architecture.md` and `docs/md2x-spec.md` modified.
+
+**Assumptions applied:** the three `## Assumptions` in this task doc all held as stated — Phase 01 was
+merged and readable, `docs/architecture.md` exists despite spec text calling it "future," and
+`docs/md2x-spec.md` is the sole `docs/*-spec.md` file. No PDF conversion was run to observe live
+behavior; all behavioral claims were verified by reading the merged source directly (the Phase 01 task
+docs' own `## Status` sections record that the wording and behavior were already observed live during
+Phase 01, and this task quotes/paraphrases from the shipped source rather than re-deriving it).
+
+**Flagged for manager (not fixed here, out of this task's scope):**
+- `docs/architecture.md`'s own Pointers section still calls `docs/project-structure.md` "(planned)"
+  even though the file exists. This predates Phase 01/the WeasyPrint plan entirely (unrelated to the
+  documented-principle shift this task addresses) and isn't in the task doc's `## Requirements` list of
+  sections to touch, so left as-is per the "smallest correct change" / "do not re-litigate" guidance.
+- `AGENTS.md` (line ~48, ~67) and `docs/project-structure.md` (line ~57) both still describe
+  `docs/architecture.md` as "(planned)" / not yet existing, even though it does. Per this task's
+  Boundaries section ("Do not change README.md, AGENTS.md, or docs/project-structure.md ... If they
+  contradict what is written here, flag the discrepancy rather than silently editing them"), this is
+  flagged rather than fixed — it's Phase 01 task 002's file set, and the staleness predates this plan.
+- `docs/md2x-spec.md`'s "Consistent styling" General features bullet and UC1's outcome description both
+  still claim PDF output receives the built-in GitHub CSS. Per phase-01 task 001's `## Status`, WeasyPrint
+  currently rejects the `--css` process-substitution delivery, so **PDF output currently has no CSS
+  styling applied** (already documented accurately in the merged `README.md` Features list, alongside
+  followup `TNLq`). This spec-level claim is stale for the same underlying reason, but fixing the CSS
+  gap itself is explicitly out of scope (`TNLq`), and neither the "Consistent styling" bullet nor UC1 was
+  named in this task's `## Requirements` file list, so it was left unedited and is flagged here rather
+  than fixed.
