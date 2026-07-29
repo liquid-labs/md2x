@@ -98,3 +98,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: Followup egcc (markdown-staging produces literal undefined.md) confirmed still present, now has explicit regression test documenting current behavior - not fixed, out of this task's scope
+    - title: md2x.js shell injection risk
+      id: arUf
+      date: "2026-07-29"
+      tags:
+        - plan/phase:automated-test-coverage
+        - type:security
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 security review (test-coverage-bugfix plan) found: src/node/md2x.js builds its shell command by naively single-quoting caller-supplied values with no escaping of embedded single quotes (options.push(`--title ''${title}''`) at md2x.js:43, `--output-path ''${outputPath}''` at md2x.js:49, sourceSpec join at md2x.js:25), then executes via shell.exec(command, { shell: ''/bin/bash'' }) (md2x.js:56, 66). Any of title/outputPath/sources containing a single quote breaks out of the quoting; a crafted value can execute arbitrary shell commands with the Node process''s privileges. md2x() is the exported library API and docs/md2x-spec.md documents these as plain caller-supplied strings (e.g. a document title), so externally-influenced input is plausible. Not introduced by the test-coverage-bugfix diff (src/node/md2x.js is unchanged), but task 004''s new src/node/md2x.test.js (lines 74-88) now asserts the exact unescaped command string as correct/expected behavior with no accompanying caveat, unlike the same file''s explicit "documents CURRENT buggy behavior" treatment of followups udVi/egcc. Worth a maintainer fix: escape embedded single quotes in title/outputPath/each sources entry, or switch to an argv-array invocation (child_process.execFile) that never round-trips through a shell.'
