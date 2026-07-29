@@ -60,6 +60,13 @@ Read the merged task 001 changes (`src/cli/lib/ensure-weasyprint.sh`, `src/cli/m
 - The observed first-run notice wording comes from the shipped `src/cli/lib/ensure-weasyprint.sh`, not from this plan's suggested phrasing — quote the real thing if quoting at all.
 - `docs/architecture.md` and `docs/md2x-spec.md` still contain statements contradicting the new behavior at the time this task runs. That is expected and is Phase 02's work; it is not a defect to fix here.
 
+## Status
+
+- **Outcome:** succeeded (2026-07-29).
+- **Validation summary:** all six validation checks passed. `~/.md2x` was warm from prior task-001 work; per Assumptions, it was removed (`rm -rf ~/.md2x`) and a real cold-start PDF conversion was run against the freshly built `./bin/md2x`, confirming the notice wording quoted in the docs (`md2x: installing weasyprint (one-time setup) into '<venv>'; this may take a minute...` / `md2x: weasyprint installed.`) matches `src/cli/lib/ensure-weasyprint.sh` verbatim.
+- **Files changed:** `README.md`, `AGENTS.md`, `docs/project-structure.md`.
+- **Assumptions applied:** task 001's shipped behavior (`src/cli/lib/ensure-weasyprint.sh`, the `python3` preflight entry in `src/cli/md2x.sh`, and the `--pdf-engine` pin in `src/cli/lib/generate-page.sh`) was read directly and observed live rather than taken from the plan's suggested phrasing.
+
 ## References
 
 - [Plan overview](../overview.md) — the full change and the documented-principle shift, including which claims in which documents become false.

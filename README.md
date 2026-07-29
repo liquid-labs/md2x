@@ -9,8 +9,11 @@ md2x requires the following external binaries on `PATH`:
 - [`pandoc`](https://pandoc.org/installing.html)
 - [Ghostscript](https://www.ghostscript.com/) (`gs`)
 - [`pdftk`](https://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/)
+- [`python3`](https://www.python.org/)
 
 md2x checks for these at startup and exits (code `2`) naming the first missing binary.
+
+[WeasyPrint](https://weasyprint.org/) — the engine Pandoc uses to render PDF output — is **not** a manual prerequisite: md2x installs it automatically into an isolated per-user virtual environment at `~/.md2x/venv` the first time a PDF conversion runs, printing a one-time notice while it does so. `python3` is what makes this possible, which is why it's on the list above. That first PDF conversion therefore takes noticeably longer and needs network access; `rm -rf ~/.md2x/venv` forces a clean reinstall on the next PDF conversion.
 
 Install md2x itself as an npm dependency, or globally for the standalone CLI:
 
@@ -55,7 +58,7 @@ const outputFiles = md2x({
 
 ## Features
 
-- Converts Markdown to PDF, HTML, or DOCX via Pandoc, rendering PDF through an HTML5 intermediate so no `pdflatex` install is required.
+- Converts Markdown to PDF, HTML, or DOCX via Pandoc, rendering PDF through an HTML5 intermediate with WeasyPrint so no `pdflatex` install is required.
 - Consistent GitHub-style CSS applied to every HTML/PDF page.
 - Automatic PDF page footers ("Page X of Y") and a running header with the document title, with an optional inferred version string.
 - Batch conversion of whole directories, recursing to find every `*.md` file.

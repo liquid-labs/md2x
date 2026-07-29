@@ -30,7 +30,7 @@ md2x/
 ├── src/                  # Source code
 │   ├── cli/              # Bash CLI, rolled up into bin/md2x
 │   │   ├── md2x.sh       # CLI entrypoint / argument parsing
-│   │   ├── lib/          # CLI library modules (page generation, GitHub CSS, parameters)
+│   │   ├── lib/          # CLI library modules (page generation, WeasyPrint bootstrap, GitHub CSS, parameters)
 │   │   └── test/         # Bash CLI test script and fixtures
 │   └── node/             # Thin Node.js wrapper (shells out to bin/md2x via shelljs)
 ├── .claude/              # Claude Code local settings
@@ -48,7 +48,7 @@ md2x/
 
 ## `src/`
 
-The CLI (`src/cli/`) is the actual conversion engine: Bash source rolled up by `@liquid-labs/bash-rollup` into the single-file `bin/md2x` executable per the `Makefile`. `src/cli/md2x.sh` is the entrypoint that parses options and dispatches to the library. `src/cli/lib/` holds `generate-page.sh` (the Pandoc → Ghostscript → `pdftk` conversion pipeline), the bundled stylesheet `github.css`, and small option/parameter definitions (`parameters.sh`, `index.sh`). `src/cli/test/` holds the CLI's test script (`test.sh`) and a fixture document (`tiny-doc.md`) exercised against the built `bin/md2x` binary.
+The CLI (`src/cli/`) is the actual conversion engine: Bash source rolled up by `@liquid-labs/bash-rollup` into the single-file `bin/md2x` executable per the `Makefile`. `src/cli/md2x.sh` is the entrypoint that parses options and dispatches to the library. `src/cli/lib/` holds `generate-page.sh` (the Pandoc → Ghostscript → `pdftk` conversion pipeline), `ensure-weasyprint.sh` (bootstraps the per-user `~/.md2x/venv` WeasyPrint install used as Pandoc's `--pdf-engine`), the bundled stylesheet `github.css`, and small option/parameter definitions (`parameters.sh`, `index.sh`). `src/cli/test/` holds the CLI's test script (`test.sh`) and a fixture document (`tiny-doc.md`) exercised against the built `bin/md2x` binary.
 
 The Node wrapper (`src/node/`) is a thin package (`index.js`, `md2x.js`) that shells out to the built `bin/md2x` CLI via `shelljs` and returns the generated file paths; it is what `@liquid-labs/md2x`'s Node library entrypoint (`dist/md2x.js`) is built from.
 
