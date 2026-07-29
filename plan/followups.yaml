@@ -41,3 +41,11 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Flagged by the planning agent for plan `test-coverage-bugfix`. In `src/cli/md2x.sh`, `for ROOT_DIR in $SEARCH_DIRS` and the unquoted `find ${ROOT_DIR} -name "*.md"` word-split on whitespace, so any input directory path containing a space breaks silently (splits into multiple bogus paths rather than erroring). Pre-existing, not touched by the `test-coverage-bugfix` plan (explicitly out of scope there — that plan''s tests must not assert space-containing paths work, only that the change doesn''t make this worse). Worth a maintainer fix: quote `${ROOT_DIR}` and iterate `SEARCH_DIRS` via a null-safe or newline-safe mechanism instead of unquoted word-splitting.'
+    - title: Race on concurrent cold ~/.md2x bootstrap
+      id: AOJw
+      date: "2026-07-29"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Flagged by the planning agent for plan `pdf-engine-weasyprint`. The new WeasyPrint bootstrap (src/cli/lib/ensure-weasyprint.sh, introduced by that plan) creates `~/.md2x/venv` in place on first PDF conversion (python3 -m venv + ensurepip + pip install weasyprint), gated by a simple `[[ -x ~/.md2x/venv/bin/weasyprint ]]` existence check. If two `md2x` processes race a cold bootstrap concurrently (e.g. two PDF conversions kicked off at once on a machine that has never run md2x before), their venv-creation and pip-install steps can interleave and corrupt the shared `~/.md2x/venv` directory. The plan deliberately deferred hardening this (no staging-dir build + atomic rename, no lockfile) in favor of matching the repo''s plain-bash style; a partially-built venv is expected to self-heal on a later run since the `-x` gate simply fails again and retries the bootstrap, but a genuinely concurrent race during the initial cold start is not guarded against. Worth a maintainer decision: accept the risk (probably fine given cold-start is a one-time, human-triggered event) or add a lockfile/staging-dir mechanism.'
