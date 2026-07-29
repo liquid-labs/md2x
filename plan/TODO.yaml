@@ -46,3 +46,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 5
+          slug: add-gated-end-to-end-tests
+          title: Add Gated End To End Tests
+          path: phase-01-automated-test-coverage/005-add-gated-end-to-end-tests.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
