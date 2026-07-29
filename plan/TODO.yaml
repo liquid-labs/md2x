@@ -47,7 +47,7 @@ phases:
           slug: cover-node-wrapper
           title: Cover Node Wrapper
           path: phase-01-automated-test-coverage/004-cover-node-wrapper.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: Filled in src/node/md2x.test.js with 17 Jest cases covering argument marshaling, return-value contract, non-zero-exit error propagation, non-fatal stderr forwarding, and markdown-string staging/cleanup. shelljs fully mocked; no case shells out. Followups udVi and egcc both confirmed still present with dedicated regression-style tests documenting current (buggy) behavior, per scope - production code not touched. Coverage 97.43% statements / 94.73% branches / 100% functions on md2x.js.
           git:
