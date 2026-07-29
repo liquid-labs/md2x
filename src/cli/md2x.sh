@@ -12,13 +12,6 @@ import options
 
 source ./lib/index.sh
 
-for EXEC in gs pandoc pdftk; do
-  type "${EXEC}" >/dev/null || {
-    echo "Required executable '${EXEC}' not found for 'md2x'. Add to 'PATH' or install." >&2
-    exit 2
-  }
-done
-
 # require-answer "Host OU or context path? (E.g., 'DevOps-ProductionMainApp', 'Security-SDLCTest', etc.)" HOST_OU_PATH
 # get-answer ""
 
@@ -29,7 +22,78 @@ done
 # $(npm bin)/gucci ./cloud/auths/environment/devops-admin-auths.yaml.tmpl
 
 # extract options
-eval "$(setSimpleOptions --script FLATTEN_DIRS:D INFER_TITLE: INFER_VERSION KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s NO_TOC -- "$@")"
+eval "$(setSimpleOptions --script FLATTEN_DIRS:D INFER_TITLE: INFER_VERSION KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s NO_TOC HELP:h -- "$@")"
+
+if [[ -n "${HELP}" ]]; then
+  cat <<'EOF'
+Usage:
+  md2x [OPTIONS] <file>...
+  md2x [OPTIONS] <directory>...
+  md2x [OPTIONS] -
+
+Converts Markdown documents into PDF, HTML, DOCX, and other Pandoc-supported
+formats, adding consistent GitHub-style styling, automatic page headers and
+footers, batch directory processing, and single-page concatenation of
+multiple Markdown files.
+
+md2x accepts one or more file paths, one or more directory paths (searched
+recursively for '*.md' files), or a single '-' argument to read Markdown
+from stdin.
+
+Options:
+  -D, --flatten-dirs         Write all output files directly into
+                              --output-path instead of mirroring the input
+                              directory structure.
+      --infer-title          Embed the title (from --title, or otherwise the
+                              filename) as document metadata via Pandoc
+                              (e.g. the HTML <title> element).
+      --infer-version        Add an inferred version string to the PDF
+                              footer: the package.json version when
+                              'git status --porcelain' is clean, or
+                              'working' when the tree is dirty.
+      --keep-intermediate    Keep intermediate build artifacts (the Pandoc
+                              log and the PDF header/footer overlay) instead
+                              of deleting them after conversion.
+  -p, --output-path <path>   Directory to write output files into. Default: '.'.
+  -F, --output-format <format>
+                              Output format: 'pdf' (default), 'html', or
+                              'docx'.
+  -t, --title <title>        Document title; used for the output filename
+                              and the PDF header text.
+      --single-page          Concatenate all input Markdown files into a
+                              single document before conversion.
+      --quiet                Suppress the "Created <file>" status message.
+      --list-files           Print only the generated file path(s), instead
+                              of "Created <file>".
+  -s, --to-stdout            Write the converted output to stdout (implies
+                              --quiet).
+      --no-toc               Suppress the table of contents Pandoc otherwise
+                              adds for pdf/html output (docx output never
+                              receives an automatic TOC).
+  -h, --help                 Print this help text and exit.
+
+Examples:
+  # Convert a single Markdown file to PDF (the default format)
+  md2x report.md
+
+  # Convert every *.md file in a directory to HTML, with an inferred title and version footer
+  md2x --output-format html --infer-title --infer-version --output-path ./out ./docs
+
+  # Concatenate several files into one PDF
+  md2x --single-page --title "Combined Report" chapter1.md chapter2.md chapter3.md
+
+  # Read Markdown from stdin
+  cat report.md | md2x -
+EOF
+  exit 0
+fi
+
+for EXEC in gs pandoc pdftk; do
+  type "${EXEC}" >/dev/null || {
+    echo "Required executable '${EXEC}' not found for 'md2x'. Add to 'PATH' or install." >&2
+    exit 2
+  }
+done
 
 # process options
 test_formats() {
