@@ -190,7 +190,9 @@ md2x_filter_env_noise() {
 #   $output  stdout only (bats' 'run' merges stderr into it; this wrapper does not)
 #   $lines   $output split on newlines
 #   $stderr  stderr, with the expected environment noise filtered out
-# Never fails the case itself -- assert on the captured values.
+# Never fails the case itself -- assert on the captured values. stdin is inherited, so
+# the CLI's '-' (read from stdin) mode is driven with a here-string or a redirect:
+# 'md2x_run - <<< "# Heading"'.
 md2x_run() {
   local stdout_file="${MD2X_TEST_TMPDIR}/md2x-stdout" \
         stderr_file="${MD2X_TEST_TMPDIR}/md2x-stderr"

@@ -120,6 +120,16 @@ teardown() {
   refute_last_call_has_arg pandoc '--toc'
 }
 
+@test "harness: md2x_run can drive the CLI's stdin mode" {
+  md2x_run --output-format html --output-path . - <<< '# Piped Heading'
+
+  assert_success
+  assert_file_exists './output.html'
+  run_input="$(md2x_pandoc_capture input)"
+  [[ "${run_input}" == *'Piped Heading'* ]] \
+    || md2x_fail "expected the piped markdown to reach pandoc, got: ${run_input}"
+}
+
 @test "harness: md2x_path_without genuinely removes a binary from PATH" {
   md2x_write_doc 'report.md'
   md2x_path_without pandoc
