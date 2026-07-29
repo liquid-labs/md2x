@@ -41,3 +41,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Flagged by the planning agent for plan `test-coverage-bugfix`. In `src/cli/md2x.sh`, `for ROOT_DIR in $SEARCH_DIRS` and the unquoted `find ${ROOT_DIR} -name "*.md"` word-split on whitespace, so any input directory path containing a space breaks silently (splits into multiple bogus paths rather than erroring). Pre-existing, not touched by the `test-coverage-bugfix` plan (explicitly out of scope there — that plan''s tests must not assert space-containing paths work, only that the change doesn''t make this worse). Worth a maintainer fix: quote `${ROOT_DIR}` and iterate `SEARCH_DIRS` via a null-safe or newline-safe mechanism instead of unquoted word-splitting.'
+    - title: PDF output currently ships with NO GitHub-mar
+      id: TNLq
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:weasyprint-pdf-engine
+        - priority:unspecified
+        - effort:unspecified
+      text: PDF output currently ships with NO GitHub-markdown CSS styling — WeasyPrint rejects the --css process-substitution file outright (no .css extension to sniff MIME type), so the stylesheet never loads for PDF output (HTML/DOCX unaffected). Fixed only the stdout-purity symptom (filtered the resulting stderr message); did not restructure CSS delivery — a real temp .css file does make WeasyPrint load styles but then emits ~10 non-fatal multi-line WARNING lines per conversion with no reliable machine-parseable boundary for stdout-purity filtering. Recommend a small dedicated follow-up task to restore PDF styling and decide how to handle WeasyPrint's CSS-compatibility warnings, ideally with a visual check of rendered output. Not caught by any of the 8 written Validation checks.
