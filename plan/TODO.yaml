@@ -42,7 +42,7 @@ phases:
             branch: phase-01-task-03-cover-cli-option-behavior
             commit:
                 - b39d8ed
-            merge: null
+            merge: e5146bf7b95825a78a747c219f8caa32903fc7ad
         - number: 4
           slug: cover-node-wrapper
           title: Cover Node Wrapper
