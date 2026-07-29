@@ -78,6 +78,7 @@ phases:
           path: phase-02-doc-updates/001-update-architecture-docs.md
           done: false
           tier: sonnet-high
+          digest: Updated docs/architecture.md (CLI entry point section notes search-root-carrying file discovery; Key decisions gained a bullet on the test stub boundary) and docs/project-structure.md (Makefile row lists test-cli/test-node/smoke-test targets). Verified docs/md2x-spec.md, README.md, and AGENTS.md were already correctly updated by phase-01 tasks 001/002 - no edit needed. make qa passes; no stale /policy/, aI57, or test.sh references remain outside the relocated smoke-test path.
           git:
             branch: phase-02-task-01-update-architecture-docs
             commit: []
