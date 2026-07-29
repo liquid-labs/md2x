@@ -134,12 +134,3 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Phase-01 efficiency review (test-coverage-bugfix plan) found: task 005''s four real-toolchain e2e cases are wired into the default make test/test-cli path (by design, per the task doc) rather than behind a separate opt-in target, so any machine with a working pandoc on PATH performs 2-3 real Pandoc/Ghostscript/pdftk conversions on every make test invocation, raising wall-clock from ~12.4s to ~13.9-17.5s (measured by task 005 itself). Deliberate, pre-accepted trade-off, not a correctness problem. Suggestion severity - optional enhancement: an environment-variable escape hatch (e.g. MD2X_SKIP_E2E=1) that bats setup checks to skip the e2e-tagged cases during rapid local iteration, while leaving make test unchanged by default for CI/gate purposes.'
-    - title: Spec-vs-code discrepancies from tasks 003/004
-      id: H8pW
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:doc-updates
-        - priority:unspecified
-        - effort:unspecified
-      text: Spec-vs-code discrepancies from tasks 003/004 (c2s9, aaLV/udVi, 8SZc/egcc) confirmed - none required a doc rewrite, the spec's stated contract is the intended behavior and code just doesn't deliver it yet; already tracked, no new action
