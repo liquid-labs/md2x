@@ -23,7 +23,7 @@ phases:
           slug: update-consumer-and-contributor-docs
           title: Update Consumer And Contributor Docs
           path: phase-01-weasyprint-pdf-engine/002-update-consumer-and-contributor-docs.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: 'Updated README.md, AGENTS.md, and docs/project-structure.md to reflect what task 001 actually shipped: python3 is now a required PATH binary in both prerequisite lists, and WeasyPrint is documented as self-managed (installed into ~/.md2x/venv on first PDF conversion) rather than a system dependency. Verified exact install-notice wording via a live cold-start PDF conversion. docs/architecture.md and docs/md2x-spec.md deliberately left untouched (Phase 02''s scope).'
           git:
