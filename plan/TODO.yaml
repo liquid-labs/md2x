@@ -25,6 +25,7 @@ phases:
           path: phase-01-automated-test-coverage/002-fix-mirrored-output-path-derivation.md
           done: false
           tier: opus-med
+          digest: Replaced the hardcoded /policy/ path strip in md2x's mirrored-output branch with a general search-root-relative derivation (fixes followup aI57). File discovery now emits tab-separated <md-file><tab><search-root> records; new normalize-path/relative-output-dir helpers compute and normalize the output subdirectory. mkdir -p moved out of the mirroring branch so --flatten-dirs also creates a missing --output-path. 11 regression cases landed red-before/green-after in src/cli/test/bats/mirrored-output-paths.bats. AGENTS.md Known issues section removed; README.md and docs/md2x-spec.md precision clauses added.
           git:
             branch: phase-01-task-02-fix-mirrored-output-path-deriv
             commit:
