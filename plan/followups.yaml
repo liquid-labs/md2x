@@ -52,3 +52,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: aI57 mirrored-output bug visible in smoke-test output (test-out/./src/cli/test/tiny-doc.docx) - pre-existing, task 002 owns the fix per plan
+    - title: 'docs/project-structure.md and AGENTS.md have '
+      id: LPg7
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: docs/project-structure.md and AGENTS.md have minor stale doc references (smoke-test target missing from table, docs marked '(planned)' though they exist) - out of this task's scope, phase-02 task 001 owns architecture doc updates
