@@ -18,7 +18,7 @@ phases:
             branch: phase-01-task-01-stand-up-test-infrastructure
             commit:
                 - 003ce7d
-            merge: null
+            merge: efe11d4dee5cd31c099a1ca388db9afffbed6ad1
         - number: 2
           slug: fix-mirrored-output-path-derivation
           title: Fix Mirrored Output Path Derivation
