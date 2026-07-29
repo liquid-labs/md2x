@@ -156,3 +156,66 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Phase-01 efficiency review (test-coverage-bugfix plan) found: task 005''s four real-toolchain e2e cases are wired into the default make test/test-cli path (by design, per the task doc) rather than behind a separate opt-in target, so any machine with a working pandoc on PATH performs 2-3 real Pandoc/Ghostscript/pdftk conversions on every make test invocation, raising wall-clock from ~12.4s to ~13.9-17.5s (measured by task 005 itself). Deliberate, pre-accepted trade-off, not a correctness problem. Suggestion severity - optional enhancement: an environment-variable escape hatch (e.g. MD2X_SKIP_E2E=1) that bats setup checks to skip the e2e-tagged cases during rapid local iteration, while leaving make test unchanged by default for CI/gate purposes.'
+    - title: PDF output currently ships with NO GitHub-mar
+      id: TNLq
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:weasyprint-pdf-engine
+        - priority:unspecified
+        - effort:unspecified
+      text: PDF output currently ships with NO GitHub-markdown CSS styling — WeasyPrint rejects the --css process-substitution file outright (no .css extension to sniff MIME type), so the stylesheet never loads for PDF output (HTML/DOCX unaffected). Fixed only the stdout-purity symptom (filtered the resulting stderr message); did not restructure CSS delivery — a real temp .css file does make WeasyPrint load styles but then emits ~10 non-fatal multi-line WARNING lines per conversion with no reliable machine-parseable boundary for stdout-purity filtering. Recommend a small dedicated follow-up task to restore PDF styling and decide how to handle WeasyPrint's CSS-compatibility warnings, ideally with a visual check of rendered output. Not caught by any of the 8 written Validation checks.
+    - title: Validation check 6 (python3 preflight failure
+      id: egW0
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:weasyprint-pdf-engine
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Validation check 6 (python3 preflight failure) was not exercised live: brew''s self-location depends on /opt/homebrew/bin staying on PATH, which also hosts python3/gs/pandoc on this dev machine, so a live PATH-exclusion test could not be safely constructed. Verified by code inspection (identical preflight-loop idiom as gs/pandoc/pdftk) instead. Recommend re-verifying live in an environment where python3 is not colocated with brew/gs/pandoc.'
+    - title: 'Pre-existing, unrelated architecture note: ge'
+      id: rndR
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:weasyprint-pdf-engine
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Pre-existing, unrelated architecture note: generate-page()''s pandoc ... 2>&1 | grep -v ... pattern has always merged the pdf-engine''s stderr into the CLI''s real stdout rather than true stderr; this task''s fix only patches the one new message WeasyPrint surfaced. Any future pdf-engine-emitted stderr text not matching the grep pattern would still leak onto stdout. Worth a more structural fix at some point, out of scope here.'
+    - title: WeasyPrint SSRF risk via lib usage
+      id: Kjs2
+      date: "2026-07-29"
+      tags:
+        - type:security
+        - plan/phase:weasyprint-pdf-engine
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Flagged by the phase-01 (weasyprint-pdf-engine) phase-review security lens, minor/low-confidence. Pinning --pdf-engine to WeasyPrint (this phase) makes WeasyPrint the actual PDF renderer again (previously this path errored on Pandoc >= 3.4, so it was unreachable in practice). WeasyPrint''s default posture fetches external resources referenced in rendered HTML (image src, @import/url() in CSS, including file:// URLs) with no built-in allowlist. md2x is a CLI a user runs against their own documents (low risk there), but it''s also published as an npm library (src/node/md2x.js, md2x({ markdown, ... })) that a consuming application could embed to render externally-supplied Markdown — in which case resource references in that content could be used for SSRF or local file disclosure via WeasyPrint''s fetch behavior. Nothing in this phase''s diff changes or introduces that fetch behavior (intrinsic to WeasyPrint, and was already true of the previous wkhtmltopdf-based path when it worked), but this phase is what makes it reachable again. Worth a maintainer decision: document the caveat for library consumers (a caller embedding md2x against externally-authored content should apply the same precautions as any other SSRF-capable rendering path — network egress restrictions, or a WeasyPrint URL fetcher override), or decide it''s out of scope / the caller''s responsibility.'
+    - title: docs/architecture.md's Pointers section still
+      id: yn0V
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:doc-updates
+        - priority:unspecified
+        - effort:unspecified
+      text: docs/architecture.md's Pointers section still calls docs/project-structure.md '(planned)' — pre-existing staleness, unrelated to this plan, not in the task's Requirements list.
+    - title: AGENTS.md (two spots) and docs/project-struct
+      id: tTl2
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:doc-updates
+        - priority:unspecified
+        - effort:unspecified
+      text: AGENTS.md (two spots) and docs/project-structure.md (one spot) still describe docs/architecture.md as '(planned)'/not-yet-existing, contradicting reality — those three files belong to Phase 01 task 002's file set, out of this task's boundaries.
+    - title: docs/md2x-spec.md's 'Consistent styling' Gene
+      id: LUhO
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:doc-updates
+        - priority:unspecified
+        - effort:unspecified
+      text: docs/md2x-spec.md's 'Consistent styling' General features bullet and UC1's outcome description both still claim PDF output gets the built-in GitHub CSS, which is no longer true (WeasyPrint rejects the --css process-substitution delivery). Already accurately noted in README.md's Features list next to followup TNLq; fixing the underlying CSS gap itself is out of scope, neither claim was named in this task's Requirements.

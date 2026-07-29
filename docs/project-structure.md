@@ -30,7 +30,7 @@ md2x/
 ├── src/                  # Source code
 │   ├── cli/              # Bash CLI, rolled up into bin/md2x
 │   │   ├── md2x.sh       # CLI entrypoint / argument parsing
-│   │   ├── lib/          # CLI library modules (page generation, GitHub CSS, parameters)
+│   │   ├── lib/          # CLI library modules (page generation, WeasyPrint bootstrap, GitHub CSS, parameters)
 │   │   └── test/         # Bash CLI test suite
 │   │       ├── bats/     # bats-core cases (*.bats), run by `make test-cli`
 │   │       ├── helpers/  # Shared bash helpers loaded by the cases
@@ -53,7 +53,7 @@ md2x/
 
 ## `src/`
 
-The CLI (`src/cli/`) is the actual conversion engine: Bash source rolled up by `@liquid-labs/bash-rollup` into the single-file `bin/md2x` executable per the `Makefile`. `src/cli/md2x.sh` is the entrypoint that parses options and dispatches to the library. `src/cli/lib/` holds `generate-page.sh` (the Pandoc → Ghostscript → `pdftk` conversion pipeline), the bundled stylesheet `github.css`, and small option/parameter definitions (`parameters.sh`, `index.sh`). `src/cli/test/` holds the CLI's test suite, all of it exercising the built `bin/md2x` binary rather than the sources, so nothing under it goes through `bash-rollup` except the manual smoke test:
+The CLI (`src/cli/`) is the actual conversion engine: Bash source rolled up by `@liquid-labs/bash-rollup` into the single-file `bin/md2x` executable per the `Makefile`. `src/cli/md2x.sh` is the entrypoint that parses options and dispatches to the library. `src/cli/lib/` holds `generate-page.sh` (the Pandoc → Ghostscript → `pdftk` conversion pipeline), `ensure-weasyprint.sh` (bootstraps the per-user `~/.md2x/venv` WeasyPrint install used as Pandoc's `--pdf-engine`), the bundled stylesheet `github.css`, and small option/parameter definitions (`parameters.sh`, `index.sh`). `src/cli/test/` holds the CLI's test suite, all of it exercising the built `bin/md2x` binary rather than the sources, so nothing under it goes through `bash-rollup` except the manual smoke test:
 
 - `bats/` — the automated [bats-core](https://github.com/bats-core/bats-core) cases (`*.bats`) that `make test-cli` runs.
 - `helpers/` — shared bash helpers a case pulls in with `load '../helpers/common'`: per-case temporary working directory and stubbed `PATH` setup/teardown, generic assertions, and stub-invocation-log assertions.

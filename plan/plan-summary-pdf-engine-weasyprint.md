@@ -1,0 +1,62 @@
+# Plan Summary: PDF Engine WeasyPrint
+
+## What was planned and why
+
+md2x's PDF output had been silently broken since Pandoc 3.4 (Nov 2024) changed its default HTML-to-PDF engine from `wkhtmltopdf` to `weasyprint`. `src/cli/lib/generate-page.sh` invoked `pandoc --to html5 -o <file>.pdf` with no `--pdf-engine` flag, so every PDF conversion on Pandoc >= 3.4 failed with `'weasyprint' not found` — reproduced locally on Pandoc 3.10.1 and recorded as followup `BfN6`. Neither engine had ever been a documented md2x prerequisite. A `pagedjs-cli` alternative had been spiked and rejected before this plan (fragile Puppeteer/Chromium bootstrap).
+
+The plan's goal was to make PDF output work again, and keep working, by having md2x pin Pandoc to a WeasyPrint binary it installs and manages itself in a per-user virtual environment (`~/.md2x/venv`) — rather than requiring the operator to install WeasyPrint system-wide — and then to correct the project documentation, which currently claims md2x manages none of its own dependencies and holds no state between invocations. Both of those claims become false once the bootstrap ships, and leaving them silently contradicted was called out as an explicit failure mode the plan needed to avoid.
+
+The plan was deliberately sequenced so implementation landed before documentation: Phase 01 (WeasyPrint PDF Engine) delivers the working pipeline plus consumer/contributor docs describing what was actually built; Phase 02 (Documentation Updates), triggered by the analyze-change-request architectural-implications check, updates `docs/architecture.md` and `docs/md2x-spec.md` to describe the genuine shift in product principle — that WeasyPrint alone is md2x-managed while `pandoc`/`gs`/`pdftk`/`python3` remain operator-installed and preflight-verified.
+
+## What shipped
+
+### Phase 01 — WeasyPrint PDF Engine
+
+- **Task 001 — Bootstrap WeasyPrint And Pin PDF Engine** (merge `891c5807058427db1d5d55be6f09c1bb4db62186`, commit `0af373b`). Implemented the WeasyPrint bootstrap (`src/cli/lib/ensure-weasyprint.sh`), wired it into `lib/index.sh`, added `python3` to the CLI's binary preflight loop, added a PDF-gated bootstrap call in `md2x.sh`, and pinned `--pdf-engine` on both Pandoc invocations in `generate-page.sh`, per the task doc and the linked design notes. Live end-to-end validation against a real `pip install weasyprint` surfaced two previously-unanticipated defects in `generate-page.sh`'s existing header/footer overlay and CSS-delivery code — both blocking the task's own validation checks and confined to this already-in-scope file — and were fixed minimally: integer truncation of fractional page dimensions, and filtering one new benign WeasyPrint stderr line for stdout purity. The CSS-delivery fix is deliberately narrow: it keeps stdout clean but does not restore GitHub-markdown styling to PDF output; this gap was flagged rather than unilaterally expanded in scope (see followup `TNLq`).
+
+- **Task 002 — Update Consumer And Contributor Docs** (merge `44783a6f99daa93074d1a2c2fb3b1d88929876e0`, commit `75038b7`). Updated `README.md`, `AGENTS.md`, and `docs/project-structure.md` to reflect what task 001 actually shipped: `python3` is now a required PATH binary in both prerequisite lists, and WeasyPrint is documented as self-managed (installed into `~/.md2x/venv` on first PDF conversion) rather than a system dependency. The exact install-notice wording was verified via a live cold-start PDF conversion. `docs/architecture.md` and `docs/md2x-spec.md` were deliberately left untouched, reserved for Phase 02.
+
+### Phase 02 — Documentation Updates
+
+- **Task 001 — Update Architecture Docs** (merge `069cc9c48a42c0ce24966ba6ce2d0fa7f3643941`, commit `029ecd9`). Brought `docs/architecture.md` and `docs/md2x-spec.md` into line with the shipped Phase 01 WeasyPrint bootstrap: both now state the accurate, asymmetric contract — `pandoc`/`gs`/`pdftk`/`python3` are operator-installed and preflight-verified, WeasyPrint alone is md2x-managed in `~/.md2x/venv`. The architecture doc's system diagram and prose now show the PDF-gated bootstrap step; the Tech stack section names the one piece of persistent local state instead of claiming statelessness; a new "WeasyPrint bootstrap" component subsection documents `ensure-weasyprint.sh`; Key decisions carries the asymmetry rationale. The spec gained a parallel "Automatic WeasyPrint bootstrap" feature, an extended exit-2 description, and corrected Node-library/Constraints/Non-goals sections. A handful of adjacent, pre-existing staleness items were identified but deliberately left unedited per task boundaries, and flagged for the manager (see followups `yn0V`, `tTl2`, `LUhO` below).
+
+## Key decisions
+
+- **Self-managed WeasyPrint, per-user venv, not a system prerequisite.** WeasyPrint is a Pandoc implementation detail the user never invokes directly; md2x bootstraps it into `~/.md2x/venv` on first PDF conversion (cheap `[[ -x ... ]]` existence check on every invocation thereafter) rather than requiring the operator to install it — asymmetric to `pandoc`/`gs`/`pdftk`/`python3`, which remain operator-installed and preflight-checked. This asymmetry is the documented-principle shift this plan makes deliberate rather than silently false (previously `docs/md2x-spec.md` and `docs/architecture.md` claimed md2x installs none of its own dependencies and holds no state between invocations).
+- **`python3` joins the preflight loop; `pip`/`weasyprint`-on-PATH deliberately do not.** `python3`'s absence fails fast at exit 2 using the same idiom as `gs`/`pandoc`/`pdftk`. No `pip` binary check was added (`ensurepip` covers it), and WeasyPrint is intentionally never expected on `PATH` — the bootstrap script's own error handling covers its absence.
+- **Bootstrap install notice goes to stderr, unconditionally (not `--quiet`-suppressible).** `--quiet` keeps its documented, narrower meaning (suppresses only the `Created <file>` message); the one-time "installing weasyprint" notice is not folded into that flag. This, plus the constraint that the Node wrapper parses generated file paths out of the CLI's stdout, means no bootstrap output may ever reach stdout — validated explicitly for `--list-files` and `--to-stdout` on a cold-start run.
+- **No LaTeX engine and no `wkhtmltopdf`/`pagedjs-cli` code path reintroduced.** The HTML5 intermediate stays; the `pagedjs-cli` alternative had already been spiked and rejected before this plan for a fragile Puppeteer/Chromium bootstrap.
+- **CSS-delivery fix was scoped narrowly, not expanded.** WeasyPrint rejects the `--css` process-substitution file outright (no `.css` extension to sniff MIME type), so PDF output currently ships with no GitHub-markdown CSS styling. Task 001 fixed only the stdout-purity symptom (filtering the resulting stderr message) rather than restructuring CSS delivery, because a real temp `.css` file does load styles but then emits ~10 non-fatal WARNING lines per conversion with no reliable machine-parseable boundary for stdout-purity filtering — flagged as followup `TNLq` for a dedicated follow-up task rather than solved inline.
+- **Design rationale for the bootstrap (exit codes, non-`--quiet` notice, no venv staleness check, interactive-test-suite constraint) is recorded separately** in `plan/notes/weasyprint-bootstrap-design.md`, referenced by task documents rather than restated in them.
+- **`make test`/`npm test` were unusable for validation** because `src/cli/test/test.sh` opens each output file with `open -Fn` and blocks on a keypress; all validation across both phases used direct `./bin/md2x` invocations instead.
+
+## Follow-up items
+
+- **`BfN6` — weasyprint missing locally for PDF conversion.** The originally-observed symptom this plan resolves. Whether it is cleared is the manager's call at apply-task-report time, not this plan's own decision.
+- **`TNLq` — PDF output ships with no GitHub-markdown CSS styling.** WeasyPrint rejects the `--css` process-substitution delivery outright. Task 001 fixed only the stdout-purity symptom; restoring real PDF styling needs a dedicated follow-up task, ideally with a visual check of rendered output and a decision on handling WeasyPrint's CSS-compatibility warnings. Not caught by any of the 8 written validation checks.
+- **`egW0` — python3 preflight failure path not exercised live.** Brew's self-location depends on `/opt/homebrew/bin` staying on PATH, which also hosts `python3`/`gs`/`pandoc` on the dev machine, so a live PATH-exclusion test could not be safely constructed. Verified by code inspection (identical preflight-loop idiom as `gs`/`pandoc`/`pdftk`) instead. Recommend re-verifying live in an environment where `python3` is not colocated with brew/gs/pandoc.
+- **`rndR` — pre-existing stderr/stdout merge in `generate-page()`.** The `pandoc ... 2>&1 | grep -v ...` pattern has always merged the PDF engine's stderr into the CLI's real stdout rather than true stderr; this plan's fix only patches the one new message WeasyPrint surfaced. Any future PDF-engine-emitted stderr text not matching the grep pattern would still leak onto stdout. Worth a more structural fix at some point; out of scope here.
+- **`Kjs2` — WeasyPrint SSRF risk via library usage.** Flagged by the Phase 01 security review lens (minor/low-confidence). Pinning `--pdf-engine` to WeasyPrint makes it the actual PDF renderer again (previously this path errored unreachably on Pandoc >= 3.4). WeasyPrint's default posture fetches external resources referenced in rendered HTML (image `src`, `@import`/`url()` in CSS, including `file://` URLs) with no built-in allowlist. Low risk for the CLI (a user rendering their own documents) but `src/node/md2x.js` is also published as an npm library that a consuming application could embed to render externally-supplied Markdown, exposing SSRF or local file disclosure via WeasyPrint's fetch behavior. Nothing in this plan's diff changes or introduces that fetch behavior (intrinsic to WeasyPrint, was already true of the previous wkhtmltopdf-based path when it worked), but this plan is what makes it reachable again. Worth a maintainer decision: document the caveat for library consumers, or decide it's the caller's responsibility.
+- **`yn0V` — `docs/architecture.md`'s Pointers section still calls `docs/project-structure.md` "(planned)".** Pre-existing staleness, unrelated to this plan, not in Phase 02 task 001's Requirements list.
+- **`tTl2` — `AGENTS.md` (two spots) and `docs/project-structure.md` (one spot) still describe `docs/architecture.md` as "(planned)"/not-yet-existing**, contradicting reality. Those three files belong to Phase 01 task 002's file set, outside Phase 02 task 001's boundaries.
+- **`LUhO` — `docs/md2x-spec.md`'s "Consistent styling" General features bullet and UC1's outcome description both still claim PDF output gets the built-in GitHub CSS**, which is no longer true given the WeasyPrint `--css` rejection (see `TNLq`). Already accurately noted in `README.md`'s Features list; fixing the underlying CSS gap is out of scope and neither claim was named in Phase 02 task 001's Requirements.
+- Also present in `followups.yaml` but pre-dating and unrelated to this plan (from the `test-coverage-bugfix` plan): `baU7` (undocumented `jq` dependency in `md2x.sh`), `udVi` (unreachable default-title branch in `md2x.js`), `egcc` (markdown-string staging produces `undefined.md`), `95ND` (unquoted path expansion breaks on spaces). Carried forward here only for completeness; not generated by this plan's work.
+
+## Final Task State
+
+# TODO
+
+## Purpose and scope
+
+Tracking document for the active plan.
+
+## Tasks
+
+### Phase 01 — WeasyPrint PDF Engine
+
+- [x] [001-bootstrap-weasyprint-and-pin-engine.md](./phase-01-weasyprint-pdf-engine/001-bootstrap-weasyprint-and-pin-engine.md) — tier `sonnet-high` · branch `phase-01-task-01-bootstrap-weasyprint-and-pin-e` · commit `0af373b` · merge `891c5807058427db1d5d55be6f09c1bb4db62186`
+- [x] [002-update-consumer-and-contributor-docs.md](./phase-01-weasyprint-pdf-engine/002-update-consumer-and-contributor-docs.md) — tier `sonnet-med` · branch `phase-01-task-02-update-consumer-and-contributo` · commit `75038b7` · merge `44783a6f99daa93074d1a2c2fb3b1d88929876e0`
+
+### Phase 02 — Documentation Updates
+
+- [x] [001-update-architecture-docs.md](./phase-02-doc-updates/001-update-architecture-docs.md) — tier `sonnet-high` · branch `phase-02-task-01-update-architecture-docs` · commit `029ecd9` · merge `069cc9c48a42c0ce24966ba6ce2d0fa7f3643941`

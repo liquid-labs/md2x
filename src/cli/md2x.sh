@@ -88,7 +88,7 @@ EOF
   exit 0
 fi
 
-for EXEC in gs pandoc pdftk; do
+for EXEC in gs pandoc pdftk python3; do
   type "${EXEC}" >/dev/null || {
     echo "Required executable '${EXEC}' not found for 'md2x'. Add to 'PATH' or install." >&2
     exit 2
@@ -107,6 +107,8 @@ test_formats() {
 test_formats || echoerrandexit "Unsupported output format '${OUTPUT_FORMAT}'."
 
 [[ -n "${OUTPUT_PATH}" ]] || OUTPUT_PATH='.'
+
+[[ "${OUTPUT_FORMAT}" == 'pdf' ]] && ensure-weasyprint
 
 # Collapse repeated slashes, drop '/./' segments and any leading './' so that roots and
 # found paths written in different-but-equivalent forms ('docs', './docs', 'docs/')

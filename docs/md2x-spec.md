@@ -4,7 +4,7 @@
 
 This document is the canonical statement of what md2x must do: its supported use cases, cross-cutting behavioral requirements, and external (CLI and Node library) surface. The intended readers are developers and AI agents implementing or modifying md2x, and reviewers checking proposed changes against what has been committed to. It assumes the reader has already oriented via [`README.md`](../README.md); this document does not repeat the project pitch or installation instructions found there.
 
-This spec covers both of md2x's external surfaces — the `md2x` CLI and the thin Node.js library wrapper (`@liquid-labs/md2x`) — since the library is a pass-through to the CLI rather than an independent implementation. It does not cover *how* the system is built (the PostScript/Ghostscript overlay-generation mechanism, the bash-rollup build process, internal module layout); that design-level material belongs in a future `docs/architecture.md`, not yet written. Working conventions (build, test, lint) live in [`AGENTS.md`](../AGENTS.md). File and directory layout live in [`docs/project-structure.md`](./project-structure.md).
+This spec covers both of md2x's external surfaces — the `md2x` CLI and the thin Node.js library wrapper (`@liquid-labs/md2x`) — since the library is a pass-through to the CLI rather than an independent implementation. It does not cover *how* the system is built (the PostScript/Ghostscript overlay-generation mechanism, the WeasyPrint bootstrap, the bash-rollup build process, internal module layout); that design-level material belongs in [`docs/architecture.md`](./architecture.md). Working conventions (build, test, lint) live in [`AGENTS.md`](../AGENTS.md). File and directory layout live in [`docs/project-structure.md`](./project-structure.md).
 
 ## Table of contents
 
@@ -57,9 +57,10 @@ This spec covers both of md2x's external surfaces — the `md2x` CLI and the thi
 
 These requirements apply across every use case above, for both the CLI and the Node library:
 
-- **Binary preflight check.** Every invocation verifies that `pandoc`, `gs` (Ghostscript), and `pdftk` are present on `PATH` before doing any conversion work. If any is missing, the invocation exits with code `2` and names the first missing binary.
+- **Binary preflight check.** Every invocation verifies that `pandoc`, `gs` (Ghostscript), `pdftk`, and `python3` are present on `PATH` before doing any conversion work. If any is missing, the invocation exits with code `2` and names the first missing binary.
+- **Automatic WeasyPrint bootstrap (PDF output only).** On the first PDF conversion in a given environment, md2x installs [WeasyPrint](https://weasyprint.org/) — the engine Pandoc uses to render PDF output — into an isolated per-user virtual environment (`~/.md2x/venv`) if it is not already present, printing a one-time notice to stderr while it does so. WeasyPrint is not a manual prerequisite; `python3` (already required by the binary preflight check above) is what makes this possible. A failed bootstrap exits with code `2` and names the failing step (see [Exit behavior](#cli)). Stdout stays clean throughout — the `--list-files` and `--to-stdout` contracts are unaffected — and `--quiet` does not suppress the notice, since the notice is a stderr message, not the `Created <file>` status line `--quiet` controls.
 - **Consistent styling.** Every HTML or PDF output is rendered with a single, built-in GitHub-flavored CSS stylesheet. There is no per-invocation styling configuration.
-- **Automatic PDF header/footer.** Every PDF output carries a footer showing the current page and total page count ("Page X of Y") and, on every page after the first, a running header showing the document title (from `--title`, or otherwise the source filename). When `--infer-version` is set, the footer also shows a version string: the `package.json` version when `git status --porcelain` reports a clean working tree, or the literal string `working` otherwise. (The mechanism that produces this overlay is a design-level concern for a future `docs/architecture.md`, not this spec.)
+- **Automatic PDF header/footer.** Every PDF output carries a footer showing the current page and total page count ("Page X of Y") and, on every page after the first, a running header showing the document title (from `--title`, or otherwise the source filename). When `--infer-version` is set, the footer also shows a version string: the `package.json` version when `git status --porcelain` reports a clean working tree, or the literal string `working` otherwise. (The mechanism that produces this overlay is a design-level concern documented in [`docs/architecture.md`](./architecture.md), not this spec.)
 - **Table of contents.** PDF and HTML output receive an automatic table of contents from Pandoc unless `--no-toc` is given. DOCX output never receives an automatic table of contents.
 - **Cross-document link rewriting.** A relative Markdown link to a sibling `.md` file (e.g. `[Foo](./bar.md)`) is rewritten in the converted output to point at that sibling's converted filename in the current output format (e.g. `./bar.pdf`), so that a batch- or single-page-converted set of cross-linked documents remains navigable after conversion. Absolute paths and `http(s)://` links are left unchanged.
 - **Intermediate artifact cleanup.** Build-time intermediate artifacts (the Pandoc log, and, for PDF output, the header/footer overlay file) are deleted after a successful conversion unless `--keep-intermediate` is given.
@@ -90,7 +91,7 @@ md2x has two external surfaces: the CLI (`md2x`) and the Node library function (
 | `--no-toc` | Suppress the automatic table of contents for `pdf`/`html` output. Has no effect on `docx` output, which never receives one. |
 | `-h`, `--help` | Print usage text and exit `0`, without performing the binary preflight check or any conversion. |
 
-**Exit behavior.** Exits `0` on success. Exits `2` and names the missing binary when a required external binary is absent (see [General features](#general-features)). Exits non-zero with a descriptive message for any input path that is neither a file nor a directory, or for an unrecognized `--output-format`.
+**Exit behavior.** Exits `0` on success. Exits `2` and names the missing binary when a required external binary is absent, or names the failing step when the automatic WeasyPrint bootstrap fails (see [General features](#general-features)). Exits non-zero with a descriptive message for any input path that is neither a file nor a directory, or for an unrecognized `--output-format`.
 
 ### Node library
 
@@ -113,13 +114,13 @@ const outputFiles = md2x({
 
 - **Returns:** `string[]` — the paths of the files generated by the conversion, equivalent to what the CLI would print with `--list-files`.
 - **Throws:** an `Error` when the underlying CLI invocation exits non-zero; the message includes the exit code and the CLI's stderr.
-- **Requires** the same external binaries (`pandoc`, `gs`, `pdftk`) on `PATH` as the CLI, since it shells out to the built CLI rather than reimplementing conversion.
+- **Requires** the same external binaries (`pandoc`, `gs`, `pdftk`, `python3`) on `PATH` as the CLI, since it shells out to the built CLI rather than reimplementing conversion. The automatic WeasyPrint bootstrap (see [General features](#general-features)) applies equally through the wrapper, since the CLI performs it regardless of caller.
 
 **Surface asymmetry.** The Node library does not expose every CLI flag. `--list-files` is always applied internally (the function always returns generated paths rather than printing "Created …" messages); `--quiet`, `--to-stdout`, and `--keep-intermediate` have no corresponding library option and are reachable only via the CLI.
 
 ## Constraints and assumptions
 
-- md2x requires `pandoc`, Ghostscript (`gs`), and `pdftk` to be installed and present on `PATH` at runtime, for both the CLI and the Node library. md2x does not install these dependencies itself.
+- md2x requires `pandoc`, Ghostscript (`gs`), `pdftk`, and `python3` to be installed and present on `PATH` at runtime, for both the CLI and the Node library; these four remain the operator's responsibility to install. The one exception is WeasyPrint, the PDF rendering engine Pandoc uses: md2x installs and manages it itself, in a per-user virtual environment at `~/.md2x/venv` (not project-relative, not an XDG directory), on the first PDF conversion. A first PDF conversion therefore requires network access to fetch WeasyPrint from PyPI; subsequent conversions reuse the installed environment.
 - PDF output is rendered through an HTML5 intermediate rather than a LaTeX engine, so no `pdflatex` installation is required.
 - `--infer-version` requires the invocation to run inside a git working tree with a readable `package.json`; it uses `git status --porcelain` to decide whether to report the `package.json` version or the literal string `working`.
 - The Node library wrapper requires the CLI to already be built (`bin/md2x`, produced by `make build` / `npm run build`) — it is not usable straight from source without a build step.
@@ -128,12 +129,11 @@ const outputFiles = md2x({
 ## Non-goals
 
 - md2x does not expose arbitrary Pandoc CLI options as pass-through flags; only the flags listed in [API definition](#api-definition) are supported.
-- md2x does not manage or install its external binary dependencies (`pandoc`, `gs`, `pdftk`) — it verifies their presence and fails fast if one is missing, but installation is the operator's responsibility.
+- md2x does not manage or install `pandoc`, `gs`, `pdftk`, or `python3` — it verifies their presence and fails fast if one is missing, but installation of these four remains the operator's responsibility. The one deliberate exception is WeasyPrint: because it is a Pandoc implementation detail the user never invokes directly, md2x installs and manages it itself (see [Constraints and assumptions](#constraints-and-assumptions) and [General features](#general-features)).
 - The Node library API is not a full superset of the CLI's flags — the [Node library](#node-library) surface omits `--to-stdout`, `--quiet`, and `--keep-intermediate`, which are reachable only via the CLI.
 
 ## Pointers to deeper docs
 
+- [`docs/architecture.md`](./architecture.md) — design-level material not covered here: the PDF header/footer overlay mechanism (Ghostscript-rendered PostScript merged onto the Pandoc output via `pdftk multistamp`), the WeasyPrint bootstrap, and the bash-rollup build pipeline.
 - [`AGENTS.md`](../AGENTS.md) — build, test, and contribution conventions for working on md2x itself.
 - [`docs/project-structure.md`](./project-structure.md) — the project's file and directory layout.
-
-Design-level material not covered here — including the mechanism behind the PDF header/footer overlay (Ghostscript-rendered PostScript merged onto the Pandoc output via `pdftk multistamp`) and the bash-rollup build pipeline — belongs in a future `docs/architecture.md`, which does not yet exist.
