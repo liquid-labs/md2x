@@ -33,7 +33,8 @@
   "devDependencies": {
     "@liquid-labs/bash-rollup": "^1.0.0-alpha.6",
     "@liquid-labs/bash-toolkit": "^1.0.0-alpha.57",
-    "@liquid-labs/catalyst-scripts": "^1.0.0-alpha.57"
+    "@liquid-labs/catalyst-scripts": "^1.0.0-alpha.57",
+    "bats": "^1.13.0"
   },
   "dependencies": {
     "shelljs": "^0.8.5"
