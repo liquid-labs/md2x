@@ -88,6 +88,7 @@ md2x has two external surfaces: the CLI (`md2x`) and the Node library function (
 | `--list-files` | Print only the generated file path(s) instead of "Created `<file>`". |
 | `-s`, `--to-stdout` | Write the converted output to stdout instead of (only) a file. Implies `--quiet`. |
 | `--no-toc` | Suppress the automatic table of contents for `pdf`/`html` output. Has no effect on `docx` output, which never receives one. |
+| `-h`, `--help` | Print usage text and exit `0`, without performing the binary preflight check or any conversion. |
 
 **Exit behavior.** Exits `0` on success. Exits `2` and names the missing binary when a required external binary is absent (see [General features](#general-features)). Exits non-zero with a descriptive message for any input path that is neither a file nor a directory, or for an unrecognized `--output-format`.
 
