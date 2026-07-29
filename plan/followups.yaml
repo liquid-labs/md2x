@@ -8,14 +8,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Flagged by the planning agent for plan `test-coverage-bugfix`. `src/cli/md2x.sh` (around the VERSION= line) runs `VERSION=$(OUTPUT=$(git status --porcelain) && [ -z "${OUTPUT}" ] && cat package.json | jq ''.version'' || echo ''working'')` on every invocation, not just under `--infer-version` — it shells out to `git` and `jq` and reads `package.json` from the CWD unconditionally. `jq` is not named in the binary preflight check (`gs`/`pandoc`/`pdftk` only), nor in AGENTS.md''s, README.md''s, or docs/md2x-spec.md''s prerequisite lists. When `jq` is missing, the command degrades silently to the literal string ''working'' rather than failing loudly. Worth a maintainer decision: add `jq` to the documented prerequisites and preflight check, or replace it with something that doesn''t add a hidden dependency.'
-    - title: markdown-string staging produces undefined.md
-      id: egcc
-      date: "2026-07-29"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: Flagged by the planning agent for plan `test-coverage-bugfix`. In `src/node/md2x.js`, when `md2x()` is called with a `markdown` string and no `title`, the staging file is built as `` `${title}.md` `` before any default is applied, producing a literal `undefined.md` file and, downstream, an `undefined.<format>` output file. Related to the unreachable-default-title followup (`udVi`) in the same file — fixing that branch's reachability may also need this staging-path construction reordered to apply the title default first. Worth a maintainer fix. Confirmed still present by phase-01 task 004 (test-coverage-bugfix plan), which added an explicit regression test documenting this current behavior (see src/node/md2x.test.js) without fixing it, as it was out of that task's scope.
     - title: Unquoted path expansion breaks on spaces
       id: 95ND
       date: "2026-07-29"
