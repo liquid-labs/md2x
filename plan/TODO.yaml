@@ -5,6 +5,7 @@ phases:
     - number: 1
       slug: weasyprint-pdf-engine
       title: WeasyPrint PDF Engine
+      diff_base: b5c7fd3f98ad75c7b75541308c8e5fa998c24c06
       tasks:
         - number: 1
           slug: bootstrap-weasyprint-and-pin-engine
