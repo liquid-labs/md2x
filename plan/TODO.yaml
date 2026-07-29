@@ -27,7 +27,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-02-update-consumer-and-contributo
-            commit: []
+            commit:
+                - 75038b7
             merge: null
     - number: 2
       slug: doc-updates
