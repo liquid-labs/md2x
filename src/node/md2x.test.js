@@ -1,8 +1,192 @@
-/* global describe expect test */
+/* global afterEach beforeEach describe expect jest test */
+import fsPath from 'node:path'
+import shell from 'shelljs'
 import { md2x } from './md2x'
 
+// Manual factory mock: shelljs is CommonJS, imported as a default import, and mutated at module load
+// (`shell.config.silent = true` in md2x.js). Babel's ESM interop resolves the default import to `.default`, so the
+// mock must nest its surface under `default` with `__esModule: true`. `jest.mock` calls are hoisted by
+// babel-plugin-jest-hoist above the imports above at compile time, so ordering them after the imports here (to
+// satisfy `import/first`) does not change when the mock takes effect.
+jest.mock('shelljs', () => ({
+  __esModule : true,
+  default    : {
+    config      : {},
+    exec        : jest.fn(),
+    tempdir     : jest.fn(),
+    mkdir       : jest.fn(),
+    rm          : jest.fn(),
+    ShellString : jest.fn()
+  }
+}))
+
+// Builds a fake shelljs 'exec' result: 'code'/'stderr' as plain properties (md2x.js reads them directly) and
+// 'toString()' standing in for shelljs' ShellString-like stdout accessor.
+const mockExecResult = (code, stdout = '', stderr = '') => ({
+  code,
+  stderr,
+  toString : () => stdout
+})
+
 describe('md2x', () => {
+  let shellStringTo
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    shell.exec.mockReturnValue(mockExecResult(0))
+    shell.tempdir.mockReturnValue('/tmp')
+    shellStringTo = jest.fn()
+    shell.ShellString.mockReturnValue({ to : shellStringTo })
+  })
+
   test('is exported as a function', () => {
     expect(typeof md2x).toBe('function')
+  })
+
+  describe('argument marshaling', () => {
+    test('applies only the always-on flags and the default output format when no options are set', () => {
+      md2x({ sources : ['a.md'] })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command).toBe("npx md2x --list-files --output-format pdf 'a.md'")
+    })
+
+    test('honors a non-default output format', () => {
+      md2x({ sources : ['a.md'], format : 'html' })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command).toBe("npx md2x --list-files --output-format html 'a.md'")
+    })
+
+    test.each([
+      ['flattenDirs', '--flatten-dirs'],
+      ['inferTitle', '--infer-title'],
+      ['inferVersion', '--infer-version'],
+      ['noToc', '--no-toc'],
+      ['singlePage', '--single-page']
+    ])('adds %s as %s, and only that flag, when set', (option, flag) => {
+      md2x({ sources : ['a.md'], [option] : true })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command).toBe(`npx md2x --list-files --output-format pdf ${flag} 'a.md'`)
+    })
+
+    test('single-quotes title and output path and places them in source order', () => {
+      md2x({ sources : ['a.md'], title : 'My Report', outputPath : './out dir' })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command).toBe(
+        "npx md2x --list-files --output-format pdf --title 'My Report' --output-path './out dir' 'a.md'"
+      )
+    })
+
+    test('space-joins and single-quotes each of multiple sources', () => {
+      md2x({ sources : ['a.md', 'b.md', 'c dir/d.md'] })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command).toBe("npx md2x --list-files --output-format pdf 'a.md' 'b.md' 'c dir/d.md'")
+    })
+
+    // Candidate followup (already tracked as 'udVi'): 'sourceSpec' is always built as
+    // `'${sources.join("' '")}'`, so a lone '-' source becomes the quoted string "'-'" -- never the bare '-' that
+    // `if (!title && sourceSpec === '-')` checks for. The 'Report' default title is therefore unreachable. This
+    // test documents that CURRENT (buggy) behavior; it does not assert the presumably-intended default.
+    test('never applies the unreachable default title for a lone "-" source (followup udVi)', () => {
+      md2x({ sources : ['-'] })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command).toBe("npx md2x --list-files --output-format pdf '-'")
+    })
+  })
+
+  describe('return value', () => {
+    test('splits stdout on newlines and drops empty entries', () => {
+      shell.exec.mockReturnValue(mockExecResult(0, '/out/a.pdf\n\n/out/b.pdf\n'))
+
+      const files = md2x({ sources : ['a.md'] })
+
+      expect(files).toEqual(['/out/a.pdf', '/out/b.pdf'])
+    })
+  })
+
+  describe('error propagation', () => {
+    test('throws an Error carrying the exit code and stderr on non-zero exit', () => {
+      shell.exec.mockReturnValue(mockExecResult(1, '', 'pandoc: missing binary'))
+
+      expect(() => md2x({ sources : ['a.md'] }))
+        .toThrow("Could not covert file to 'pdf': (1) pandoc: missing binary")
+    })
+  })
+
+  describe('non-fatal stderr', () => {
+    let errorSpy
+
+    beforeEach(() => {
+      errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      errorSpy.mockRestore()
+    })
+
+    test('returns normally and forwards stderr to console.error when the exit code is 0', () => {
+      shell.exec.mockReturnValue(mockExecResult(0, '/out/a.pdf\n', 'a warning'))
+
+      const files = md2x({ sources : ['a.md'] })
+
+      expect(files).toEqual(['/out/a.pdf'])
+      expect(errorSpy).toHaveBeenCalledWith('a warning')
+    })
+  })
+
+  describe('markdown staging path', () => {
+    test('stages the markdown string, appends the staging file to the command, and cleans up on success', () => {
+      shell.exec.mockReturnValue(mockExecResult(0, '/out/Title.pdf\n'))
+
+      const files = md2x({ markdown : '# Hello', title : 'Title' })
+
+      expect(shell.tempdir).toHaveBeenCalledTimes(1)
+      expect(shell.mkdir).toHaveBeenCalledTimes(1)
+      const [mkdirFlag, stagingDir] = shell.mkdir.mock.calls[0]
+      expect(mkdirFlag).toBe('-p')
+      expect(stagingDir.startsWith(fsPath.join('/tmp', 'md2x') + fsPath.sep)).toBe(true)
+
+      const stagingFile = fsPath.join(stagingDir, 'Title.md')
+      expect(shell.ShellString).toHaveBeenCalledWith('# Hello')
+      expect(shellStringTo).toHaveBeenCalledWith(stagingFile)
+
+      const [command] = shell.exec.mock.calls[0]
+      // The command template always inserts a space before the (here empty, since 'sources' is not given)
+      // 'sourceSpec', and the staging-file append adds a second space, so two spaces separate the last flag from
+      // the staging file path.
+      expect(command).toBe(`npx md2x --list-files --output-format pdf --title 'Title'  ${stagingFile}`)
+
+      expect(shell.rm).toHaveBeenCalledTimes(1)
+      expect(shell.rm).toHaveBeenCalledWith('-r', stagingDir)
+      expect(files).toEqual(['/out/Title.pdf'])
+    })
+
+    test('cleans up the staging directory even when the command fails (finally)', () => {
+      shell.exec.mockReturnValue(mockExecResult(1, '', 'boom'))
+
+      expect(() => md2x({ markdown : '# Hello', title : 'Title' })).toThrow()
+
+      const [, stagingDir] = shell.mkdir.mock.calls[0]
+      expect(shell.rm).toHaveBeenCalledTimes(1)
+      expect(shell.rm).toHaveBeenCalledWith('-r', stagingDir)
+    })
+
+    // Candidate followup (already tracked as 'egcc'): the staging filename is built as `${title}.md` before the
+    // (unreachable, per followup udVi) default title would ever apply, so with no 'title' given, 'title' is
+    // literally undefined and the staging file is named 'undefined.md'. This documents that CURRENT (buggy)
+    // behavior; it does not assert a corrected filename.
+    test('stages to "undefined.md" when no title is given (followup egcc)', () => {
+      shell.exec.mockReturnValue(mockExecResult(0, '/out/undefined.pdf\n'))
+
+      md2x({ markdown : '# Hello' })
+
+      const [, stagingDir] = shell.mkdir.mock.calls[0]
+      expect(shellStringTo).toHaveBeenCalledWith(fsPath.join(stagingDir, 'undefined.md'))
+    })
   })
 })
