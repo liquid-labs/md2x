@@ -16,3 +16,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: fix-mirrored-output-path-derivation
+          title: Fix Mirrored Output Path Derivation
+          path: phase-01-automated-test-coverage/002-fix-mirrored-output-path-derivation.md
+          done: false
+          tier: opus-med
+          git:
+            branch: null
+            commit: []
+            merge: null
