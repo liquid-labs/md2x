@@ -18,7 +18,7 @@ phases:
             branch: phase-01-task-01-bootstrap-weasyprint-and-pin-e
             commit:
                 - 0af373b
-            merge: null
+            merge: 891c5807058427db1d5d55be6f09c1bb4db62186
         - number: 2
           slug: update-consumer-and-contributor-docs
           title: Update Consumer And Contributor Docs
