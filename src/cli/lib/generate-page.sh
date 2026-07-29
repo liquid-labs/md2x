@@ -25,6 +25,7 @@ EOF
   if [[ -z "${INPUT}" ]]; then
     pandoc \
       $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
+      $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
       --quiet \
       --standalone \
       --from gfm \
@@ -34,12 +35,15 @@ EOF
       <(cat "${MD_FILE}" | eval $LINK_CONVERTER) \
       -o "${BASE_OUTPUT}" \
       --log 'pandoc-log.log' \
-      2>&1 | { grep -vE '(\(\d+/\d+\)\s*$|Done)' || true; }
-    # ^^ the 'grep' removes the 'Loading pages (1/6)' messages sent to stderr, while hopefully allowing actual error
-    # messages through.
+      2>&1 | { grep -vE '(\(\d+/\d+\)\s*$|Done|Unsupported stylesheet type)' || true; }
+    # ^^ the 'grep' removes the 'Loading pages (1/6)' progress messages (previous pdf-engine) sent to stderr, while
+    # hopefully allowing actual error messages through. WeasyPrint also reports 'Unsupported stylesheet type' for
+    # the '--css' process-substitution file (no '.css' extension for it to sniff a MIME type from), which is
+    # filtered here for the same reason -- see this task's notes for the known follow-up to restore PDF styling.
   else
     pandoc \
       $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
+      $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
       --quiet \
       --standalone \
       --from gfm \
@@ -49,7 +53,7 @@ EOF
       <(echo "${INPUT}" | eval $LINK_CONVERTER) \
       -o "${BASE_OUTPUT}" \
       --log 'pandoc-log.log' \
-      2>&1 | { grep -vE '(\(\d+/\d+\)\s*$|Done)' || true; }
+      2>&1 | { grep -vE '(\(\d+/\d+\)\s*$|Done|Unsupported stylesheet type)' || true; }
   fi
   [[ -n "${KEEP_INTERMEDIATE}" ]] || rm pandoc-log.log
 
@@ -63,6 +67,10 @@ EOF
     MEDIA_DIMENSIONS=$(echo "${DOC_DATA}" | grep PageMediaDimensions | head -n 1)
     XPAGE=$(echo "${MEDIA_DIMENSIONS}" | cut -d: -f2 | cut -d' ' -f 2)
     YPAGE=$(echo "${MEDIA_DIMENSIONS}" | cut -d: -f2 | cut -d' ' -f 3)
+    # WeasyPrint reports fractional point dimensions (e.g. '595.276' for A4) where the previous pdf-engine gave
+    # whole points; truncate to whole points so the integer arithmetic below stays valid regardless of pdf-engine.
+    XPAGE="${XPAGE%%.*}"
+    YPAGE="${YPAGE%%.*}"
     HF_FONT_SIZE=9
     PG_NUMBER_X_OFFSET=$((${XPAGE} - 145))
     VERSION_X_OFFSET=75

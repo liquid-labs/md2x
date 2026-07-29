@@ -104,3 +104,45 @@ architectural_impact: true
 - After creating `src/cli/lib/ensure-weasyprint.sh` and wiring it into `src/cli/lib/index.sh`.
 - After updating `src/cli/md2x.sh` (preflight entry plus the gated call site).
 - After updating `src/cli/lib/generate-page.sh` and confirming a cold-start PDF conversion succeeds end to end.
+
+## Status
+
+**Outcome: succeeded.** Implemented 2026-07-29. All four files changed exactly as scoped
+(`git diff --stat` against the pre-task commit shows only `src/cli/lib/ensure-weasyprint.sh` (new),
+`src/cli/lib/index.sh`, `src/cli/md2x.sh`, and `src/cli/lib/generate-page.sh`).
+
+Validation summary (see the implementing agent's structured report for full detail):
+
+- Checks 1-5, 7, 8: passed, verified against a real cold-start `pip install weasyprint` and a real warm re-run.
+- Check 6 (`python3` preflight failure): verified by code inspection plus a read-only confirmation of `type`'s
+  behavior for a nonexistent command, not by a live PATH-exclusion run. `python3` and `gs`/`pandoc`/`brew` all
+  resolve from the same `/opt/homebrew/bin` on this machine, and the bundled option-parser calls
+  `brew --prefix gnu-getopt` unconditionally on every Darwin invocation (before the preflight loop even runs);
+  safely excluding only `python3` from `PATH` while keeping `brew` self-locating correctly would have required
+  moving real system files outside the worktree, which this environment's tooling declined to permit. The added
+  `python3` entry uses the identical `type "${EXEC}" >/dev/null || { echo ...; exit 2; }` idiom already
+  proven-in-production for `gs`/`pandoc`/`pdftk`, so this is a lower-risk gap than it would be for novel logic.
+
+Two defects were discovered during live end-to-end validation that were not anticipated by the task doc or its
+design notes, both confined to `src/cli/lib/generate-page.sh` (already an in-scope file) and both required to make
+`## Validation` pass as written:
+
+1. **Header/footer overlay crash on WeasyPrint's fractional page dimensions.** WeasyPrint reports A4 as
+   `595.276 841.89` pt (fractional) where the pre-existing `--pdf-engine`-less default apparently gave whole
+   points; the existing `$(( XPAGE - 145 ))`-style bash arithmetic aborted the whole `md2x` process (exit 1) on
+   the fractional value. Fixed by truncating `XPAGE`/`YPAGE` to whole points (`${XPAGE%%.*}`) immediately after
+   extraction, preserving the existing overlay-positioning logic untouched.
+2. **WeasyPrint's `--css <(process substitution)` stylesheet gets rejected.** Pandoc's PDF path (via WeasyPrint)
+   reports `ERROR: Unsupported stylesheet type text/plain for file:///dev/fd/NN` because a process-substitution
+   path has no `.css` extension for WeasyPrint's MIME sniffing to key off; the message lands on the CLI's real
+   **stdout** (the existing `2>&1 | grep -v ...` merge in `generate-page()` predates this task and was already
+   structurally capable of leaking pdf-engine stderr chatter onto stdout — this task's engine switch is what
+   newly triggers it). This breaks the `--list-files`/`--to-stdout` stdout-purity contract this task's design
+   explicitly protects. Fixed minimally by adding this one message to the existing noise-filtering `grep`
+   pattern (same idiom already used for the old engine's `Loading pages (x/y)`/`Done` progress spam) — **the
+   `--css` delivery mechanism itself was deliberately left unchanged**, so WeasyPrint still does not load the
+   stylesheet and **PDF output currently ships with no GitHub-markdown CSS styling applied** (HTML/DOCX output is
+   unaffected). See `flagged_for_manager` in the implementing agent's report for the recommended follow-up.
+
+Files changed: `src/cli/lib/ensure-weasyprint.sh` (new), `src/cli/lib/index.sh`, `src/cli/md2x.sh`,
+`src/cli/lib/generate-page.sh`.
