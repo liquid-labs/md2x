@@ -143,3 +143,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: Pre-existing doc self-contradiction (docs/project-structure.md and docs/architecture.md marked '(planned)' in AGENTS.md/architecture.md despite existing since the doc set's initial commit) - already tracked as followup LPg7, confirmed still present, left untouched as unrelated to this task's phase-01-conformance scope
+    - title: Spec-vs-code discrepancies from tasks 003/004
+      id: H8pW
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:doc-updates
+        - priority:unspecified
+        - effort:unspecified
+      text: Spec-vs-code discrepancies from tasks 003/004 (c2s9, aaLV/udVi, 8SZc/egcc) confirmed - none required a doc rewrite, the spec's stated contract is the intended behavior and code just doesn't deliver it yet; already tracked, no new action
