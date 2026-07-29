@@ -5,4 +5,14 @@ phases:
     - number: 1
       slug: weasyprint-pdf-engine
       title: WeasyPrint PDF Engine
-      tasks: []
+      tasks:
+        - number: 1
+          slug: bootstrap-weasyprint-and-pin-engine
+          title: Bootstrap WeasyPrint And Pin PDF Engine
+          path: phase-01-weasyprint-pdf-engine/001-bootstrap-weasyprint-and-pin-engine.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
