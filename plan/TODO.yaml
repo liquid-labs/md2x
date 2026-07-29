@@ -51,7 +51,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-01-task-04-cover-node-wrapper
-            commit: []
+            commit:
+                - 47b8c50
             merge: null
         - number: 5
           slug: add-gated-end-to-end-tests
