@@ -66,3 +66,53 @@ Additional guidance:
 - After the output-shaping cases (`--quiet`, `--list-files`, `--to-stdout`, `--help`).
 - After the pandoc-argument cases (`--infer-title`, `--no-toc`, `--infer-version`, `--keep-intermediate`).
 - After the `--single-page` and stdin cases.
+
+## Status
+
+**Outcome:** succeeded. Date: 2026-07-29.
+
+Added five new bats files under `src/cli/test/bats/`, none touching `src/cli/`, `Makefile`, `package.json`, or task 001's shared helpers (`src/cli/test/helpers/`):
+
+- `src/cli/test/bats/output-format.bats` (5 cases) — `--output-format`.
+- `src/cli/test/bats/exit-codes.bats` (3 cases) — Exit codes.
+- `src/cli/test/bats/output-shaping.bats` (6 cases) — `--quiet`, `--list-files`, `--to-stdout`, `--help`/`-h`.
+- `src/cli/test/bats/pandoc-args.bats` (12 cases) — `--infer-title`, `--no-toc`, `--infer-version`, `--keep-intermediate`.
+- `src/cli/test/bats/single-page-and-stdin.bats` (4 cases) — `--single-page`, stdin `-`.
+
+**Table-row-to-case mapping** (per Validation's second bullet):
+
+| Requirements table row | Case(s) |
+| --- | --- |
+| `--output-format` | `output-format.bats`: "--output-format pdf converts to <title>.pdf", "--output-format html converts to <title>-base.html", "--output-format docx converts to <title>.docx", "absent --output-format defaults to pdf", "an unrecognized --output-format exits non-zero, names the format, and never calls pandoc" |
+| `--single-page` | `single-page-and-stdin.bats`: "--single-page concatenates multiple files, in order, into one output named from --title", "--single-page defaults the output name to 'output' when --title is absent" |
+| stdin `-` | `single-page-and-stdin.bats`: "stdin '-' produces one output named from --title, invoking pandoc exactly once", "stdin '-' defaults the output name to 'output' when --title is absent" |
+| `--infer-title` | `pandoc-args.bats`: "--infer-title embeds the title in the metadata file pandoc receives", "without --infer-title, the metadata file carries no title" |
+| `--infer-version` | `pandoc-args.bats`: "--infer-version adds a Version: string to the Ghostscript overlay invocation", "without --infer-version, no Version: string appears in the Ghostscript invocation" |
+| `--no-toc` | `pandoc-args.bats`: "--no-toc removes --toc from the pandoc invocation for pdf output", "without --no-toc, pdf output includes --toc", "--no-toc removes --toc from the pandoc invocation for html output", "without --no-toc, html output includes --toc", "docx output never includes --toc, with --no-toc given", "docx output never includes --toc, without --no-toc given" |
+| `--quiet` | `output-shaping.bats`: "--quiet suppresses the 'Created' line but still writes the output" |
+| `--list-files` | `output-shaping.bats`: "--list-files prints only the generated path, with no 'Created ' prefix" |
+| `--to-stdout` | `output-shaping.bats`: "--to-stdout writes the converted content to stdout and implies --quiet" |
+| `--help` / `-h` | `output-shaping.bats`: "--help exits 0 with usage text on stdout", "-h is a short alias for --help", "--help exits 0 even with every required binary absent from PATH" |
+| `--keep-intermediate` | `pandoc-args.bats`: "--keep-intermediate retains the pandoc log and pdf overlay after conversion", "without --keep-intermediate, the pandoc log and pdf overlay are removed after conversion" |
+| Exit codes | `exit-codes.bats`: "a PATH missing 'pandoc' exits 2 and names 'pandoc'", "a PATH missing 'gs' exits 2 and names 'gs'", "an input path that is neither a file nor a directory exits non-zero and names the path" |
+
+**Validation results:**
+
+- `make test < /dev/null` (stdin closed): exit 0. 40 bats cases pass (13 pre-existing `harness-smoke.bats` + 27 new), plus the existing Jest suite (1 test).
+- Every case also passes run individually (`npx bats src/cli/test/bats/<file>.bats` per new file), confirming no inter-case coupling.
+- `git diff --stat` / `git status --porcelain`: five new files under `src/cli/test/bats/`; no other file touched.
+- `grep`-checked every new `assert_file_exists`/`assert_output_*` call for an `--output-path`/subdirectory argument other than `.`: none found. Every non-`--flatten-dirs` case uses `--single-page` or stdin `-`, neither of which enters the mirroring branch.
+- `make lint`: exit 0 (no findings against `src/node`; bash sources are not linted per `AGENTS.md`).
+- `make qa`: exit 0 (`test` + `lint`).
+
+**Discrepancy flagged (documented, not fixed, per task instructions):** `--output-format html` on a per-file (non-`--single-page`, non-stdin) conversion produces `<title>-base.html`, not `<title>.html`. Neither `docs/md2x-spec.md` (UC2, API definition table) nor `README.md` mentions a `-base` suffix; the suffix comes from `src/cli/md2x.sh`'s per-file conversion loop (line ~168: `if [[ "${OUTPUT_FORMAT}" == 'html' ]]; then BASE_OUTPUT="${BASE_OUTPUT}-base"; fi`). Documented in `output-format.bats`'s `"--output-format html converts to <title>-base.html"` case with an explicit comment; not present in the single-page/stdin path (their `BASE_OUTPUT` construction never adds `-base`), which the tests don't exercise for this discrepancy. Candidate followup for the manager.
+
+**Assumptions applied:** all four from `## Assumptions` — task 001's harness/stubs/helpers/`make test` wiring already existed and were used as-is; task 002 (mirrored-path fix) was not depended on, per the invariant-input-shape guidance; the stub binaries made every PDF case runnable without a real Pandoc PDF engine; the version probe resolved to the literal `working` in every case's temp CWD (confirmed via the `--infer-version` cases).
+
+**Decisions made:**
+- Organized new cases into five files split along the checkpoint-hint boundaries (`output-format.bats`, `exit-codes.bats`, `output-shaping.bats`, `pandoc-args.bats`, `single-page-and-stdin.bats`) rather than one large file, for readability and to mirror the task's own grouping.
+- For `--to-stdout`, used `--output-format html` rather than the default `pdf`: with `pdf` the CLI overwrites the base output with the pdftk-merged (header/footer overlay) content before `cat`-ing it to stdout, so only a non-pdf format's stdout still carries the pandoc stub's own placeholder text verbatim. Commented inline in the test.
+- Used space-free titles (`CombinedReport`, `Piped`) rather than the spec's example `"Combined Report"`, per the task's fixture-path space-free guidance (the CLI's unquoted word-splitting already breaks on spaces).
+- Added a `pdf`-file-count assertion (`find . -maxdepth 1 -name '*.pdf' | wc -l`) to the `--single-page` cases to positively confirm "exactly one output file is produced," not just that the expected file exists.
+
+**Flagged for manager:** the html `-base` suffix discrepancy above is a candidate followup (not filed here — followups.yaml is out of scope for this task agent).
