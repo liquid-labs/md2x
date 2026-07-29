@@ -14,7 +14,7 @@ phases:
           done: false
           tier: opus-med
           git:
-            branch: null
+            branch: phase-01-task-01-stand-up-test-infrastructure
             commit: []
             merge: null
         - number: 2
