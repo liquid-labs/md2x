@@ -4,8 +4,7 @@
   "description": "A command line utility to print Mardown documents to PDF, HTML, and other formats.",
   "main": "dist/md2x.js",
   "bin": {
-    "md2x": "bin/md2x",
-    "liq-gen-roles-ref": "bin/liq-gen-roles-ref.sh"
+    "md2x": "bin/md2x"
   },
   "scripts": {
     "build": "make all",
