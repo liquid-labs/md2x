@@ -11,7 +11,7 @@ phases:
           slug: stand-up-test-infrastructure
           title: Stand Up Test Infrastructure
           path: phase-01-automated-test-coverage/001-stand-up-test-infrastructure.md
-          done: false
+          done: true
           tier: opus-med
           digest: 'Stood up full test harness: bats-core CLI suite under src/cli/test/{bats,helpers,stubs}, hermetic-PATH stub pandoc/gs/pdftk, Jest wired via catalyst-scripts with trivial src/node/md2x.test.js, make test/test-cli/test-node/smoke-test wiring, old test.sh relocated to manual/visual-smoke-test.sh, AGENTS.md and docs/project-structure.md updated.'
           git:
