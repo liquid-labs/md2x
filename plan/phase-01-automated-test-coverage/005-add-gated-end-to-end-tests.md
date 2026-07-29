@@ -46,3 +46,26 @@ No standard skill covers this; the [Requirements](#requirements) section below i
 - [`docs/md2x-spec.md`](../../docs/md2x-spec.md) — UC1, UC2, and the General features section (styling, TOC, PDF header/footer) these cases spot-check end to end.
 - `src/cli/test/tiny-doc.md` — the existing fixture.
 - `src/cli/test/manual/visual-smoke-test.sh` (relocated by task 001) — the interactive check these cases partially automate; worth reading for what the manual test was verifying.
+
+## Status
+
+**Outcome:** succeeded. Date: 2026-07-29.
+
+Added `src/cli/test/bats/real-toolchain-e2e.bats` — the only file this task creates or touches. Four cases, all prefixed `e2e:` to keep them visually distinguishable from the stub-based suite:
+
+1. `tiny-doc.md` → HTML — gated on `pandoc` on `PATH`; **ran** on this machine. Asserted output exists, is non-empty, contains the fixture's `Tiny Doc` heading text and a `<style>` marker.
+2. `tiny-doc.md` → DOCX — gated on `pandoc` on `PATH`; **ran**. Asserted output exists, is non-empty, and starts with the `PK` zip magic.
+3. `tiny-doc.md` → PDF — gated on a throwaway probe conversion (`pandoc --to html5 -o <tmp>.pdf --quiet <(printf '# probe\n')`), mirroring exactly how `generate-page.sh` drives Pandoc's HTML5-to-PDF path (binary presence alone would not have caught the missing engine). **Skipped** on this machine, reporting `pandoc's PDF engine is unavailable: 'weasyprint' not found. Please select a different --pdf-engine or install 'weasyprint'` — the expected outcome per this task's `## Assumptions` and followup `BfN6`. When it does run (verified the assertion logic is sound, just not exercisable here), it additionally checks for `<title>-overlay.pdf` (kept via `--keep-intermediate`) as direct proof the Ghostscript/pdftk overlay stage executed, not just that Pandoc alone produced a PDF.
+4. `--single-page` concatenation of two fixtures (`alpha.md`, `beta.md`) to HTML — gated on `pandoc` on `PATH`; **ran**. Asserted the combined output contains both fixtures' heading text.
+
+None of the four cases install the stub `PATH` (`md2x_setup`/`md2x_use_stub_path` are never called); a local `e2e_setup`/`e2e_teardown` pair reimplements only the private-working-directory part of the shared setup and additionally asserts `MD2X_STUB_DIR` is not on `PATH` as a defensive guard. `grep -n "md2x_use_stub_path\|md2x_setup\b\|md2x_path_without" src/cli/test/bats/real-toolchain-e2e.bats` matches only explanatory comments, never a call.
+
+**Validation performed:**
+- `make test` → exit 0. Runner output: cases 11–14 in the combined bats run are the four e2e cases; 11, 12, 14 report `ok` (ran), 13 reports `ok ... # skip pandoc's PDF engine is unavailable: ...` (skipped, not failed).
+- HTML/DOCX/single-page cases actually ran (not skipped) and all assertions held; PDF case skipped with the missing-capability message, as required.
+- Simulated a fully-unavailable toolchain: built an isolated `PATH` (`gs`, `pdftk`, `jq`, `perl`, `brew`, `bash`, `git` symlinked in; system dirs only, no `pandoc`) and ran `node_modules/.bin/bats` directly against the new file — all four cases skipped (`# skip real 'pandoc' not found on PATH`), exit 0. (Ran at the bats-invocation level rather than reconstructing `make test`'s full npm/node toolchain under the restricted `PATH`, since only the e2e file's own PATH-gating was in scope here.)
+- `git diff --stat` / `git status --porcelain` show only the new `src/cli/test/bats/real-toolchain-e2e.bats` file — no changes to `src/cli/md2x.sh`, `src/cli/lib/`, `src/node/`, `Makefile`, `package.json`, or the shared test helpers.
+- Wall-clock `make test`: before (file removed) ≈12.4s; after (file present) ≈13.9–17.5s across two runs (real Pandoc/Ghostscript/pdftk conversions for 3 of 4 cases account for the difference) — still well within "reasonable" for a small, fast suite.
+- `make lint` and `make qa` both exit 0.
+
+**Assumptions applied:** the task doc's stated environment assumption (pandoc/gs/pdftk/jq/perl present, weasyprint absent) held exactly as described; the PDF case's skip is the intended, verified outcome rather than a defect.
