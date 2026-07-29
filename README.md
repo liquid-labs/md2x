@@ -59,7 +59,7 @@ const outputFiles = md2x({
 ## Features
 
 - Converts Markdown to PDF, HTML, or DOCX via Pandoc, rendering PDF through an HTML5 intermediate with WeasyPrint so no `pdflatex` install is required.
-- Consistent GitHub-style CSS applied to every HTML/PDF page.
+- Consistent GitHub-style CSS applied to every HTML page (PDF output is not currently styled — see followup `TNLq`).
 - Automatic PDF page footers ("Page X of Y") and a running header with the document title, with an optional inferred version string.
 - Batch conversion of whole directories, recursing to find every `*.md` file.
 - `--single-page` concatenates multiple Markdown files into one output document.

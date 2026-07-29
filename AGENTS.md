@@ -53,7 +53,7 @@ md2x({ sources: ['report.md'] })
 - The CLI is authored as modular bash source under `src/cli/`, combined into one distributable file by `bash-rollup` — always edit the source modules, never `bin/md2x` directly.
 - JavaScript under `src/node/` is linted via `@liquid-labs/catalyst-scripts` (`make lint`); no separate style guide beyond what the linter enforces.
 - `--infer-version` behavior depends on `git status --porcelain` cleanliness versus `package.json`'s version — keep this in mind when testing that flag locally, since a dirty working tree changes the observed output.
-- `~/.md2x/venv` persists across runs and machines — once WeasyPrint is installed, later PDF conversions skip the bootstrap silently. When testing `src/cli/lib/ensure-weasyprint.sh` changes or the first-run install notice, `rm -rf ~/.md2x/venv` first to force a cold start.
+- `~/.md2x/venv` persists across runs — once WeasyPrint is installed, later PDF conversions skip the bootstrap silently. When testing `src/cli/lib/ensure-weasyprint.sh` changes or the first-run install notice, `rm -rf ~/.md2x/venv` first to force a cold start.
 
 ## Known issues
 

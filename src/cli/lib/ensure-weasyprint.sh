@@ -18,7 +18,7 @@ ensure-weasyprint-fail() {
   echo "md2x: failed to install weasyprint (step: ${1})." >&2
   echo "md2x: likely causes: no network access, a proxy blocking PyPI, or missing platform build tooling." >&2
   echo "md2x: to retry manually, run:" >&2
-  echo "  rm -rf '${VENV_DIR}' && python3 -m venv '${VENV_DIR}' && '${VENV_DIR}/bin/python3' -m ensurepip --upgrade && '${VENV_DIR}/bin/python3' -m pip install weasyprint" >&2
+  echo "  rm -rf '${VENV_DIR}' && python3 -m venv '${VENV_DIR}' && '${VENV_DIR}/bin/python3' -m ensurepip --upgrade && '${VENV_DIR}/bin/python3' -m pip install 'weasyprint==69.0'" >&2
   rm -rf "${VENV_DIR}"
   exit 2
 }
@@ -34,7 +34,7 @@ ensure-weasyprint() {
 
   python3 -m venv "${VENV_DIR}" >&2 || ensure-weasyprint-fail 'python3 -m venv'
   "${VENV_DIR}/bin/python3" -m ensurepip --upgrade >&2 || ensure-weasyprint-fail 'ensurepip'
-  "${VENV_DIR}/bin/python3" -m pip install weasyprint >&2 || ensure-weasyprint-fail 'pip install weasyprint'
+  "${VENV_DIR}/bin/python3" -m pip install 'weasyprint==69.0' >&2 || ensure-weasyprint-fail 'pip install weasyprint'
 
   [[ -x "${WEASYPRINT_BIN}" ]] || ensure-weasyprint-fail 'post-install check'
 
