@@ -1,0 +1,10 @@
+version: 2
+items:
+    - title: Hardcoded /policy/ path in --flatten-dirs
+      id: aI57
+      date: "2026-07-28"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+      text: In src/cli/md2x.sh, the non-`--flatten-dirs` (mirror-directory-structure) code path derives the output subdirectory via `REL_DIR=$(dirname "${MD_FILE#*/policy/}")`. This hardcodes a `/policy/` substring strip that looks like a leftover from a different project's directory convention rather than general-purpose behavior — it will not generalize correctly for input paths that don't contain a `/policy/` segment (the strip silently no-ops and the full path gets used as REL_DIR instead of a path relative to some sensible root). Found while authoring README.md; the README documents the flag's evident intended contract ("mirror the input directory structure") rather than this implementation detail, since the intended behavior is what should be fixed toward. Worth a maintainer review/fix.
