@@ -13,6 +13,7 @@ phases:
           path: phase-01-automated-test-coverage/001-stand-up-test-infrastructure.md
           done: false
           tier: opus-med
+          digest: 'Stood up full test harness: bats-core CLI suite under src/cli/test/{bats,helpers,stubs}, hermetic-PATH stub pandoc/gs/pdftk, Jest wired via catalyst-scripts with trivial src/node/md2x.test.js, make test/test-cli/test-node/smoke-test wiring, old test.sh relocated to manual/visual-smoke-test.sh, AGENTS.md and docs/project-structure.md updated.'
           git:
             branch: phase-01-task-01-stand-up-test-infrastructure
             commit:
