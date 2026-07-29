@@ -73,3 +73,44 @@ Also cover a multi-root invocation (`md2x -p out docs notes`, each root resolved
 - After writing the regression cases and recording their pre-fix failures.
 - After the `src/cli/md2x.sh` change makes them pass.
 - After the `AGENTS.md` (and any minimal README/spec) wording updates.
+
+## Status
+
+**Outcome: succeeded** — 2026-07-29. **This task resolves followup `aI57`**; `plan/followups.yaml` was deliberately left untouched, so the manager should remove the item via `followups_remove` when applying this report.
+
+### Pre-fix failure list (the evidence the coverage is real)
+
+`src/cli/test/bats/mirrored-output-paths.bats` was written and run against the **unmodified** CLI first. 9 of its 11 cases were red; the two controls were green:
+
+| # | Case | Pre-fix |
+| --- | --- | --- |
+| 1 | a directory root mirrors paths relative to that root | **failed** — wrote `out/docs/a.pdf`, `out/docs/guide/b.pdf` |
+| 2 | a `./`-prefixed root resolves the same and prints no `/./` | **failed** — printed `Created out/./docs/guide/b.pdf` |
+| 3 | a directly named file lands directly in `--output-path` | **failed** — wrote `out/docs/guide/b.pdf` |
+| 4 | a directly named file honours the default `--output-path` | **failed** — wrote `./docs/guide/b.pdf` |
+| 5 | a trailing slash on the root is immaterial | **failed** — wrote `out/docs/…`, printed `/./` |
+| 6 | each root of a multi-root invocation resolves against itself | **failed** — wrote `out/docs/…`, `out/notes/…` |
+| 7 | a root of `.` mirrors the whole visible tree | **failed** — printed `Created out/./docs/a.pdf` |
+| 8 | an absolute root resolves against itself | **failed** — wrote `out//var/folders/…/work/docs/a.pdf` |
+| 9 | `--flatten-dirs` discards structure and creates a missing `--output-path` | **failed** — exited 1, `out/a.pdf: No such file or directory` |
+| 10 | `--single-page` still writes exactly one file (control) | passed |
+| 11 | stdin mode still writes exactly one file (control) | passed |
+
+The contract note's fail-before/pass-after cases 1–4 map to rows 1, 2, 3 and 9; its control case 5 maps to row 10. All 11 are green after the fix.
+
+### What changed in `src/cli/md2x.sh`
+
+- The file-discovery process substitution now emits **tab-separated `<md-file><tab><search-root>` records** instead of bare paths, so the loop knows which directory argument each file was found under. The root is the *second* field precisely so the existing `sort` still orders the stream by file path; directly-named files still come first (with an empty root field) and are filtered for emptiness at the producer, with the loop's `[[ -n "${MD_FILE}" ]] || continue` guard left in place.
+- Two new helpers replace `dirname "${MD_FILE#*/policy/}"`: `normalize-path` (collapses `//`, drops `/./` segments and leading `./`) and `relative-output-dir <md-file> <search-root>` (prints the output subdirectory, or nothing when the file sits at the root or was named directly). An empty search root means "named directly on the command line", which the contract places straight into `--output-path`.
+- `mkdir -p "${BASE_OUTPUT}"` moved out of the mirroring branch so it runs for `--flatten-dirs` too.
+- `--single-page` and stdin (`-`) are untouched: they still write exactly `${OUTPUT_PATH}/${TITLE}.${OUTPUT_FORMAT}` and still do **not** create `--output-path` themselves (requirement 5 — the two control cases `mkdir -p out` for that reason).
+
+### Validation
+
+All `## Validation` checks passed: pre-fix failure list recorded above; `make test` green (21 cases: 10 harness + 11 new) with exit 0, non-interactively; `make lint`, `make qa`, `make all` and `bash -n src/cli/md2x.sh` all clean; `grep -rn 'policy' src/` and `grep -rn 'aI57' AGENTS.md` both return nothing; `git status` shows `plan/followups.yaml` untouched. Every row of the contract note's "Worked examples" table was additionally verified by hand against the built `bin/md2x` under a stub `PATH` and matched exactly, as did the overlapping-roots case (`md2x -p out docs docs/guide` — converts `b.md` twice as before, no crash), a no-argument invocation (empty stream, no crash), and a mixed named-file + directory-root invocation.
+
+### Affected files
+
+- `src/cli/md2x.sh`
+- `src/cli/test/bats/mirrored-output-paths.bats` (new)
+- `AGENTS.md` (the "Known issues" section removed — the `aI57` bullet was its only entry), `README.md`, `docs/md2x-spec.md`

@@ -68,7 +68,7 @@ md2x accepts one or more file paths, one or more directory paths (searched recur
 
 | Flag | Description |
 | --- | --- |
-| `-D`, `--flatten-dirs` | Write all output files directly into `--output-path` instead of mirroring the input directory structure. |
+| `-D`, `--flatten-dirs` | Write all output files directly into `--output-path` instead of mirroring the input directory structure. Without this flag, each output file is written under `--output-path` at the path its input occupies *relative to the directory argument it was found under*; a file named directly on the command line goes straight into `--output-path`. |
 | `--infer-title` | Embed the title (from `--title`, or otherwise the filename) as document metadata via Pandoc (e.g. the HTML `<title>` element). |
 | `--infer-version` | Add an inferred version string to the PDF footer: the `package.json` version when `git status --porcelain` is clean, or `working` when the tree is dirty. |
 | `--keep-intermediate` | Keep intermediate build artifacts (the Pandoc log and the PDF header/footer overlay) instead of deleting them after conversion. |
