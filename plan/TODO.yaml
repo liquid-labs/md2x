@@ -11,7 +11,7 @@ phases:
           slug: bootstrap-weasyprint-and-pin-engine
           title: Bootstrap WeasyPrint And Pin PDF Engine
           path: phase-01-weasyprint-pdf-engine/001-bootstrap-weasyprint-and-pin-engine.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: 'Implemented the WeasyPrint bootstrap (src/cli/lib/ensure-weasyprint.sh), wired into lib/index.sh, added python3 to the preflight loop and a PDF-gated bootstrap call in md2x.sh, and pinned --pdf-engine on both pandoc invocations in generate-page.sh, per the task doc and linked design notes. Live end-to-end validation against a real pip install weasyprint surfaced two previously-unanticipated defects in generate-page.sh''s existing header/footer overlay and CSS-delivery code — both blocking the task''s own Validation checks and confined to this already-in-scope file — fixed minimally (integer truncation of fractional page dimensions; filtering one new benign WeasyPrint stderr line). The CSS-delivery fix is deliberately narrow: keeps stdout clean but does not restore GitHub-markdown styling to PDF output — flagged rather than unilaterally expanded in scope.'
           git:
