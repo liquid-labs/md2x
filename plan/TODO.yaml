@@ -35,7 +35,7 @@ phases:
           slug: cover-cli-option-behavior
           title: Cover CLI Option Behavior
           path: phase-01-automated-test-coverage/003-cover-cli-option-behavior.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: Added 27 bats cases across 5 new files covering --output-format, --single-page, stdin -, --infer-title, --infer-version, --no-toc, --quiet, --list-files, --to-stdout, --help, --keep-intermediate, and missing-binary/bad-input-path exit codes. All cases use invariant output-path shapes (--flatten-dirs or --single-page/stdin) so this stays mergeable with task 002's parallel mirrored-path fix. make test/lint/qa all pass.
           git:
