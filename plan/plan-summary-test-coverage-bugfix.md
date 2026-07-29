@@ -154,3 +154,25 @@ smoke-test output, now fixed by task 002), `LPg7` (minor stale doc references in
 `docs/project-structure.md`/`AGENTS.md`, out of scope for Phase 01, owned by Phase 02 task 001),
 `aaLV`/`8SZc` (confirmation that `udVi`/`egcc` remain unfixed with regression tests in place, per
 the key decisions above).
+
+## Final Task State
+
+# TODO
+
+## Purpose and scope
+
+Tracking document for the active plan.
+
+## Tasks
+
+### Phase 01 — Automated Test Coverage
+
+- [x] [001-stand-up-test-infrastructure.md](./phase-01-automated-test-coverage/001-stand-up-test-infrastructure.md) — tier `opus-med` · branch `phase-01-task-01-stand-up-test-infrastructure` · commit `003ce7d` · merge `efe11d4dee5cd31c099a1ca388db9afffbed6ad1`
+- [x] [002-fix-mirrored-output-path-derivation.md](./phase-01-automated-test-coverage/002-fix-mirrored-output-path-derivation.md) — tier `opus-med` · branch `phase-01-task-02-fix-mirrored-output-path-deriv` · commit `b620b0b` · merge `d981bef2224c3dcc5042f178788f2f24df76cb07`
+- [x] [003-cover-cli-option-behavior.md](./phase-01-automated-test-coverage/003-cover-cli-option-behavior.md) — tier `sonnet-high` · branch `phase-01-task-03-cover-cli-option-behavior` · commit `b39d8ed` · merge `e5146bf7b95825a78a747c219f8caa32903fc7ad`
+- [x] [004-cover-node-wrapper.md](./phase-01-automated-test-coverage/004-cover-node-wrapper.md) — tier `sonnet-high` · branch `phase-01-task-04-cover-node-wrapper` · commit `47b8c50` · merge `e00094071f075e684e9e4b176f52e48f65cd6641`
+- [x] [005-add-gated-end-to-end-tests.md](./phase-01-automated-test-coverage/005-add-gated-end-to-end-tests.md) — tier `sonnet-med` · branch `phase-01-task-05-add-gated-end-to-end-tests` · commit `c5ac86c` · merge `c04448feada0fd10a2d7649753c624054dfabd0d`
+
+### Phase 02 — Documentation Updates
+
+- [x] [001-update-architecture-docs.md](./phase-02-doc-updates/001-update-architecture-docs.md) — tier `sonnet-high` · branch `phase-02-task-01-update-architecture-docs` · commit `…` · merge `6099c9b20019ad3c7701da133b71ad76aa7e42f8`
