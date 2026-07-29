@@ -34,3 +34,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'md2x_run helper exists because git status --porcelain emits ''fatal: not a git repository'' stderr noise on every invocation outside a repo; tasks 002-005 should use md2x_run not bare run'
+    - title: bin/md2x hard-requires Homebrew on macOS (bre
+      id: H7ej
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: bin/md2x hard-requires Homebrew on macOS (brew --prefix gnu-getopt) - undocumented, possible followup, out of scope here
