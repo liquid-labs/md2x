@@ -27,7 +27,8 @@ phases:
           tier: opus-med
           git:
             branch: phase-01-task-02-fix-mirrored-output-path-deriv
-            commit: []
+            commit:
+                - b620b0b
             merge: null
         - number: 3
           slug: cover-cli-option-behavior
