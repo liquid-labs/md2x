@@ -61,3 +61,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: docs/project-structure.md and AGENTS.md have minor stale doc references (smoke-test target missing from table, docs marked '(planned)' though they exist) - out of this task's scope, phase-02 task 001 owns architecture doc updates
+    - title: --single-page and stdin still do not create -
+      id: MPHT
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: --single-page and stdin still do not create --output-path when missing (same class of bug as the flatten-dirs fix, one-line mkdir -p, but explicitly out of this task's scope per requirement 6) - candidate followup for consistency
