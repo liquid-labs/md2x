@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+#
+# Test stub for 'pdftk', used by the md2x CLI test suite. See ../helpers/common.bash.
+#
+# It manipulates no PDFs. It exists to (a) record what the CLI asked for and
+# (b) reproduce the two behaviours 'src/cli/lib/generate-page.sh' depends on:
+#
+#   * 'pdftk <file> dump_data' must print a 'NumberOfPages:' line and a
+#     'PageMediaDimensions:' line. The CLI feeds both into '$(( ))' arithmetic, so
+#     they must be plain integers -- unlike real pdftk, which prints the dimensions
+#     as decimals. Override the reported values with MD2X_TEST_STUB_PAGE_COUNT and
+#     MD2X_TEST_STUB_PAGE_DIMENSIONS ('<x> <y>').
+#   * 'pdftk <file> multistamp <overlay> output <combined>' must create <combined>;
+#     the CLI immediately 'mv's it onto the base output and would abort under
+#     'set -o errexit' if it were missing.
+#
+# The invocation (argv[0] basename plus the full argument vector, tab separated) is
+# appended to "${MD2X_TEST_STUB_LOG}" when that variable is set.
+#
+# Kept compatible with bash 3.2: the test PATH is deliberately minimal.
+
+STUB_NAME='pdftk'
+
+# --- record the invocation ---------------------------------------------------------
+if [[ -n "${MD2X_TEST_STUB_LOG:-}" ]]; then
+  RECORD="${STUB_NAME}"
+  for FIELD in "$@"; do
+    RECORD="${RECORD}"$'\t'"${FIELD}"
+  done
+  printf '%s\n' "${RECORD}" >> "${MD2X_TEST_STUB_LOG}"
+fi
+
+PAGE_COUNT="${MD2X_TEST_STUB_PAGE_COUNT:-3}"
+PAGE_DIMENSIONS="${MD2X_TEST_STUB_PAGE_DIMENSIONS:-612 792}"
+
+ARGS=("$@")
+
+# --- 'dump_data': report a synthetic, integer-valued page geometry -----------------
+for ARG in "$@"; do
+  if [[ "${ARG}" == 'dump_data' ]]; then
+    printf 'NumberOfPages: %s\n' "${PAGE_COUNT}"
+    printf 'PageMediaDimensions: %s\n' "${PAGE_DIMENSIONS}"
+    exit 0
+  fi
+done
+
+# --- 'multistamp ... output <file>': create the merged document --------------------
+I=0
+while (( I < ${#ARGS[@]} )); do
+  if [[ "${ARGS[I]}" == 'output' ]] && [[ -n "${ARGS[I + 1]:-}" ]]; then
+    printf 'md2x-test-stub: pdftk multistamp output\n' > "${ARGS[I + 1]}"
+    exit 0
+  fi
+  I=$(( I + 1 ))
+done
+
+exit 0
