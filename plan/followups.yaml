@@ -210,3 +210,11 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: docs/md2x-spec.md's 'Consistent styling' General features bullet and UC1's outcome description both still claim PDF output gets the built-in GitHub CSS, which is no longer true (WeasyPrint rejects the --css process-substitution delivery). Already accurately noted in README.md's Features list next to followup TNLq; fixing the underlying CSS gap itself is out of scope, neither claim was named in this task's Requirements.
+    - title: bats PDF cases can cold-install weasyprint
+      id: efJF
+      date: "2026-07-29"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Surfaced while resolving the pdf-engine-weasyprint plan-branch merge conflict. The bats suite (src/cli/test/bats/) stubs pandoc/gs/pdftk on PATH but not python3, and the merged src/cli/md2x.sh now calls ensure-weasyprint (real python3 -m venv + pip install weasyprint) for every --output-format pdf invocation. On this dev machine ~/.md2x/venv/bin/weasyprint already existed, so make test-cli''s PDF cases took the cheap warm-path check and passed quickly (55/55). On a machine that has never run md2x — including a fresh CI runner — the first PDF-format bats case would trigger a real, ~1-minute, network-dependent WeasyPrint install rather than staying hermetic like the rest of the stubbed suite. Worth a maintainer decision: stub/short-circuit ensure-weasyprint in the bats harness, or document/accept the one-time cold-CI cost.'
