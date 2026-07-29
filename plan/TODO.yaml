@@ -15,7 +15,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-01-task-01-bootstrap-weasyprint-and-pin-e
-            commit: []
+            commit:
+                - 0af373b
             merge: null
         - number: 2
           slug: update-consumer-and-contributor-docs
