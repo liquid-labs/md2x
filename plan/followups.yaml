@@ -59,3 +59,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Validation check 6 (python3 preflight failure) was not exercised live: brew''s self-location depends on /opt/homebrew/bin staying on PATH, which also hosts python3/gs/pandoc on this dev machine, so a live PATH-exclusion test could not be safely constructed. Verified by code inspection (identical preflight-loop idiom as gs/pandoc/pdftk) instead. Recommend re-verifying live in an environment where python3 is not colocated with brew/gs/pandoc.'
+    - title: 'Pre-existing, unrelated architecture note: ge'
+      id: rndR
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:weasyprint-pdf-engine
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Pre-existing, unrelated architecture note: generate-page()''s pandoc ... 2>&1 | grep -v ... pattern has always merged the pdf-engine''s stderr into the CLI''s real stdout rather than true stderr; this task''s fix only patches the one new message WeasyPrint surfaced. Any future pdf-engine-emitted stderr text not matching the grep pattern would still leak onto stdout. Worth a more structural fix at some point, out of scope here.'
