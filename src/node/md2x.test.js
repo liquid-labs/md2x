@@ -87,15 +87,14 @@ describe('md2x', () => {
       expect(command).toBe("npx md2x --list-files --output-format pdf 'a.md' 'b.md' 'c dir/d.md'")
     })
 
-    // Candidate followup (already tracked as 'udVi'): 'sourceSpec' is always built as
-    // `'${sources.join("' '")}'`, so a lone '-' source becomes the quoted string "'-'" -- never the bare '-' that
-    // `if (!title && sourceSpec === '-')` checks for. The 'Report' default title is therefore unreachable. This
-    // test documents that CURRENT (buggy) behavior; it does not assert the presumably-intended default.
-    test('never applies the unreachable default title for a lone "-" source (followup udVi)', () => {
+    // 'sourceSpec' is always built as `'${sources.join("' '")}'`, so a lone '-' source becomes the quoted string
+    // "'-'". The default-title check compares against that quoted form, so the 'Report' default applies for a
+    // lone '-' (stdin) source.
+    test('applies the default title for a lone "-" source (followup udVi, fixed)', () => {
       md2x({ sources : ['-'] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format pdf '-'")
+      expect(command).toBe("npx md2x --list-files --output-format pdf --title 'Report' '-'")
     })
   })
 
@@ -176,17 +175,15 @@ describe('md2x', () => {
       expect(shell.rm).toHaveBeenCalledWith('-r', stagingDir)
     })
 
-    // Candidate followup (already tracked as 'egcc'): the staging filename is built as `${title}.md` before the
-    // (unreachable, per followup udVi) default title would ever apply, so with no 'title' given, 'title' is
-    // literally undefined and the staging file is named 'undefined.md'. This documents that CURRENT (buggy)
-    // behavior; it does not assert a corrected filename.
-    test('stages to "undefined.md" when no title is given (followup egcc)', () => {
-      shell.exec.mockReturnValue(mockExecResult(0, '/out/undefined.pdf\n'))
+    // With no 'title' given for the markdown-string path, 'title' now defaults to 'Report' before the staging
+    // filename is built, so the staging file is named 'Report.md' rather than the literal 'undefined.md'.
+    test('defaults the staging filename to Report.md when no title is given (followup egcc, fixed)', () => {
+      shell.exec.mockReturnValue(mockExecResult(0, '/out/Report.pdf\n'))
 
       md2x({ markdown : '# Hello' })
 
       const [, stagingDir] = shell.mkdir.mock.calls[0]
-      expect(shellStringTo).toHaveBeenCalledWith(fsPath.join(stagingDir, 'undefined.md'))
+      expect(shellStringTo).toHaveBeenCalledWith(fsPath.join(stagingDir, 'Report.md'))
     })
   })
 })

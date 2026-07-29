@@ -23,7 +23,10 @@ const md2x = ({
   sources
 }) => {
   const sourceSpec = `${sources ? `'${sources.join("' '")}'` : ''}` // will generate file below; see note on bugginess
-  if (!title && sourceSpec === '-') {
+  if (!title && sourceSpec === "'-'") {
+    title = 'Report'
+  }
+  if (!title && markdown !== undefined) {
     title = 'Report'
   }
   const options = ['--list-files', `--output-format ${format}`]
