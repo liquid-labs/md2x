@@ -54,7 +54,7 @@ phases:
             branch: phase-01-task-04-cover-node-wrapper
             commit:
                 - 47b8c50
-            merge: null
+            merge: e00094071f075e684e9e4b176f52e48f65cd6641
         - number: 5
           slug: add-gated-end-to-end-tests
           title: Add Gated End To End Tests
