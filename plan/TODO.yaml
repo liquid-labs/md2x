@@ -26,3 +26,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 3
+          slug: cover-cli-option-behavior
+          title: Cover CLI Option Behavior
+          path: phase-01-automated-test-coverage/003-cover-cli-option-behavior.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
