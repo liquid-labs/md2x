@@ -71,10 +71,6 @@ md2x({ sources: ['report.md'] })
 - JavaScript under `src/node/` is linted via `@liquid-labs/catalyst-scripts` (`make lint`); no separate style guide beyond what the linter enforces.
 - `--infer-version` behavior depends on `git status --porcelain` cleanliness versus `package.json`'s version — keep this in mind when testing that flag locally, since a dirty working tree changes the observed output.
 
-## Known issues
-
-- A known bug in the non-`--flatten-dirs` (mirrored-output) path of `src/cli/md2x.sh` is tracked as followup [aI57](./plan/followups.yaml): a hardcoded `/policy/` path-strip leftover from a prior migration does not generalize to arbitrary input paths.
-
 ## Documentation
 
 - [README.md](./README.md) — consumer-facing overview, installation, and CLI reference.

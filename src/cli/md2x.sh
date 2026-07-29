@@ -108,6 +108,47 @@ test_formats || echoerrandexit "Unsupported output format '${OUTPUT_FORMAT}'."
 
 [[ -n "${OUTPUT_PATH}" ]] || OUTPUT_PATH='.'
 
+# Collapse repeated slashes, drop '/./' segments and any leading './' so that roots and
+# found paths written in different-but-equivalent forms ('docs', './docs', 'docs/')
+# compare as strings, and so no '/./' survives into a path we build or print.
+normalize-path() {
+  local PATH_IN="${1}"
+  while [[ "${PATH_IN}" == *'//'* ]]; do PATH_IN="${PATH_IN//\/\//\/}"; done
+  while [[ "${PATH_IN}" == *'/./'* ]]; do PATH_IN="${PATH_IN//\/.\//\/}"; done
+  while [[ "${PATH_IN}" == './'* ]]; do PATH_IN="${PATH_IN#./}"; done
+  printf '%s' "${PATH_IN}"
+}
+
+# relative-output-dir <md-file> <search-root>
+#
+# The directory the output file must occupy under '--output-path': the directory part of
+# <md-file> taken relative to <search-root>, the directory argument the file was found
+# under. An empty <search-root> means the file was named directly on the command line,
+# which the contract places directly in '--output-path'. Prints nothing when the file
+# sits at the root, so callers can skip appending a subdirectory entirely rather than
+# appending a '.' segment.
+relative-output-dir() {
+  local MD_PATH ROOT PREFIX REL
+  # A file named directly on the command line carries no search root; it is rooted at
+  # its own directory and so always lands directly in '--output-path'.
+  [[ -n "${2}" ]] || return 0
+
+  MD_PATH="$(normalize-path "${1}")"
+  ROOT="$(normalize-path "${2}")"
+
+  REL="${MD_PATH}"
+  if [[ -n "${ROOT}" ]] && [[ "${ROOT}" != '.' ]]; then
+    PREFIX="${ROOT}"
+    [[ "${PREFIX}" == */ ]] || PREFIX="${PREFIX}/"
+    # A found path always starts with the root 'find' was given, so the prefix match is
+    # the normal case; leaving REL as the whole path is a conservative fallback.
+    [[ "${MD_PATH}" != "${PREFIX}"* ]] || REL="${MD_PATH#"${PREFIX}"}"
+  fi
+
+  REL="$(dirname "${REL}")"
+  [[ "${REL}" == '.' ]] || [[ "${REL}" == '/' ]] || printf '%s' "${REL}"
+}
+
 [[ -z "${TO_STDOUT}" ]] || QUIET=true
 
 SEARCH_DIRS=''
@@ -148,7 +189,9 @@ fi
 
 {
   if [[ -z "${INPUT}" ]]; then
-    while read -r MD_FILE; do
+    # Each record is '<md-file><tab><search-root>'; an empty root means the file was
+    # named directly on the command line rather than found under a directory argument.
+    while IFS=$'\t' read -r MD_FILE SEARCH_ROOT; do
       [[ -n "${MD_FILE}" ]] || continue
       # --to html5 : uses the HTML 5 engine. Yes, even when rendering PDF. It renders and
       #              prints and saves us the hassle of having to install pdflatex
@@ -160,10 +203,12 @@ fi
         
         BASE_OUTPUT="${OUTPUT_PATH}"
         [[ -n "${FLATTEN_DIRS}" ]] || {
-          REL_DIR=$(dirname "${MD_FILE#*/policy/}")
-          BASE_OUTPUT="${BASE_OUTPUT}/${REL_DIR}"
-          mkdir -p "${BASE_OUTPUT}"
+          REL_DIR="$(relative-output-dir "${MD_FILE}" "${SEARCH_ROOT}")"
+          [[ -z "${REL_DIR}" ]] || BASE_OUTPUT="${BASE_OUTPUT}/${REL_DIR}"
         }
+        # Both branches need this: '--flatten-dirs' writes straight into
+        # '--output-path', which is just as likely not to exist yet.
+        mkdir -p "${BASE_OUTPUT}"
         BASE_OUTPUT="${BASE_OUTPUT}/${TITLE}"
         if [[ "${OUTPUT_FORMAT}" == 'html' ]]; then BASE_OUTPUT="${BASE_OUTPUT}-base"; fi
         BASE_OUTPUT="${BASE_OUTPUT}.${OUTPUT_FORMAT}"
@@ -179,4 +224,19 @@ fi
     MD_FILE="${TITLE:-input}.md"
     generate-page
   fi
-} < <(echo "${MD_FILES}"; for ROOT_DIR in $SEARCH_DIRS; do find ${ROOT_DIR} -name "*.md"; done | sort)
+} < <(
+  # Directly-named files first (with an empty search-root field), then the recursive
+  # '*.md' search results sorted by path, exactly as before -- except that each record
+  # now carries the search root the file was found under so the loop can place the
+  # output relative to it. The root is the second field so that sorting still orders
+  # the stream by file path.
+  while IFS= read -r NAMED_FILE; do
+    [[ -n "${NAMED_FILE}" ]] || continue
+    printf '%s\t\n' "${NAMED_FILE}"
+  done <<< "${MD_FILES}"
+  for ROOT_DIR in $SEARCH_DIRS; do
+    find ${ROOT_DIR} -name "*.md" | while IFS= read -r FOUND_FILE; do
+      printf '%s\t%s\n' "${FOUND_FILE}" "${ROOT_DIR}"
+    done
+  done | sort
+)
