@@ -61,6 +61,7 @@ phases:
           path: phase-01-automated-test-coverage/005-add-gated-end-to-end-tests.md
           done: false
           tier: sonnet-med
+          digest: 'Added src/cli/test/bats/real-toolchain-e2e.bats, a 4-case gated end-to-end suite against the real pandoc/gs/pdftk toolchain. HTML, DOCX, and single-page cases ran for real and passed; the PDF case is gated on a throwaway probe conversion and correctly skips citing the missing weasyprint engine (followup BfN6). Confirmed inverse: with pandoc absent entirely, all four cases skip cleanly, exit 0. No files outside the new test file touched.'
           git:
             branch: phase-01-task-05-add-gated-end-to-end-tests
             commit:
