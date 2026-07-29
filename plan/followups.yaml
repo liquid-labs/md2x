@@ -97,3 +97,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: --output-format html on a per-file conversion produces <title>-base.html rather than <title>.html - undocumented in docs/md2x-spec.md or README.md - candidate followup
+    - title: Followup udVi (unreachable default-title bran
+      id: aaLV
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: Followup udVi (unreachable default-title branch) confirmed still present, now has explicit regression test documenting current behavior - not fixed, out of this task's scope
