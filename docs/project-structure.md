@@ -83,7 +83,7 @@ Flow's planning directory. Currently holds only `followups.yaml`, which tracks s
 
 | File | Purpose |
 | --- | --- |
-| `Makefile` | Build/test/lint driver invoked by the npm scripts (`make all`, `make test`, `make qa`, `make clean`). |
+| `Makefile` | Build/test/lint driver invoked by the npm scripts (`make all`, `make test` — which runs `make test-cli` and `make test-node` — `make qa`, `make clean`); also exposes the opt-in, interactive `make smoke-test` check. |
 | `package.json` | npm package manifest; declares the `md2x` CLI bin entrypoint and delegates `build`/`test` scripts to `make`. |
 | `package-lock.json` | npm dependency lockfile. |
 | `.gitignore` | Excludes build outputs (`bin/`, `dist/`, `test-out/`, ...), `node_modules/`, and most of `.flow/` from version control. |
