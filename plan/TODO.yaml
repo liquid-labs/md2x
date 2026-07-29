@@ -39,7 +39,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-01-task-03-cover-cli-option-behavior
-            commit: []
+            commit:
+                - b39d8ed
             merge: null
         - number: 4
           slug: cover-node-wrapper
