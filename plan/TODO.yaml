@@ -36,3 +36,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 4
+          slug: cover-node-wrapper
+          title: Cover Node Wrapper
+          path: phase-01-automated-test-coverage/004-cover-node-wrapper.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
