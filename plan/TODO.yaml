@@ -15,7 +15,8 @@ phases:
           tier: opus-med
           git:
             branch: phase-01-task-01-stand-up-test-infrastructure
-            commit: []
+            commit:
+                - 003ce7d
             merge: null
         - number: 2
           slug: fix-mirrored-output-path-derivation
