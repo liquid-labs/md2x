@@ -106,3 +106,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: Followup udVi (unreachable default-title branch) confirmed still present, now has explicit regression test documenting current behavior - not fixed, out of this task's scope
+    - title: Followup egcc (markdown-staging produces lite
+      id: 8SZc
+      date: "2026-07-29"
+      tags:
+        - type:ambiguity
+        - plan/phase:automated-test-coverage
+        - priority:unspecified
+        - effort:unspecified
+      text: Followup egcc (markdown-staging produces literal undefined.md) confirmed still present, now has explicit regression test documenting current behavior - not fixed, out of this task's scope
