@@ -82,4 +82,4 @@ phases:
           git:
             branch: phase-02-task-01-update-architecture-docs
             commit: []
-            merge: null
+            merge: 6099c9b20019ad3c7701da133b71ad76aa7e42f8
