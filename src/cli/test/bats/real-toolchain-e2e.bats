@@ -13,12 +13,13 @@
 # Gating is per-capability, not per-binary:
 #   * HTML/DOCX cases only need 'pandoc' resolvable on the ambient PATH.
 #   * The PDF case additionally needs pandoc's HTML5-to-PDF path to have a working
-#     external "pdf engine" available (weasyprint by default on this machine; see
-#     followup BfN6). 'pandoc' being on PATH does not imply that engine is present, so
-#     the PDF case is gated on a throwaway probe conversion, not a binary-presence
-#     check. On this machine that probe is expected to fail, so the PDF case is
-#     expected to skip -- that is the documented, intended outcome (see the task doc's
-#     '## Assumptions'), not a defect.
+#     external "pdf engine" available -- specifically md2x's self-managed
+#     '~/.md2x/venv/bin/weasyprint' (see ensure-weasyprint.sh), the absolute path md2x
+#     itself invokes; a bare 'weasyprint' on PATH is deliberately never assumed. 'pandoc'
+#     being on PATH does not imply that engine is present, so the PDF case is gated on a
+#     throwaway probe conversion against that same binary, not a binary-presence check.
+#     The probe (and thus the case) skips, naming what's missing, when the managed
+#     venv/binary has not been bootstrapped on the machine running the suite.
 # A skipped case reports as skipped (with a message naming what was missing) and does
 # not affect the suite's exit status; a run case exercises the real toolchain and its
 # assertions must hold for real.
@@ -114,7 +115,10 @@ e2e_require_pdf_engine() {
   probe_out="${probe_dir}/probe.pdf"
   probe_err="${probe_dir}/probe.err"
 
-  if ! pandoc --to html5 -o "${probe_out}" --quiet <(printf '# probe\n') 2> "${probe_err}"; then
+  # md2x never puts a bare 'weasyprint' on PATH -- it invokes the managed venv binary by
+  # its absolute path instead (see ensure-weasyprint.sh). Point the probe at that same
+  # binary so it tests what md2x actually uses rather than pandoc's PATH-based default.
+  if ! pandoc --to html5 -o "${probe_out}" --pdf-engine="${HOME}/.md2x/venv/bin/weasyprint" --quiet <(printf '# probe\n') 2> "${probe_err}"; then
     skip "pandoc's PDF engine is unavailable: $(head -n 1 -- "${probe_err}")"
   fi
 }

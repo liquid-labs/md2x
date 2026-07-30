@@ -1,21 +1,5 @@
 version: 2
 items:
-    - title: Undocumented jq dependency in md2x.sh
-      id: baU7
-      date: "2026-07-29"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Flagged by the planning agent for plan `test-coverage-bugfix`. `src/cli/md2x.sh` (around the VERSION= line) runs `VERSION=$(OUTPUT=$(git status --porcelain) && [ -z "${OUTPUT}" ] && cat package.json | jq ''.version'' || echo ''working'')` on every invocation, not just under `--infer-version` — it shells out to `git` and `jq` and reads `package.json` from the CWD unconditionally. `jq` is not named in the binary preflight check (`gs`/`pandoc`/`pdftk` only), nor in AGENTS.md''s, README.md''s, or docs/md2x-spec.md''s prerequisite lists. When `jq` is missing, the command degrades silently to the literal string ''working'' rather than failing loudly. Worth a maintainer decision: add `jq` to the documented prerequisites and preflight check, or replace it with something that doesn''t add a hidden dependency.'
-    - title: Unquoted path expansion breaks on spaces
-      id: 95ND
-      date: "2026-07-29"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Flagged by the planning agent for plan `test-coverage-bugfix`. In `src/cli/md2x.sh`, `for ROOT_DIR in $SEARCH_DIRS` and the unquoted `find ${ROOT_DIR} -name "*.md"` word-split on whitespace, so any input directory path containing a space breaks silently (splits into multiple bogus paths rather than erroring). Pre-existing, not touched by the `test-coverage-bugfix` plan (explicitly out of scope there — that plan''s tests must not assert space-containing paths work, only that the change doesn''t make this worse). Worth a maintainer fix: quote `${ROOT_DIR}` and iterate `SEARCH_DIRS` via a null-safe or newline-safe mechanism instead of unquoted word-splitting.'
     - title: Race on concurrent cold ~/.md2x bootstrap
       id: AOJw
       date: "2026-07-29"
@@ -42,24 +26,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: docs/project-structure.md and AGENTS.md have minor stale doc references (smoke-test target missing from table, docs marked '(planned)' though they exist) - out of this task's scope, phase-02 task 001 owns architecture doc updates
-    - title: --single-page and stdin still do not create -
-      id: MPHT
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: --single-page and stdin still do not create --output-path when missing (same class of bug as the flatten-dirs fix, one-line mkdir -p, but explicitly out of this task's scope per requirement 6) - candidate followup for consistency
-    - title: --flatten-dirs help text in src/cli/md2x.sh n
-      id: rm3a
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: --flatten-dirs help text in src/cli/md2x.sh not updated to match the more precise README.md/spec wording (task named only README and spec) - trivial, candidate followup
     - title: --output-format html on a per-file conversion
       id: c2s9
       date: "2026-07-29"
@@ -140,14 +106,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Surfaced while resolving the pdf-engine-weasyprint plan-branch merge conflict. The bats suite (src/cli/test/bats/) stubs pandoc/gs/pdftk on PATH but not python3, and the merged src/cli/md2x.sh now calls ensure-weasyprint (real python3 -m venv + pip install weasyprint) for every --output-format pdf invocation. On this dev machine ~/.md2x/venv/bin/weasyprint already existed, so make test-cli''s PDF cases took the cheap warm-path check and passed quickly (55/55). On a machine that has never run md2x — including a fresh CI runner — the first PDF-format bats case would trigger a real, ~1-minute, network-dependent WeasyPrint install rather than staying hermetic like the rest of the stubbed suite. Worth a maintainer decision: stub/short-circuit ensure-weasyprint in the bats harness, or document/accept the one-time cold-CI cost.'
-    - title: e2e PDF case skip guard now stale
-      id: zjG5
-      date: "2026-07-29"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Surfaced while resolving the pdf-engine-weasyprint plan-branch merge conflict. src/cli/test/bats/real-toolchain-e2e.bats'' PDF case skips with "pandoc''s PDF engine is unavailable: ''weasyprint'' not found" — it probes for weasyprint on PATH before running. Under the now-merged self-managed WeasyPrint design, weasyprint is deliberately never expected on PATH (md2x calls it via the absolute ~/.md2x/venv/bin/weasyprint path instead), so this guard will now always fire and the PDF e2e case will always skip, even though the conversion would in fact succeed via the managed venv binary. Worth a maintainer fix: update the guard to probe for the venv binary (or just attempt a conversion and let ensure-weasyprint''s own bootstrap/preflight handle unavailability) so this case actually exercises the real toolchain again.'
     - title: 'Design note (not a required fix): unlike pand'
       id: OUbU
       date: "2026-07-30"
