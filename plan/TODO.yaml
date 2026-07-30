@@ -23,6 +23,7 @@ phases:
           path: phase-01-resolve-followups/002-fix-html-output-naming.md
           done: false
           tier: sonnet-med
+          digest: Removed the -base suffix logic from src/cli/md2x.sh's per-file conversion loop so --output-format html now writes <title>.html, parallel to <title>.pdf/<title>.docx naming. Updated output-format.bats, harness-smoke.bats, real-toolchain-e2e.bats, and docs/md2x-spec.md's UC2 text. make test green (66 bats, 17 jest).
           git:
             branch: phase-01-task-02-fix-html-output-naming
             commit:
