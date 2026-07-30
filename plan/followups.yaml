@@ -79,12 +79,3 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Design note (not a required fix): unlike pandoc-log.log and the PDF overlay (both written into the user''s working/output directory), the CSS temp file lives in the system TMPDIR and its path is never surfaced to the user, so --keep-intermediate currently leaves it effectively undiscoverable/orphaned outside the user''s working tree. Implemented per the task doc''s explicit ''either is acceptable'' framing (gated on KEEP_INTERMEDIATE, matching the prescribed line), but flagging for task 003 or a follow-up to consider: always removing it regardless of the flag, or surfacing its path when retained.'
-    - title: Two more temp files added to errexit leak
-      id: MwYH
-      date: "2026-07-30"
-      tags:
-        - plan/phase:restore-pdf-styling
-        - type:optimization
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 (restore-pdf-styling) task 004 incremental review found: BODY_OPEN_TMP_FILE/BODY_CLOSE_TMP_FILE are created unconditionally on every generate-page() call, mirroring CSS_TMP_FILE. Because md2x.sh runs with errexit and generate-page() can be invoked once per file inside a multi-file conversion loop, a mid-invocation pandoc failure skips the cleanup lines the same way it already skips CSS_TMP_FILE cleanup (tracked in followup 9hZL) -- this diff adds two more per-invocation temp files to that same leak surface, tripling (from one file to three) the stray temp files left behind per failed conversion in a batch run. Not blocking -- reproduces an existing, task-doc-mandated pattern rather than introducing a new one. If addressed, do so together with the pre-existing CSS_TMP_FILE leak (followup 9hZL), e.g. via a single trap-based cleanup, rather than as a separate fix.'
