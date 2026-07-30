@@ -1,13 +1,5 @@
 version: 2
 items:
-    - title: Undocumented jq dependency in md2x.sh
-      id: baU7
-      date: "2026-07-29"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Flagged by the planning agent for plan `test-coverage-bugfix`. `src/cli/md2x.sh` (around the VERSION= line) runs `VERSION=$(OUTPUT=$(git status --porcelain) && [ -z "${OUTPUT}" ] && cat package.json | jq ''.version'' || echo ''working'')` on every invocation, not just under `--infer-version` — it shells out to `git` and `jq` and reads `package.json` from the CWD unconditionally. `jq` is not named in the binary preflight check (`gs`/`pandoc`/`pdftk` only), nor in AGENTS.md''s, README.md''s, or docs/md2x-spec.md''s prerequisite lists. When `jq` is missing, the command degrades silently to the literal string ''working'' rather than failing loudly. Worth a maintainer decision: add `jq` to the documented prerequisites and preflight check, or replace it with something that doesn''t add a hidden dependency.'
     - title: Unquoted path expansion breaks on spaces
       id: 95ND
       date: "2026-07-29"
