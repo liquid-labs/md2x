@@ -106,14 +106,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Surfaced while resolving the pdf-engine-weasyprint plan-branch merge conflict. The bats suite (src/cli/test/bats/) stubs pandoc/gs/pdftk on PATH but not python3, and the merged src/cli/md2x.sh now calls ensure-weasyprint (real python3 -m venv + pip install weasyprint) for every --output-format pdf invocation. On this dev machine ~/.md2x/venv/bin/weasyprint already existed, so make test-cli''s PDF cases took the cheap warm-path check and passed quickly (55/55). On a machine that has never run md2x — including a fresh CI runner — the first PDF-format bats case would trigger a real, ~1-minute, network-dependent WeasyPrint install rather than staying hermetic like the rest of the stubbed suite. Worth a maintainer decision: stub/short-circuit ensure-weasyprint in the bats harness, or document/accept the one-time cold-CI cost.'
-    - title: e2e PDF case skip guard now stale
-      id: zjG5
-      date: "2026-07-29"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Surfaced while resolving the pdf-engine-weasyprint plan-branch merge conflict. src/cli/test/bats/real-toolchain-e2e.bats'' PDF case skips with "pandoc''s PDF engine is unavailable: ''weasyprint'' not found" — it probes for weasyprint on PATH before running. Under the now-merged self-managed WeasyPrint design, weasyprint is deliberately never expected on PATH (md2x calls it via the absolute ~/.md2x/venv/bin/weasyprint path instead), so this guard will now always fire and the PDF e2e case will always skip, even though the conversion would in fact succeed via the managed venv binary. Worth a maintainer fix: update the guard to probe for the venv binary (or just attempt a conversion and let ensure-weasyprint''s own bootstrap/preflight handle unavailability) so this case actually exercises the real toolchain again.'
     - title: 'Design note (not a required fix): unlike pand'
       id: OUbU
       date: "2026-07-30"
