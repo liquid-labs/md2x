@@ -35,6 +35,7 @@ phases:
           path: phase-01-resolve-followups/003-fix-md2x-js-shell-injection.md
           done: false
           tier: sonnet-high
+          digest: 'Closed followup arUf by adding a shellQuote helper implementing POSIX single-quote escaping, applied at all four call sites the task doc identified: sources (per-entry), title, outputPath, and the staging path. Added four new Jest cases proving the injection is closed. make test (66 bats + 21 Jest) and make lint green, 100% coverage maintained. Manual trace with a hostile title payload confirmed the fix holds.'
           git:
             branch: phase-01-task-03-fix-md2x-js-shell-injection
             commit:
