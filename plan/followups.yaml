@@ -26,3 +26,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Genuine latent bug: a healthy, readable search root''s files silently vanish (zero exit code, no error beyond find''s own stderr line) merely because it''s listed after an unreadable root. Not fixed per this task''s explicit no-behavior-change assumption. Needs a maintainer decision: abort loudly, or process every root independently regardless of one root''s failure.'
+    - title: 'Informational only: WEASYPRINT_LOCK_TIMEOUT_S'
+      id: ZP4P
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:resolve-followups
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Informational only: WEASYPRINT_LOCK_TIMEOUT_SECS=180 and WEASYPRINT_LOCK_POLL_SECS=1 are fixed constants, not exposed via env-var override, matching the file''s existing style. Worth a maintainer note if future needs (e.g. CI wanting a shorter timeout) arise, but out of this task''s scope.'
