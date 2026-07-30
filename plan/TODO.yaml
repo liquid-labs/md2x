@@ -77,6 +77,7 @@ phases:
           path: phase-01-resolve-followups/007-surface-css-temp-file-path.md
           done: false
           tier: sonnet-med
+          digest: Added a one-time stderr announcement of the CSS temp file's path in src/cli/md2x.sh, printed whenever --keep-intermediate is set (independent of --quiet), firing exactly once per invocation. Extended bats coverage and updated README.md/docs/md2x-spec.md. Full make test suite (67 bats, 17 Jest, 100% coverage) is green.
           git:
             branch: phase-01-task-07-surface-css-temp-file-path
             commit:
