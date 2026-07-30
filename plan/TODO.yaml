@@ -74,7 +74,7 @@ phases:
             branch: phase-01-task-06-stub-weasyprint-bootstrap-in-b
             commit:
                 - 0788ca0
-            merge: null
+            merge: 4f6fb346ba78df307c94b01d69dcafb8d0ea8768
         - number: 7
           slug: surface-css-temp-file-path
           title: Surface The CSS Temp File Path Under --keep-intermediate
