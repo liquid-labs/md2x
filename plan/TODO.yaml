@@ -56,3 +56,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 6
+          slug: stub-weasyprint-bootstrap-in-bats
+          title: Stub WeasyPrint Bootstrap In The Bats Test Harness
+          path: phase-01-resolve-followups/006-stub-weasyprint-bootstrap-in-bats.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
