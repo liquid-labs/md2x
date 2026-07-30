@@ -13,12 +13,13 @@
 # The invocation (argv[0] basename plus the full argument vector, tab separated) is
 # appended to "${MD2X_TEST_STUB_LOG}" when that variable is set.
 #
-# When "${MD2X_TEST_STUB_CAPTURE_DIR}" is set, the content behind the three
-# process-substitution arguments the CLI builds ('--metadata-file', '--css', and the
-# rewritten input document) is captured there as
-# 'pandoc-<n>-metadata', 'pandoc-<n>-css' and 'pandoc-<n>-input', where <n> is the
-# 1-based invocation number recorded in 'pandoc.count'. Those fds are readable exactly
-# once, so the stub always drains them.
+# When "${MD2X_TEST_STUB_CAPTURE_DIR}" is set, the content behind the five
+# process-substitution/file arguments the CLI builds ('--metadata-file', '--css', the
+# rewritten input document, '--include-before-body', and '--include-after-body') is
+# captured there as 'pandoc-<n>-metadata', 'pandoc-<n>-css', 'pandoc-<n>-input',
+# 'pandoc-<n>-body-open' and 'pandoc-<n>-body-close', where <n> is the 1-based
+# invocation number recorded in 'pandoc.count'. Those fds are readable exactly once, so
+# the stub always drains them.
 #
 # Two env vars let a test drive the stub's own stderr/exit behaviour, following the
 # same override convention '../stubs/pdftk' uses for 'MD2X_TEST_STUB_PAGE_COUNT' /
@@ -48,6 +49,8 @@ METADATA_FILE=''
 CSS_FILE=''
 INPUT_FILE=''
 TO_FORMAT=''
+INCLUDE_BEFORE_FILE=''
+INCLUDE_AFTER_FILE=''
 
 ARGS=("$@")
 I=0
@@ -63,6 +66,10 @@ while (( I < ${#ARGS[@]} )); do
       CSS_FILE="${ARGS[I + 1]:-}"; I=$(( I + 2 ));;
     --to)
       TO_FORMAT="${ARGS[I + 1]:-}"; I=$(( I + 2 ));;
+    --include-before-body)
+      INCLUDE_BEFORE_FILE="${ARGS[I + 1]:-}"; I=$(( I + 2 ));;
+    --include-after-body)
+      INCLUDE_AFTER_FILE="${ARGS[I + 1]:-}"; I=$(( I + 2 ));;
     --from)
       I=$(( I + 2 ));;
     -*)
@@ -76,9 +83,13 @@ done
 INPUT_CONTENT=''
 METADATA_CONTENT=''
 CSS_CONTENT=''
+BODY_OPEN_CONTENT=''
+BODY_CLOSE_CONTENT=''
 [[ -z "${INPUT_FILE}" ]] || ! [[ -r "${INPUT_FILE}" ]] || INPUT_CONTENT="$(cat -- "${INPUT_FILE}")"
 [[ -z "${METADATA_FILE}" ]] || ! [[ -r "${METADATA_FILE}" ]] || METADATA_CONTENT="$(cat -- "${METADATA_FILE}")"
 [[ -z "${CSS_FILE}" ]] || ! [[ -r "${CSS_FILE}" ]] || CSS_CONTENT="$(cat -- "${CSS_FILE}")"
+[[ -z "${INCLUDE_BEFORE_FILE}" ]] || ! [[ -r "${INCLUDE_BEFORE_FILE}" ]] || BODY_OPEN_CONTENT="$(cat -- "${INCLUDE_BEFORE_FILE}")"
+[[ -z "${INCLUDE_AFTER_FILE}" ]] || ! [[ -r "${INCLUDE_AFTER_FILE}" ]] || BODY_CLOSE_CONTENT="$(cat -- "${INCLUDE_AFTER_FILE}")"
 
 if [[ -n "${MD2X_TEST_STUB_CAPTURE_DIR:-}" ]] && [[ -d "${MD2X_TEST_STUB_CAPTURE_DIR}" ]]; then
   COUNT_FILE="${MD2X_TEST_STUB_CAPTURE_DIR}/pandoc.count"
@@ -89,6 +100,8 @@ if [[ -n "${MD2X_TEST_STUB_CAPTURE_DIR:-}" ]] && [[ -d "${MD2X_TEST_STUB_CAPTURE
   printf '%s\n' "${INPUT_CONTENT}" > "${MD2X_TEST_STUB_CAPTURE_DIR}/pandoc-${CALL_NUMBER}-input"
   printf '%s\n' "${METADATA_CONTENT}" > "${MD2X_TEST_STUB_CAPTURE_DIR}/pandoc-${CALL_NUMBER}-metadata"
   printf '%s\n' "${CSS_CONTENT}" > "${MD2X_TEST_STUB_CAPTURE_DIR}/pandoc-${CALL_NUMBER}-css"
+  printf '%s\n' "${BODY_OPEN_CONTENT}" > "${MD2X_TEST_STUB_CAPTURE_DIR}/pandoc-${CALL_NUMBER}-body-open"
+  printf '%s\n' "${BODY_CLOSE_CONTENT}" > "${MD2X_TEST_STUB_CAPTURE_DIR}/pandoc-${CALL_NUMBER}-body-close"
 fi
 
 # --- reproduce the side effects the CLI depends on ---------------------------------

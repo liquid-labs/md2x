@@ -117,4 +117,35 @@ architectural_impact: false
 
 - After implementing and testing the `generate-page.sh` change (Requirements 1-3) in isolation via a manual Pandoc invocation, before touching the test stub.
 - After extending the `pandoc` stub (Requirement 4), before writing the new bats cases that depend on it.
+
+## Status
+
+**Outcome:** succeeded. **Date:** 2026-07-29.
+
+Implemented all six requirements exactly as specified. `generate-page()` in `src/cli/lib/generate-page.sh` now defines `MARKDOWN_BODY_OPEN`/`MARKDOWN_BODY_CLOSE`, writes them into `BODY_OPEN_TMP_FILE`/`BODY_CLOSE_TMP_FILE` via the same trailing-`X`-only `mktemp` idiom `CSS_TMP_FILE` uses (no `.css`-style forced-extension/`mv` workaround needed here, per the task doc's Requirement 2 rationale), and passes `--include-before-body ${BODY_OPEN_TMP_FILE} --include-after-body ${BODY_CLOSE_TMP_FILE}` in both Pandoc invocations gated by the same `[[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo ...` conditional-word-splitting idiom already used for `--toc`/`--pdf-engine`. Both temp files are always created but only conditionally referenced on the Pandoc command line, and both are cleaned up under the existing `KEEP_INTERMEDIATE` gate alongside `CSS_TMP_FILE`.
+
+`src/cli/test/stubs/pandoc` now parses `--include-before-body`/`--include-after-body`, drains and (when `MD2X_TEST_STUB_CAPTURE_DIR` is set) captures their content as `pandoc-<n>-body-open`/`pandoc-<n>-body-close`, and its header comment documents the two new captured kinds alongside the existing `metadata`/`css`/`input` ones.
+
+**Automated coverage (Requirement 5):** added to `src/cli/test/bats/pandoc-args.bats`:
+- `--keep-intermediate retains the body-open/body-close temp files handed to pandoc after conversion` and its `without --keep-intermediate ... removed` counterpart, mirroring the existing CSS temp-file pair, using `grep 'md2x-body-open\.'` / `'md2x-body-close\.'` to locate each path.
+- `pdf output wraps the body in a markdown-body div ...` and the `html output ...` equivalent, asserting `assert_last_call_has_arg` for both flags and that `md2x_pandoc_capture body-open`/`body-close` are exactly `<div class="markdown-body">` and `</div>`.
+- `docx output never includes --include-before-body/--include-after-body`, using `refute_last_call_has_arg` for both flags — the load-bearing DOCX-corruption regression guard.
+
+Extended `src/cli/test/bats/real-toolchain-e2e.bats`'s existing `"e2e: tiny-doc.md converts to real HTML with recognizable Pandoc/CSS markup"` case with `assert_file_contains './tiny-doc-base.html' 'class="markdown-body"'` — genuine (non-stub) Pandoc proof the wrapper div lands in real output.
+
+`make all && make test-cli` passes 66/66 (0 skipped except the pre-existing, environment-specific PDF-engine-probe skip on case 61, unrelated to this task — see below).
+
+**Real-render confirmation (Requirement 6):** this environment has a real `pandoc` (Homebrew), `gs`, `pdftk`, and a bootstrapped WeasyPrint at `~/.md2x/venv/bin/weasyprint` (version 69.0, pre-existing in this worktree's home directory), so the full real-conversion check was performed, not just stated as blocked. Ran `./bin/md2x` against `src/cli/test/tiny-doc.md` with default (PDF) output, rasterized with `gs -sDEVICE=png16m -r150`, and visually inspected the PNG. Checklist result, item by item:
+- Sans-serif GitHub-style body font: confirmed — body text renders in a humanist sans-serif face, not a serif/Times-New-Roman font.
+- Visible background box behind the fenced code block: confirmed — a light gray box with syntax-highlighted content (`echo "fenced code block"`) is clearly rendered behind the code block.
+- Table cell borders/striping: confirmed — the Format/Engine table shows visible cell borders on every row.
+- H1>H2>H3 size/weight hierarchy: confirmed — "Tiny Doc" (H1) is visibly larger/bolder than "A Second-Level Heading" (H2), which is in turn larger/bolder than "A Third-Level Heading" (H3).
+
+Additionally (beyond the task doc's explicit checklist, but directly relevant to Requirement 3's correctness claim): ran a real, non-stub `--output-format docx` conversion of the same fixture and inspected `word/document.xml` inside the resulting `.docx` — `grep -c '<div' word/document.xml` returned `0`, confirming the DOCX-exclusion gate holds against the real toolchain, not just the stub-based bats coverage.
+
+**shellcheck:** `shellcheck src/cli/lib/generate-page.sh` reports 19 findings on the post-change file versus 17 on the pre-change file (both counted programmatically via `shellcheck -f json`, not by eyeballing raw text) — task 001's `## Status` recorded 15 as its own baseline, so the pre-change count here (17) already reflects some drift since task 001 landed, from intervening changes unrelated to this task. The 2 new findings (both `SC2046 Quote this to prevent word splitting`, on the two new `$( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo "--include-before-body ... --include-after-body ..." )` conditional lines) are not a new *class* of issue — they are additional instances of the exact same warning already present on the pre-existing, adjacent `--toc` and `--pdf-engine` conditionals that use the identical idiom the task doc's Requirement 3 explicitly mandated reusing. Flagged for the manager below since the task doc's Validation bullet implies zero new warnings, which is not literally achievable while following Requirement 3's specified idiom.
+
+**Assumptions applied:** all three of this task doc's `## Assumptions` held as stated — tasks 001/002 were already landed in this worktree, `github.css` has no `body.markdown-body`-anchored rule, and wrapping the whole rendered body (title header + `--toc` nav + content) in the div was confirmed harmless/desirable, matching what the real-render confirmation above shows.
+
+Affected files: `src/cli/lib/generate-page.sh`, `src/cli/test/stubs/pandoc`, `src/cli/test/bats/pandoc-args.bats`, `src/cli/test/bats/real-toolchain-e2e.bats`.
 - After the automated bats coverage (Requirement 5) passes, before performing the real-render confirmation (Requirement 6), since the latter is a report-only step with no further code changes.
