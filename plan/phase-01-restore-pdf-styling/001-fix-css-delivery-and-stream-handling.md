@@ -64,3 +64,17 @@ Run `make test-cli` (which depends on `make all`) locally and confirm all cases 
 ## Metadata
 
 architectural_impact: false
+
+## Status
+
+**Outcome:** succeeded. **Date:** 2026-07-29.
+
+Implemented all three requirements in `src/cli/lib/generate-page.sh`, `src/cli/test/stubs/pandoc`, `src/cli/test/bats/pandoc-args.bats`, and a new `src/cli/test/bats/pandoc-stream-handling.bats`. `make all && make test-cli` passes 61/61 (5 new cases plus 2 extended `--keep-intermediate` cases). `shellcheck src/cli/lib/generate-page.sh` reports the identical 15-warning set as before this change (verified by diffing shellcheck's error-code output against the pre-change file) — no new warnings introduced.
+
+**Deviation from Requirement 1's literal `mktemp` guidance:** the task doc's assumption that `mktemp "${TMPDIR:-/tmp}/md2x-css.XXXXXX.css"` (a literal suffix after the `X`s) randomizes correctly on BSD/macOS `mktemp` does not hold on this worktree's actual macOS `/usr/bin/mktemp` (Darwin 25.6.0): empirically verified that when the `X` run is not the template's trailing characters, this `mktemp` returns the template *unrandomized* (verbatim), so a second call within the same process/session collides with `mkstemp failed ... File exists` against the first call's still-existing file — this is not a hypothetical, it broke 9 of the new/existing bats cases (including `real-toolchain-e2e.bats` and `single-page-and-stdin.bats` cases unrelated to this task, since every PDF/HTML/DOCX conversion calls `generate-page()`). GNU coreutils `mktemp` (verified via Homebrew's `gmktemp` on the same machine) does correctly randomize with a trailing literal suffix, confirming this is a genuine BSD-vs-GNU `mktemp` behavior difference, not an environment misconfiguration. Implemented the `mktemp "...XXXXXX"` (trailing-`X`-only) + `mv "${CSS_TMP_FILE}" "${CSS_TMP_FILE}.css"` workaround the task doc explicitly said wasn't needed — it is needed for correctness on real macOS. All other requirements (both `--css` call sites, `KEEP_INTERMEDIATE`-gated cleanup, stderr-merge removal, `1>/dev/null` defensive redirect with a documenting comment, no `2>&1`) were implemented as specified.
+
+**Decision — `KEEP_INTERMEDIATE` gates CSS temp-file cleanup:** implemented literally as the task doc's Requirement 1 prescribed (`[[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${CSS_TMP_FILE}"`), mirroring the existing `pandoc-log.log` convention. Flagged for the manager below: unlike the Pandoc log and PDF overlay (both written into the user's working/output directory, so `--keep-intermediate` leaves them somewhere the user will actually see), the CSS temp file lives in the *system* `TMPDIR` and its path is never printed to the user — so `--keep-intermediate` currently leaves an orphaned, effectively undiscoverable file outside the user's working tree. Left as-is per the task doc's explicit "either is acceptable" framing, but worth task 003 (or a follow-up) considering whether to always remove it, or to surface its path when retained.
+
+**Assumptions applied:** `TMPDIR` may be unset (used `"${TMPDIR:-/tmp}"`); Pandoc's own stdout is inert when `-o <file>` is given (added `1>/dev/null` anyway as the task doc's optional defense-in-depth, documented in a code comment); this task's automated coverage is stub-based only and does not curate real WeasyPrint stderr volume (per `## Assumptions`' third bullet).
+
+Affected files: `src/cli/lib/generate-page.sh`, `src/cli/test/stubs/pandoc`, `src/cli/test/bats/pandoc-args.bats`, `src/cli/test/bats/pandoc-stream-handling.bats` (new).
