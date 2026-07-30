@@ -34,10 +34,25 @@ EOF
   CSS_TMP_FILE="${CSS_TMP_FILE}.css"
   printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
 
+  # 'github.css' scopes every rule under a bare '.markdown-body' class selector, and
+  # neither Pandoc's default html5 template nor a '-V'/'--variable' metadata hook puts
+  # that class anywhere in the generated document. '--include-before-body'/
+  # '--include-after-body' inject literal content just inside the opening/closing
+  # '<body>' tag, so wrapping the whole rendered body in this div satisfies those
+  # selectors exactly as well as a class on '<body>' itself would (see task doc
+  # plan/phase-01-restore-pdf-styling/004-wrap-generated-body-in-markdown-body-div.md).
+  MARKDOWN_BODY_OPEN='<div class="markdown-body">'
+  MARKDOWN_BODY_CLOSE='</div>'
+  BODY_OPEN_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-body-open.XXXXXX")"
+  BODY_CLOSE_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-body-close.XXXXXX")"
+  printf '%s' "${MARKDOWN_BODY_OPEN}" > "${BODY_OPEN_TMP_FILE}"
+  printf '%s' "${MARKDOWN_BODY_CLOSE}" > "${BODY_CLOSE_TMP_FILE}"
+
   if [[ -z "${INPUT}" ]]; then
     pandoc \
       $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
       $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
+      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo "--include-before-body ${BODY_OPEN_TMP_FILE} --include-after-body ${BODY_CLOSE_TMP_FILE}" ) \
       --quiet \
       --standalone \
       --from gfm \
@@ -58,6 +73,7 @@ EOF
     pandoc \
       $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
       $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
+      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo "--include-before-body ${BODY_OPEN_TMP_FILE} --include-after-body ${BODY_CLOSE_TMP_FILE}" ) \
       --quiet \
       --standalone \
       --from gfm \
@@ -71,6 +87,8 @@ EOF
   fi
   [[ -n "${KEEP_INTERMEDIATE}" ]] || rm pandoc-log.log
   [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${CSS_TMP_FILE}"
+  [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${BODY_OPEN_TMP_FILE}"
+  [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${BODY_CLOSE_TMP_FILE}"
 
   if [[ "${OUTPUT_FORMAT}" == 'pdf' ]]; then
     # generate headers and footers as a separate document and overlay them.
