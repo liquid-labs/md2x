@@ -26,3 +26,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Validation check 6 (python3 preflight failure) was not exercised live: brew''s self-location depends on /opt/homebrew/bin staying on PATH, which also hosts python3/gs/pandoc on this dev machine, so a live PATH-exclusion test could not be safely constructed. Verified by code inspection (identical preflight-loop idiom as gs/pandoc/pdftk) instead. Recommend re-verifying live in an environment where python3 is not colocated with brew/gs/pandoc.'
+    - title: 'Genuine latent bug: a healthy, readable searc'
+      id: S92a
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:resolve-followups
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Genuine latent bug: a healthy, readable search root''s files silently vanish (zero exit code, no error beyond find''s own stderr line) merely because it''s listed after an unreadable root. Not fixed per this task''s explicit no-behavior-change assumption. Needs a maintainer decision: abort loudly, or process every root independently regardless of one root''s failure.'
