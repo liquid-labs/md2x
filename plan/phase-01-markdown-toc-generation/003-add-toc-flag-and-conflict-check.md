@@ -110,3 +110,62 @@ independent of tasks 001 and 002 and may run concurrently with them.
 - `src/cli/test/bats/exit-codes.bats` — the idiom for asserting a fatal path names its cause and
   leaves no artifacts.
 - `src/node/md2x.test.js` — the existing option-mapping test style.
+
+## Status
+
+**Outcome: succeeded** (2026-07-30).
+
+All seven requirements implemented and verified:
+
+1. Added `TOC:` (long-only, boolean) to the `setSimpleOptions` spec in `src/cli/md2x.sh`, placed
+   after `TO_STDOUT:s` and before the existing `NO_TOC`. Confirmed `TOC:`'s trailing colon
+   prevents it from claiming `-t` (already owned by `TITLE:t=`); `--no-toc` still claims `-n` as
+   before, untouched.
+2. Added the conflict check (`echoerrandexit "Cannot specify both '--toc' and '--no-toc'."`)
+   immediately after the existing `test_formats` validation and before the `ensure-weasyprint`
+   call, so the conflict aborts before any network-triggering or conversion work.
+3. Added the `TOC_MODE` resolution block (`auto`/`on`/`off`) directly after the conflict check.
+   Nothing reads it yet (task 004's concern); `NO_TOC`'s existing use in
+   `src/cli/lib/generate-page.sh` is untouched.
+4. Rewrote the `--help` heredoc: added a `--toc` entry and rewrote `--no-toc`'s wording to cover
+   TOC self-generation across all three formats, the `<!-- md2x:toc -->` marker, the
+   >2-pages-and->=4-sections default heuristic, and the both-flags-is-an-error rule. The retired
+   "docx output never receives" phrase is gone.
+5. Added `toc` to `src/node/md2x.js`'s destructured options and pushes `--toc` when truthy,
+   mirroring `noToc`'s existing handling and placed adjacent to it in both the destructuring and
+   push order.
+6. Added `src/cli/test/bats/toc-flags.bats` (new file, per the task doc's "getting long"
+   allowance) covering: both-flags-together in each order (non-zero exit, both flags named on
+   stderr, no output file, `pandoc` never invoked), `--toc` alone and `--no-toc` alone each still
+   converting, `--help` mentioning `--toc` and no longer containing the retired phrase, and a
+   `-t`-not-stolen regression check (see the one exception below). Added a `toc`/`--toc` case to
+   the existing `test.each` table in `src/node/md2x.test.js`, alongside `noToc`.
+7. Left the existing `pandoc-args.bats` `--toc`/`--no-toc` Pandoc-argument cases untouched.
+
+**One validation-checklist item needed substitution, not a fix, and is flagged below rather than
+silently reinterpreted.** The checklist's literal command —
+`./bin/md2x -t Foo --infer-title --output-format html --flatten-dirs --output-path . x.md` should
+produce `Foo.html` — does **not** hold, on the unmodified baseline as well as after this task's
+change: `src/cli/md2x.sh`'s main per-file conversion loop unconditionally overwrites `TITLE` from
+each input file's own basename (`TITLE=$(basename "${MD_FILE}" .md)`, line ~275, pre-dating this
+task per `git log`), so `--title`/`-t` has no effect on a directly-named, non-`--single-page`,
+non-stdin conversion's output filename or embedded metadata — confirmed by running the exact
+literal command against a build of this task's change: it produces `x.html` with `<title>x</title>`,
+not `Foo.html`. This is unrelated to, and predates, the `TOC:` option-spec change; the property the
+checklist item actually cares about — that `-t` still parses as the title option and was not
+stolen by `TOC:`'s short-option derivation — is independently true and is verified in
+`toc-flags.bats` via the `--single-page` code path, which does honor `--title` (matching the
+pattern already established in `single-page-and-stdin.bats`). Fixing the per-file `--title`
+precedence bug itself is out of this task's stated scope (`src/cli/md2x.sh` option
+spec/validation/help text only) and carries its own design questions (e.g. what a shared `--title`
+should do across a multi-file batch, where every file would otherwise collide on one output name)
+that deserve a dedicated task, not a rider here. See `flagged_for_manager` in this task's
+structured report.
+
+Affected source files: `src/cli/md2x.sh`, `src/node/md2x.js`, `src/node/md2x.test.js`,
+`src/cli/test/bats/toc-flags.bats`.
+
+Validation: `make test` (`test-cli` 78/78, `test-node` 23/23) and `make lint` both pass. The
+`./bin/md2x --toc --no-toc report.md`, `--help` grep, and `grep -n 'TOC_MODE'` checklist items all
+pass as literally specified. The `-t Foo`/`Foo.html` checklist item is not-applicable per the
+explanation above.

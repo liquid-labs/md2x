@@ -22,7 +22,7 @@ source ./lib/index.sh
 # $(npm bin)/gucci ./cloud/auths/environment/devops-admin-auths.yaml.tmpl
 
 # extract options
-eval "$(setSimpleOptions --script FLATTEN_DIRS:D INFER_TITLE: INFER_VERSION KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s NO_TOC HELP:h -- "$@")"
+eval "$(setSimpleOptions --script FLATTEN_DIRS:D INFER_TITLE: INFER_VERSION KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s TOC: NO_TOC HELP:h -- "$@")"
 
 if [[ -n "${HELP}" ]]; then
   cat <<'EOF'
@@ -72,9 +72,16 @@ Options:
                               of "Created <file>".
   -s, --to-stdout            Write the converted output to stdout (implies
                               --quiet).
-      --no-toc               Suppress the table of contents Pandoc otherwise
-                              adds for pdf/html output (docx output never
-                              receives an automatic TOC).
+      --toc                  Force a table of contents; overrides the
+                              default heuristic below (see --no-toc).
+      --no-toc               Suppress the table of contents. md2x
+                              generates the TOC itself for pdf, html, and
+                              docx alike, placed at a '<!-- md2x:toc -->'
+                              marker (or after the title, absent one).
+                              With neither flag, a TOC is added only to
+                              documents of more than about two pages with
+                              four or more top-level sections. Giving both
+                              flags is an error.
   -h, --help                 Print this help text and exit.
 
 Examples:
@@ -110,6 +117,16 @@ test_formats() {
 }
 [[ -n "${OUTPUT_FORMAT}" ]] || OUTPUT_FORMAT='pdf'
 test_formats || echoerrandexit "Unsupported output format '${OUTPUT_FORMAT}'."
+
+# '--toc' and '--no-toc' resolve to a single 'TOC_MODE' the pipeline consumes; giving
+# both is fatal, and must be checked before 'ensure-weasyprint' below, which can
+# trigger a minute-long network install on a cold machine -- the conflict must abort
+# before any conversion work begins.
+[[ -z "${TOC}" ]] || [[ -z "${NO_TOC}" ]] \
+  || echoerrandexit "Cannot specify both '--toc' and '--no-toc'."
+TOC_MODE='auto'
+[[ -z "${TOC}" ]] || TOC_MODE='on'
+[[ -z "${NO_TOC}" ]] || TOC_MODE='off'
 
 [[ -n "${OUTPUT_PATH}" ]] || OUTPUT_PATH='.'
 
