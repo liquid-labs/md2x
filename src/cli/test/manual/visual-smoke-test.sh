@@ -43,6 +43,14 @@ for OUTPUT_FORMAT in ${OUTPUT_FORMATS}; do
   list-add-item FILES "${FILE}"
 done
 
+echo ""
+echo "Before closing, review the PDF specifically for GitHub CSS styling:"
+echo "  [ ] Headings show a visible size/weight hierarchy (H1 > H2 > H3), not uniform body text."
+echo "  [ ] The fenced code block is rendered in a monospace font with a distinct background,"
+echo "      and the inline code span is visually distinguishable from surrounding prose."
+echo "  [ ] The table renders with visible cell borders/structure, not as unstyled run-on text."
+echo "  [ ] The overall body font is GitHub's sans-serif style, not a default serif/LaTeX-style font."
+echo ""
 echo "Please review open files and then hit enter to close..."
 read -r THROW_AWAY
 
