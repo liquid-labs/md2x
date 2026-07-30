@@ -30,7 +30,7 @@ phases:
             branch: phase-01-task-02-extend-visual-smoke-test-for-c
             commit:
                 - 60edbc9
-            merge: null
+            merge: 6874f82
         - number: 3
           slug: update-stale-pdf-styling-docs
           title: Update Stale Pdf Styling Docs
