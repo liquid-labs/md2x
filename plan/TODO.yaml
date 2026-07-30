@@ -49,7 +49,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-04-document-find-pipe-abort-seman
-            commit: []
+            commit:
+                - 487e0c9
             merge: null
         - number: 5
           slug: document-weasyprint-ssrf-caveat
