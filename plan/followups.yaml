@@ -24,24 +24,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Flagged by the planning agent for plan `pdf-engine-weasyprint`. The new WeasyPrint bootstrap (src/cli/lib/ensure-weasyprint.sh, introduced by that plan) creates `~/.md2x/venv` in place on first PDF conversion (python3 -m venv + ensurepip + pip install weasyprint), gated by a simple `[[ -x ~/.md2x/venv/bin/weasyprint ]]` existence check. If two `md2x` processes race a cold bootstrap concurrently (e.g. two PDF conversions kicked off at once on a machine that has never run md2x before), their venv-creation and pip-install steps can interleave and corrupt the shared `~/.md2x/venv` directory. The plan deliberately deferred hardening this (no staging-dir build + atomic rename, no lockfile) in favor of matching the repo''s plain-bash style; a partially-built venv is expected to self-heal on a later run since the `-x` gate simply fails again and retries the bootstrap, but a genuinely concurrent race during the initial cold start is not guarded against. Worth a maintainer decision: accept the risk (probably fine given cold-start is a one-time, human-triggered event) or add a lockfile/staging-dir mechanism.'
-    - title: bin/md2x hard-requires Homebrew on macOS (bre
-      id: H7ej
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: bin/md2x hard-requires Homebrew on macOS (brew --prefix gnu-getopt) - undocumented, possible followup, out of scope here
-    - title: 'docs/project-structure.md and AGENTS.md have '
-      id: LPg7
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: docs/project-structure.md and AGENTS.md have minor stale doc references (smoke-test target missing from table, docs marked '(planned)' though they exist) - out of this task's scope, phase-02 task 001 owns architecture doc updates
     - title: --single-page and stdin still do not create -
       id: MPHT
       date: "2026-07-29"
@@ -114,24 +96,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Flagged by the phase-01 (weasyprint-pdf-engine) phase-review security lens, minor/low-confidence. Pinning --pdf-engine to WeasyPrint (this phase) makes WeasyPrint the actual PDF renderer again (previously this path errored on Pandoc >= 3.4, so it was unreachable in practice). WeasyPrint''s default posture fetches external resources referenced in rendered HTML (image src, @import/url() in CSS, including file:// URLs) with no built-in allowlist. md2x is a CLI a user runs against their own documents (low risk there), but it''s also published as an npm library (src/node/md2x.js, md2x({ markdown, ... })) that a consuming application could embed to render externally-supplied Markdown — in which case resource references in that content could be used for SSRF or local file disclosure via WeasyPrint''s fetch behavior. Nothing in this phase''s diff changes or introduces that fetch behavior (intrinsic to WeasyPrint, and was already true of the previous wkhtmltopdf-based path when it worked), but this phase is what makes it reachable again. Worth a maintainer decision: document the caveat for library consumers (a caller embedding md2x against externally-authored content should apply the same precautions as any other SSRF-capable rendering path — network egress restrictions, or a WeasyPrint URL fetcher override), or decide it''s out of scope / the caller''s responsibility.'
-    - title: docs/architecture.md's Pointers section still
-      id: yn0V
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:doc-updates
-        - priority:unspecified
-        - effort:unspecified
-      text: docs/architecture.md's Pointers section still calls docs/project-structure.md '(planned)' — pre-existing staleness, unrelated to this plan, not in the task's Requirements list.
-    - title: AGENTS.md (two spots) and docs/project-struct
-      id: tTl2
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:doc-updates
-        - priority:unspecified
-        - effort:unspecified
-      text: AGENTS.md (two spots) and docs/project-structure.md (one spot) still describe docs/architecture.md as '(planned)'/not-yet-existing, contradicting reality — those three files belong to Phase 01 task 002's file set, out of this task's boundaries.
     - title: bats PDF cases can cold-install weasyprint
       id: efJF
       date: "2026-07-29"
@@ -157,15 +121,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Design note (not a required fix): unlike pandoc-log.log and the PDF overlay (both written into the user''s working/output directory), the CSS temp file lives in the system TMPDIR and its path is never surfaced to the user, so --keep-intermediate currently leaves it effectively undiscoverable/orphaned outside the user''s working tree. Implemented per the task doc''s explicit ''either is acceptable'' framing (gated on KEEP_INTERMEDIATE, matching the prescribed line), but flagging for task 003 or a follow-up to consider: always removing it regardless of the flag, or surfacing its path when retained.'
-    - title: docs/architecture.md's 'Page generation / con
-      id: djfw
-      date: "2026-07-30"
-      tags:
-        - type:ambiguity
-        - plan/phase:restore-pdf-styling
-        - priority:unspecified
-        - effort:unspecified
-      text: docs/architecture.md's 'Page generation / conversion pipeline' component description says intermediate-artifact cleanup covers 'the Pandoc log and, for PDF, the overlay file' — it does not mention the CSS temp file, which generate-page.sh now also creates and cleans up (for every output format, not just PDF). Pre-existing omission, not a contradiction introduced by this task's edits; task doc explicitly scoped no edit to that section — flagging for the manager to decide whether a follow-up doc task should tighten that sentence.
     - title: CSS temp file leaks on pandoc failure
       id: 9hZL
       date: "2026-07-30"
@@ -184,24 +139,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Phase-01 (restore-pdf-styling) combined review found: $CSS is static, deterministic content that never varies across generate-page() calls within a single md2x invocation, but src/cli/md2x.sh calls generate-page() once per Markdown file inside a loop when converting a directory or multiple files (--flatten-dirs/recursive batch mode). The new mktemp+mv+printf sequence in generate-page.sh now performs real filesystem I/O (two process spawns plus a file write) once per input file in a batch conversion, to recreate identical content each time, where the prior process-substitution delivery was a per-invocation in-memory pipe. For a project with many Markdown files this is an easily-avoidable linear per-file cost. Suggested fix: hoist CSS temp-file creation out of generate-page() to run once per md2x invocation (e.g. in src/cli/md2x.sh before the per-file loop), passing the path in; clean up once after the batch completes.'
-    - title: CHANGELOG.md unreachable from README
-      id: vjPJ
-      date: "2026-07-30"
-      tags:
-        - plan/phase:restore-pdf-styling
-        - type:documentation
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 (restore-pdf-styling) phase-review''s documentation link-chain check found: CHANGELOG.md is not reachable from README.md (README links only to AGENTS.md, docs/md2x-spec.md, docs/architecture.md, docs/project-structure.md, which all cross-link back into that same reachable set). Pre-existing condition, not introduced or touched by this phase''s diff (confirmed via git log — CHANGELOG.md''s own history and this phase''s README.md diff don''t intersect). Worth a maintainer decision: add a README link to CHANGELOG.md, or explicitly treat CHANGELOG.md as exempt from the project''s link-chain convention.'
-    - title: 'Per the task doc''s own note: a documentation '
-      id: qbZF
-      date: "2026-07-30"
-      tags:
-        - type:ambiguity
-        - plan/phase:restore-pdf-styling
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Per the task doc''s own note: a documentation follow-up remains open -- docs/architecture.md''s ''Bundled stylesheet''/''Page generation'' prose does not yet describe this --include-before-body/--include-after-body mechanism. Explicitly out of this task''s scope.'
     - title: markdown-body flags unquoted word-split risk
       id: 5gem
       date: "2026-07-30"

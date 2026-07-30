@@ -10,10 +10,13 @@ md2x requires the following external binaries on `PATH`:
 - [Ghostscript](https://www.ghostscript.com/) (`gs`)
 - [`pdftk`](https://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/)
 - [`python3`](https://www.python.org/)
+- [`jq`](https://jqlang.org/)
 
 md2x checks for these at startup and exits (code `2`) naming the first missing binary.
 
 [WeasyPrint](https://weasyprint.org/) — the engine Pandoc uses to render PDF output — is **not** a manual prerequisite: md2x installs it automatically into an isolated per-user virtual environment at `~/.md2x/venv` the first time a PDF conversion runs, printing a one-time notice while it does so. `python3` is what makes this possible, which is why it's on the list above. That first PDF conversion therefore takes noticeably longer and needs network access; `rm -rf ~/.md2x/venv` forces a clean reinstall on the next PDF conversion.
+
+On macOS, [Homebrew](https://brew.sh/) must also be installed: md2x's option parser resolves GNU getopt via `brew --prefix gnu-getopt` on every invocation, on macOS only.
 
 Install md2x itself as an npm dependency, or globally for the standalone CLI:
 
@@ -94,6 +97,7 @@ Every PDF md2x generates gets a footer with page numbers ("Page X of Y"), and, o
 - Full specification: [docs/md2x-spec.md](./docs/md2x-spec.md)
 - Architecture and conversion pipeline: [docs/architecture.md](./docs/architecture.md)
 - Project structure and file layout: [docs/project-structure.md](./docs/project-structure.md)
+- Release history: [CHANGELOG.md](./CHANGELOG.md)
 
 ## License
 

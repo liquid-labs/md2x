@@ -76,11 +76,13 @@ Every invocation, whichever entry point it starts from, performs the same sequen
 
 ### Page generation / conversion pipeline
 
-`src/cli/lib/generate-page.sh` is the core of the system: it builds and runs the Pandoc invocation (embedding metadata, the bundled CSS, and the TOC flag; for PDF output, pinning `--pdf-engine` to the absolute path of the [managed WeasyPrint binary](#weasyprint-bootstrap) rather than relying on `PATH`), applies the link-rewriting substitution to relative `.md` links, and — for PDF output — computes page dimensions from `pdftk ... dump_data`, renders the Ghostscript PostScript overlay, and merges it with `pdftk ... multistamp`. It also owns intermediate-artifact cleanup (the Pandoc log and, for PDF, the overlay file) unless `--keep-intermediate` is given.
+`src/cli/lib/generate-page.sh` is the core of the system: it builds and runs the Pandoc invocation (embedding metadata, the bundled CSS, and the TOC flag; for PDF output, pinning `--pdf-engine` to the absolute path of the [managed WeasyPrint binary](#weasyprint-bootstrap) rather than relying on `PATH`), applies the link-rewriting substitution to relative `.md` links, and — for PDF output — computes page dimensions from `pdftk ... dump_data`, renders the Ghostscript PostScript overlay, and merges it with `pdftk ... multistamp`. It also owns intermediate-artifact cleanup (the Pandoc log, the CSS temp file, the body-open/body-close temp files, and, for PDF, the overlay file) unless `--keep-intermediate` is given.
 
 ### Bundled stylesheet
 
 `src/cli/lib/github.css` is embedded into the built CLI at build time — `bash-rollup` inlines its contents into a heredoc in `generate-page.sh` — so styling has no external file dependency at runtime; the CSS travels with the built CLI rather than being read from disk at conversion time. At conversion time, `generate-page()` writes that embedded content to a `mktemp`-created, `.css`-suffixed temporary file and passes that file's path to Pandoc's `--css`, rather than a process-substitution file descriptor, because WeasyPrint (the pinned `--pdf-engine`) MIME-sniffs `--css` from its path's file extension and cannot sniff a type from a process-substitution `/dev/fd/N` path. The temporary file is removed after the Pandoc invocation unless `--keep-intermediate` is given.
+
+`github.css` scopes every rule under a bare `.markdown-body` class selector, but neither Pandoc's default html5 template nor a `-V`/`--variable` metadata hook places that class anywhere in the generated document. `generate-page()` works around this by writing two more temporary files — an opening `<div class="markdown-body">` and a closing `</div>` — and passing them to Pandoc's `--include-before-body`/`--include-after-body` flags, which inject their content just inside the opening and closing `<body>` tags respectively. The result is a rendered body wrapped in a `markdown-body` div, satisfying `github.css`'s selectors exactly as well as a class on `<body>` itself would. Like the CSS temp file, both are removed after the Pandoc invocation unless `--keep-intermediate` is given.
 
 ### Node library wrapper
 
@@ -103,5 +105,5 @@ The `Makefile` drives two independent build outputs: `bash-rollup` combines `src
 
 - [`docs/md2x-spec.md`](./md2x-spec.md) — the functional/requirements layer: use cases, behavioral requirements, and the CLI/Node API surface.
 - [`AGENTS.md`](../AGENTS.md) — build, test, and contribution conventions for working on md2x.
-- [`docs/project-structure.md`](./project-structure.md) — file and directory layout reference (planned).
+- [`docs/project-structure.md`](./project-structure.md) — file and directory layout reference.
 - [`README.md`](../README.md) — the project's front door and consumer-facing overview.
