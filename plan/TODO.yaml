@@ -60,7 +60,7 @@ phases:
             branch: phase-01-task-05-document-weasyprint-ssrf-cavea
             commit:
                 - 28d411c
-            merge: null
+            merge: 3c525fb42f6cf2ccdb5811c7d2c7d56eba91d177
         - number: 6
           slug: stub-weasyprint-bootstrap-in-bats
           title: Stub WeasyPrint Bootstrap In The Bats Test Harness
