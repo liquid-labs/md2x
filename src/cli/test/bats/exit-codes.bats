@@ -83,7 +83,7 @@ teardown() {
 
   assert_success
   assert_stderr_contains 'Permission denied'
-  assert_file_not_exists 'out/report-base.html'
+  assert_file_not_exists 'out/report.html'
 
   chmod 755 unreadable-root
 }
@@ -100,7 +100,7 @@ teardown() {
 
   assert_success
   assert_stderr_contains 'Permission denied'
-  assert_file_exists 'out/report-base.html'
+  assert_file_exists 'out/report.html'
 
   chmod 755 unreadable-root
 }
