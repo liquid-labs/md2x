@@ -68,7 +68,7 @@ phases:
           done: false
           tier: sonnet-med
           git:
-            branch: null
+            branch: phase-01-task-06-stub-weasyprint-bootstrap-in-b
             commit: []
             merge: null
         - number: 7
