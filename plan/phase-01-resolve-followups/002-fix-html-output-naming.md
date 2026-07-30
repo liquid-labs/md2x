@@ -32,3 +32,16 @@ Closes followup `c2s9`. In `src/cli/md2x.sh`'s per-file conversion loop, `--outp
 - `docs/md2x-spec.md` — UC2 and the API definition table.
 - `README.md` — CLI reference table (`--output-format` row) and Usage examples.
 - `plan/followups.yaml` item `c2s9` — full original followup text.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-07-30
+- **Validation summary:** `make test` green (66/66 bats cases, 17/17 jest tests). `grep -rn -- '-base\.html\|report-base\|tiny-doc-base' src/cli/test/ docs/ README.md` returns no hits.
+- **Affected files:**
+  - `src/cli/md2x.sh` — removed the `-base` suffix conditional in the per-file conversion loop; confirmed the `--single-page`/stdin branch was already unaffected.
+  - `src/cli/test/bats/output-format.bats` — renamed the HTML case to `"--output-format html converts to <title>.html"`, refreshed its comment, and asserted `./report.html` instead of `./report-base.html`.
+  - `src/cli/test/bats/harness-smoke.bats` — updated the "html conversion leaves the pdf-only tools untouched" case to assert `./report.html`.
+  - `src/cli/test/bats/real-toolchain-e2e.bats` — updated all four `./tiny-doc-base.html` references to `./tiny-doc.html`.
+  - `docs/md2x-spec.md` — UC2 outcome text now names the `<title>.html`/`<title>.docx` convention explicitly, parallel to UC1's `report.pdf`.
+- Closes followup `c2s9`.
