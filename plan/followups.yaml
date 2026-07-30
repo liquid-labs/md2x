@@ -131,15 +131,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Phase-01 efficiency review (test-coverage-bugfix plan) found: task 005''s four real-toolchain e2e cases are wired into the default make test/test-cli path (by design, per the task doc) rather than behind a separate opt-in target, so any machine with a working pandoc on PATH performs 2-3 real Pandoc/Ghostscript/pdftk conversions on every make test invocation, raising wall-clock from ~12.4s to ~13.9-17.5s (measured by task 005 itself). Deliberate, pre-accepted trade-off, not a correctness problem. Suggestion severity - optional enhancement: an environment-variable escape hatch (e.g. MD2X_SKIP_E2E=1) that bats setup checks to skip the e2e-tagged cases during rapid local iteration, while leaving make test unchanged by default for CI/gate purposes.'
-    - title: PDF output currently ships with NO GitHub-mar
-      id: TNLq
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:weasyprint-pdf-engine
-        - priority:unspecified
-        - effort:unspecified
-      text: PDF output currently ships with NO GitHub-markdown CSS styling — WeasyPrint rejects the --css process-substitution file outright (no .css extension to sniff MIME type), so the stylesheet never loads for PDF output (HTML/DOCX unaffected). Fixed only the stdout-purity symptom (filtered the resulting stderr message); did not restructure CSS delivery — a real temp .css file does make WeasyPrint load styles but then emits ~10 non-fatal multi-line WARNING lines per conversion with no reliable machine-parseable boundary for stdout-purity filtering. Recommend a small dedicated follow-up task to restore PDF styling and decide how to handle WeasyPrint's CSS-compatibility warnings, ideally with a visual check of rendered output. Not caught by any of the 8 written Validation checks.
     - title: Validation check 6 (python3 preflight failure
       id: egW0
       date: "2026-07-29"
