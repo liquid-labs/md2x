@@ -26,3 +26,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 3
+          slug: add-toc-flag-and-conflict-check
+          title: Add Toc Flag And Conflict Check
+          path: phase-01-markdown-toc-generation/003-add-toc-flag-and-conflict-check.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
