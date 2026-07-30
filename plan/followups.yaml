@@ -237,3 +237,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: docs/architecture.md's 'Page generation / conversion pipeline' component description says intermediate-artifact cleanup covers 'the Pandoc log and, for PDF, the overlay file' — it does not mention the CSS temp file, which generate-page.sh now also creates and cleans up (for every output format, not just PDF). Pre-existing omission, not a contradiction introduced by this task's edits; task doc explicitly scoped no edit to that section — flagging for the manager to decide whether a follow-up doc task should tighten that sentence.
+    - title: 'Load-bearing finding, needs a decision: githu'
+      id: yJ9C
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:restore-pdf-styling
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Load-bearing finding, needs a decision: github.css''s rules are essentially all scoped under .markdown-body, but nothing in generate-page()''s Pandoc invocation ever adds that class to the generated <body> (confirmed via tiny-doc-base.html inspection). As a result, task 001''s CSS-delivery fix did not actually resolve followup TNLq''s visual gap — real PDF output still renders with a default serif font, no table borders, and no code-block background. This needs either reopening/amending task 001''s scope, or a new task/followup targeting src/cli/lib/generate-page.sh (e.g. a custom Pandoc template or --include-before-body/--include-after-body wrapper adding class="markdown-body") before this plan can be considered to have actually restored PDF styling. Full observation detail (per checklist item) is recorded in the task doc''s new ## Status section.'
