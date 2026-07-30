@@ -62,7 +62,7 @@ teardown() {
   md2x_run --output-format html --flatten-dirs --output-path . report.md
 
   assert_success
-  assert_file_exists './report-base.html'
+  assert_file_exists './report.html'
   assert_stub_called pandoc
   refute_stub_called gs
   refute_stub_called pdftk

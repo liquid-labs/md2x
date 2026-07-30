@@ -27,7 +27,7 @@ This spec covers both of md2x's external surfaces — the `md2x` CLI and the thi
 
 - **Actor:** A developer who wants a non-PDF output.
 - **Action:** Runs `md2x --output-format html report.md` or `md2x --output-format docx report.md`.
-- **Outcome:** The file is converted with Pandoc to the requested format. HTML output carries the same GitHub-style CSS; DOCX output never receives the header/footer overlay or an automatic table of contents (regardless of `--no-toc`). An unrecognized `--output-format` value is rejected with a fatal error before any conversion is attempted.
+- **Outcome:** The file is converted with Pandoc to the requested format. Output is written as `report.html` or `report.docx` — same `<title>.<format>` naming convention as the PDF case in UC1. HTML output carries the same GitHub-style CSS; DOCX output never receives the header/footer overlay or an automatic table of contents (regardless of `--no-toc`). An unrecognized `--output-format` value is rejected with a fatal error before any conversion is attempted.
 
 ### UC3: Batch-convert a directory of Markdown files
 

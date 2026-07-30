@@ -257,7 +257,6 @@ printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
         # '--output-path', which is just as likely not to exist yet.
         mkdir -p "${BASE_OUTPUT}"
         BASE_OUTPUT="${BASE_OUTPUT}/${TITLE}"
-        if [[ "${OUTPUT_FORMAT}" == 'html' ]]; then BASE_OUTPUT="${BASE_OUTPUT}-base"; fi
         BASE_OUTPUT="${BASE_OUTPUT}.${OUTPUT_FORMAT}"
         
         generate-page
