@@ -51,5 +51,6 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-01-task-04-wrap-generated-body-in-markdow
-            commit: []
+            commit:
+                - d08a989
             merge: null
