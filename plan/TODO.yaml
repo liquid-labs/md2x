@@ -15,7 +15,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-01-task-01-lock-weasyprint-bootstrap
-            commit: []
+            commit:
+                - c80287d
             merge: null
         - number: 2
           slug: fix-html-output-naming
