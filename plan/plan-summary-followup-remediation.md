@@ -136,3 +136,25 @@ Per `plan/followups.yaml` as it stands after this plan's own removals, 5 items r
   maintainer fix**: distinguish `EEXIST`-style contention (confirm via a directory-existence
   check after a failed `mkdir`) from other `mkdir` failure modes, and fail fast with an accurate
   message on the latter.
+
+## Final Task State
+
+# TODO
+
+## Purpose and scope
+
+Tracking document for the active plan.
+
+## Tasks
+
+### Phase 01 — Resolve Followups
+
+- [x] [001-lock-weasyprint-bootstrap.md](./phase-01-resolve-followups/001-lock-weasyprint-bootstrap.md) — tier `sonnet-high` · branch `phase-01-task-01-lock-weasyprint-bootstrap` · commit `c80287d` · merge `e6f5bbf53f98a9d91d9168835b327d71d0baee91`
+- [x] [002-fix-html-output-naming.md](./phase-01-resolve-followups/002-fix-html-output-naming.md) — tier `sonnet-med` · branch `phase-01-task-02-fix-html-output-naming` · commit `6935ec1` · merge `61ead9601df3da5bdff550b6ed7c88b0e73a5299`
+- [x] [003-fix-md2x-js-shell-injection.md](./phase-01-resolve-followups/003-fix-md2x-js-shell-injection.md) — tier `sonnet-high` · branch `phase-01-task-03-fix-md2x-js-shell-injection` · commit `ce5c15a` · merge `ffcc4534cc098a6d9e441dae69385a407cfeebb7`
+- [x] [004-document-find-pipe-abort-semantics.md](./phase-01-resolve-followups/004-document-find-pipe-abort-semantics.md) — tier `sonnet-med` · branch `phase-01-task-04-document-find-pipe-abort-seman` · commit `487e0c9` · merge `33d6bf18f33da4e92e3cc65a2d99ed24981c8b48`
+- [x] [005-document-weasyprint-ssrf-caveat.md](./phase-01-resolve-followups/005-document-weasyprint-ssrf-caveat.md) — tier `sonnet-med` · branch `phase-01-task-05-document-weasyprint-ssrf-cavea` · commit `28d411c` · merge `3c525fb42f6cf2ccdb5811c7d2c7d56eba91d177`
+- [x] [006-stub-weasyprint-bootstrap-in-bats.md](./phase-01-resolve-followups/006-stub-weasyprint-bootstrap-in-bats.md) — tier `sonnet-med` · branch `phase-01-task-06-stub-weasyprint-bootstrap-in-b` · commit `0788ca0` · merge `4f6fb346ba78df307c94b01d69dcafb8d0ea8768`
+- [x] [007-surface-css-temp-file-path.md](./phase-01-resolve-followups/007-surface-css-temp-file-path.md) — tier `sonnet-med` · branch `phase-01-task-07-surface-css-temp-file-path` · commit `a3d9330` · merge `7efe43a03114443ba3af8b2af89bcece56438686`
+
+Plus one manager-applied integration fix (commit f44fb6c) and one dispatch-simple-task fix for the phase-review security finding (commit 52e3936, merged as 400ebaa).
