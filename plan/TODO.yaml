@@ -37,7 +37,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-01-task-03-fix-md2x-js-shell-injection
-            commit: []
+            commit:
+                - ce5c15a
             merge: null
         - number: 4
           slug: document-find-pipe-abort-semantics
