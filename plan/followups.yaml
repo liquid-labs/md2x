@@ -228,3 +228,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Design note (not a required fix): unlike pandoc-log.log and the PDF overlay (both written into the user''s working/output directory), the CSS temp file lives in the system TMPDIR and its path is never surfaced to the user, so --keep-intermediate currently leaves it effectively undiscoverable/orphaned outside the user''s working tree. Implemented per the task doc''s explicit ''either is acceptable'' framing (gated on KEEP_INTERMEDIATE, matching the prescribed line), but flagging for task 003 or a follow-up to consider: always removing it regardless of the flag, or surfacing its path when retained.'
+    - title: docs/architecture.md's 'Page generation / con
+      id: djfw
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:restore-pdf-styling
+        - priority:unspecified
+        - effort:unspecified
+      text: docs/architecture.md's 'Page generation / conversion pipeline' component description says intermediate-artifact cleanup covers 'the Pandoc log and, for PDF, the overlay file' — it does not mention the CSS temp file, which generate-page.sh now also creates and cleans up (for every output format, not just PDF). Pre-existing omission, not a contradiction introduced by this task's edits; task doc explicitly scoped no edit to that section — flagging for the manager to decide whether a follow-up doc task should tighten that sentence.
