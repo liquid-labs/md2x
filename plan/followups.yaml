@@ -79,15 +79,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Design note (not a required fix): unlike pandoc-log.log and the PDF overlay (both written into the user''s working/output directory), the CSS temp file lives in the system TMPDIR and its path is never surfaced to the user, so --keep-intermediate currently leaves it effectively undiscoverable/orphaned outside the user''s working tree. Implemented per the task doc''s explicit ''either is acceptable'' framing (gated on KEEP_INTERMEDIATE, matching the prescribed line), but flagging for task 003 or a follow-up to consider: always removing it regardless of the flag, or surfacing its path when retained.'
-    - title: CSS temp file recreated per file in batch
-      id: QBKX
-      date: "2026-07-30"
-      tags:
-        - plan/phase:restore-pdf-styling
-        - type:optimization
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 (restore-pdf-styling) combined review found: $CSS is static, deterministic content that never varies across generate-page() calls within a single md2x invocation, but src/cli/md2x.sh calls generate-page() once per Markdown file inside a loop when converting a directory or multiple files (--flatten-dirs/recursive batch mode). The new mktemp+mv+printf sequence in generate-page.sh now performs real filesystem I/O (two process spawns plus a file write) once per input file in a batch conversion, to recreate identical content each time, where the prior process-substitution delivery was a per-invocation in-memory pipe. For a project with many Markdown files this is an easily-avoidable linear per-file cost. Suggested fix: hoist CSS temp-file creation out of generate-page() to run once per md2x invocation (e.g. in src/cli/md2x.sh before the per-file loop), passing the path in; clean up once after the batch completes.'
     - title: markdown-body flags unquoted word-split risk
       id: 5gem
       date: "2026-07-30"
