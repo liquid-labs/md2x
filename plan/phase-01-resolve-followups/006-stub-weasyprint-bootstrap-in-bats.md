@@ -31,3 +31,12 @@ Closes followup `efJF`. The bats suite's shared harness (`src/cli/test/helpers/c
 - `src/cli/test/bats/harness-smoke.bats` — where to add the new self-verification case.
 - `src/cli/test/bats/real-toolchain-e2e.bats` — must remain unaffected.
 - `plan/followups.yaml` item `efJF` — full original followup text.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-07-30
+- **Summary:** `md2x_setup()` now saves the original `HOME`, points `HOME` at a new private directory inside `MD2X_TEST_TMPDIR` (`${MD2X_TEST_TMPDIR}/home`), and pre-populates `${HOME}/.md2x/venv/bin/weasyprint` with a trivial `chmod +x`'d `#!/bin/sh\nexit 0` placeholder before the CLI is ever invoked. `md2x_teardown()` restores the original `HOME` symmetrically with the existing `PATH` restoration; the private `HOME` directory is cleaned up by the existing `rm -rf "${MD2X_TEST_TMPDIR}"` step, no separate cleanup added. Added a new `harness-smoke.bats` case asserting the fake `weasyprint` binary exists at the stubbed `HOME` and that a default-setup PDF conversion's stderr never contains the `"md2x: installing weasyprint"` cold-bootstrap notice. Added a header-comment bullet in `common.bash` describing the new stub. `src/cli/test/bats/real-toolchain-e2e.bats` is untouched (confirmed via `git diff --stat`) — its `e2e_setup`/`e2e_teardown` never call `md2x_setup`/`md2x_use_stub_path`.
+- **Validation:** `make test` passes (67 bats cases + JS suite all green, including the new harness-smoke case). `grep -n "HOME" src/cli/test/helpers/common.bash` shows the new save/override/restore lines. `git diff --stat -- src/cli/test/bats/real-toolchain-e2e.bats` shows no changes. `make test-cli` completed in ~2m27s total wall time across 67 cases with visible contention from other concurrently-running worktree test suites on the same machine; no single case showed anywhere near the ~1-minute cold-bootstrap delay the fix targets.
+- **Affected files:** `src/cli/test/helpers/common.bash`, `src/cli/test/bats/harness-smoke.bats`.
+- **Resolved followup:** `efJF` (id reported for the manager to remove from `plan/followups.yaml`; not removed by this task agent).
