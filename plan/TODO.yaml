@@ -5,4 +5,14 @@ phases:
     - number: 1
       slug: restore-pdf-styling
       title: Restore Pdf Styling
-      tasks: []
+      tasks:
+        - number: 1
+          slug: fix-css-delivery-and-stream-handling
+          title: Fix Css Delivery And Stream Handling
+          path: phase-01-restore-pdf-styling/001-fix-css-delivery-and-stream-handling.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
