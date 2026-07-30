@@ -47,3 +47,20 @@ Items tagged `plan/phase:restore-pdf-styling` in `plan/followups.yaml`:
 - **`qbZF` — doc follow-up remains open for the body-wrapper mechanism.** docs/architecture.md's "Bundled stylesheet"/"Page generation" prose does not yet describe the `--include-before-body`/`--include-after-body` mechanism task 004 introduced; explicitly out of task 004's scope.
 - **`5gem` — unquoted word-split risk in the new markdown-body flags.** The `--include-before-body`/`--include-after-body` flag+value pairs are injected via unquoted command substitution relying on IFS word-splitting; a `TMPDIR` containing a space would silently misalign the resulting Pandoc arguments (low real-world likelihood, but differs from the `=`-fused `--pdf-engine=...` idiom used elsewhere).
 - **`MwYH` — two more temp files added to the same errexit leak surface as `9hZL`.** Task 004's `BODY_OPEN_TMP_FILE`/`BODY_CLOSE_TMP_FILE` are created unconditionally per `generate-page()` call and share the same mid-invocation-failure cleanup gap as `9hZL`'s `CSS_TMP_FILE`; recommends addressing both together (e.g. a single trap-based cleanup) rather than separately.
+
+## Final Task State
+
+# TODO
+
+## Purpose and scope
+
+Tracking document for the active plan.
+
+## Tasks
+
+### Phase 01 — Restore Pdf Styling
+
+- [x] [001-fix-css-delivery-and-stream-handling.md](./phase-01-restore-pdf-styling/001-fix-css-delivery-and-stream-handling.md) — tier `sonnet-high` · branch `phase-01-task-01-fix-css-delivery-and-stream-ha` · commit `240e72a` · merge `bc3052b`
+- [x] [002-extend-visual-smoke-test-for-css.md](./phase-01-restore-pdf-styling/002-extend-visual-smoke-test-for-css.md) — tier `sonnet-med` · branch `phase-01-task-02-extend-visual-smoke-test-for-c` · commit `60edbc9` · merge `6874f82`
+- [x] [003-update-stale-pdf-styling-docs.md](./phase-01-restore-pdf-styling/003-update-stale-pdf-styling-docs.md) — tier `sonnet-med` · branch `phase-01-task-03-update-stale-pdf-styling-docs` · commit `d485599` · merge `d314405`
+- [x] [004-wrap-generated-body-in-markdown-body-div.md](./phase-01-restore-pdf-styling/004-wrap-generated-body-in-markdown-body-div.md) — tier `sonnet-high` · branch `phase-01-task-04-wrap-generated-body-in-markdow` · commit `d08a989` · merge `c46d8b7`
