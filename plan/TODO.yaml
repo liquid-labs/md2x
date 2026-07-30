@@ -16,3 +16,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: add-toc-preprocessor-script
+          title: Add TOC Preprocessor Script
+          path: phase-01-markdown-toc-generation/002-add-toc-preprocessor-script.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
