@@ -47,6 +47,7 @@ phases:
           path: phase-01-resolve-followups/004-document-find-pipe-abort-semantics.md
           done: false
           tier: sonnet-med
+          digest: Confirmed empirically that a find failure on an unreadable search root never aborts the overall script (still exits 0) but silently drops any search root listed after the failing one, while roots before it are unaffected. Documented this at the pipe's nesting site in src/cli/md2x.sh and added two exit-codes.bats cases pinning down exit code, stderr content, and output differences. make test is green.
           git:
             branch: phase-01-task-04-document-find-pipe-abort-seman
             commit:
