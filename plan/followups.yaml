@@ -8,15 +8,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Flagged by the planning agent for plan `pdf-engine-weasyprint`. The new WeasyPrint bootstrap (src/cli/lib/ensure-weasyprint.sh, introduced by that plan) creates `~/.md2x/venv` in place on first PDF conversion (python3 -m venv + ensurepip + pip install weasyprint), gated by a simple `[[ -x ~/.md2x/venv/bin/weasyprint ]]` existence check. If two `md2x` processes race a cold bootstrap concurrently (e.g. two PDF conversions kicked off at once on a machine that has never run md2x before), their venv-creation and pip-install steps can interleave and corrupt the shared `~/.md2x/venv` directory. The plan deliberately deferred hardening this (no staging-dir build + atomic rename, no lockfile) in favor of matching the repo''s plain-bash style; a partially-built venv is expected to self-heal on a later run since the `-x` gate simply fails again and retries the bootstrap, but a genuinely concurrent race during the initial cold start is not guarded against. Worth a maintainer decision: accept the risk (probably fine given cold-start is a one-time, human-triggered event) or add a lockfile/staging-dir mechanism.'
-    - title: md2x.sh find-pipe abort shift
-      id: 8ZmD
-      date: "2026-07-29"
-      tags:
-        - plan/phase:automated-test-coverage
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 correctness review (test-coverage-bugfix plan) found: the aI57 fix''s file-discovery process substitution in src/cli/md2x.sh now nests a per-root inner pipe (find ${ROOT_DIR} -name "*.md" | while IFS= read -r FOUND_FILE; do ...; done) inside the existing outer for-loop | sort pipe. Under set -o pipefail/errexit, a find failure on one search root now surfaces only after that root''s already-discovered files drain through the inner while loop, rather than aborting the instant the bare find command failed as in the pre-fix code. Net abort-or-not behavior is likely unchanged, but the abort point and how much partial file-list reaches the loop first has shifted. Low confidence, minor severity - worth a one-line comment or a targeted bats case (an existing-but-unreadable search root) if the maintainer wants to pin down or preserve the original immediate-abort semantics.'
     - title: Validation check 6 (python3 preflight failure
       id: egW0
       date: "2026-07-29"
