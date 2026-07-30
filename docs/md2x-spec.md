@@ -80,7 +80,7 @@ md2x has two external surfaces: the CLI (`md2x`) and the Node library function (
 | `-D`, `--flatten-dirs` | Write every output file directly into `--output-path`, discarding input directory structure, instead of mirroring each input file's path relative to the search root it was found under. |
 | `--infer-title` | Embed the title (`--title`, or otherwise the filename) as document metadata via Pandoc (e.g. the HTML `<title>` element). |
 | `--infer-version` | Add the inferred version string (see [General features](#general-features)) to the PDF footer. |
-| `--keep-intermediate` | Retain the Pandoc log and PDF overlay file instead of deleting them after conversion. |
+| `--keep-intermediate` | Retain the Pandoc log and PDF overlay file instead of deleting them after conversion. Also retains the CSS temp file, printing its path to stderr (not suppressed by `--quiet`) since — unlike the log and overlay — it lives outside the working/output tree, in `TMPDIR`. |
 | `-p`, `--output-path <path>` | Directory to write output files into. Defaults to `.`. |
 | `-F`, `--output-format <format>` | Output format: `pdf` (default), `html`, or `docx`. Any other value is a fatal error. |
 | `-t`, `--title <title>` | Document title, used for the output filename and the PDF header text. |
