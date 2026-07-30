@@ -8,15 +8,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Flagged by the planning agent for plan `pdf-engine-weasyprint`. The new WeasyPrint bootstrap (src/cli/lib/ensure-weasyprint.sh, introduced by that plan) creates `~/.md2x/venv` in place on first PDF conversion (python3 -m venv + ensurepip + pip install weasyprint), gated by a simple `[[ -x ~/.md2x/venv/bin/weasyprint ]]` existence check. If two `md2x` processes race a cold bootstrap concurrently (e.g. two PDF conversions kicked off at once on a machine that has never run md2x before), their venv-creation and pip-install steps can interleave and corrupt the shared `~/.md2x/venv` directory. The plan deliberately deferred hardening this (no staging-dir build + atomic rename, no lockfile) in favor of matching the repo''s plain-bash style; a partially-built venv is expected to self-heal on a later run since the `-x` gate simply fails again and retries the bootstrap, but a genuinely concurrent race during the initial cold start is not guarded against. Worth a maintainer decision: accept the risk (probably fine given cold-start is a one-time, human-triggered event) or add a lockfile/staging-dir mechanism.'
-    - title: md2x.js shell injection risk
-      id: arUf
-      date: "2026-07-29"
-      tags:
-        - plan/phase:automated-test-coverage
-        - type:security
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 security review (test-coverage-bugfix plan) found: src/node/md2x.js builds its shell command by naively single-quoting caller-supplied values with no escaping of embedded single quotes (options.push(`--title ''${title}''`) at md2x.js:43, `--output-path ''${outputPath}''` at md2x.js:49, sourceSpec join at md2x.js:25), then executes via shell.exec(command, { shell: ''/bin/bash'' }) (md2x.js:56, 66). Any of title/outputPath/sources containing a single quote breaks out of the quoting; a crafted value can execute arbitrary shell commands with the Node process''s privileges. md2x() is the exported library API and docs/md2x-spec.md documents these as plain caller-supplied strings (e.g. a document title), so externally-influenced input is plausible. Not introduced by the test-coverage-bugfix diff (src/node/md2x.js is unchanged), but task 004''s new src/node/md2x.test.js (lines 74-88) now asserts the exact unescaped command string as correct/expected behavior with no accompanying caveat, unlike the same file''s explicit "documents CURRENT buggy behavior" treatment of followups udVi/egcc. Worth a maintainer fix: escape embedded single quotes in title/outputPath/each sources entry, or switch to an argv-array invocation (child_process.execFile) that never round-trips through a shell.'
     - title: md2x.sh find-pipe abort shift
       id: 8ZmD
       date: "2026-07-29"
