@@ -33,3 +33,14 @@ Read the current (already-hoisted, trap-cleaned) CSS temp-file handling in `src/
 - `src/cli/test/helpers/common.bash` — `md2x_run`'s `$stderr` capture.
 - `README.md`'s CLI reference table and `docs/md2x-spec.md`'s API definition table — the `--keep-intermediate` row/entry to update.
 - `plan/followups.yaml` item `OUbU` — full original followup text.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-07-30
+- **Implementation:** Added an unconditional-once, `--quiet`-independent stderr announcement of `CSS_TMP_FILE`'s path in `src/cli/md2x.sh`, gated only on `[[ -n "${KEEP_INTERMEDIATE}" ]]`, placed immediately after the existing conditional `trap ... EXIT` registration (so it fires exactly once per invocation, before all three conversion branches — per-file loop, `--single-page`, and stdin — since `CSS_TMP_FILE` creation is hoisted above all of them).
+- **Validation summary:** `make test` passes (67/67 bats cases, 17/17 Node/Jest tests, 100% coverage on `md2x.js`). Extended `src/cli/test/bats/pandoc-args.bats`'s existing `"--keep-intermediate retains the css temp file handed to pandoc after conversion"` case with an `assert_stderr_contains` check, and added a new sibling case `"--quiet --keep-intermediate still prints the retained css temp file path to stderr"`. Manually confirmed (real `pandoc`/`gs`/`pdftk`/`python3` toolchain, outside bats) that `md2x --keep-intermediate --output-format pdf report.md` prints `md2x: kept intermediate CSS file: '<path>'` to stderr, that the same message appears under `--quiet --keep-intermediate` while stdout stays empty (only the "Created ..." line is suppressed), and that the message is absent from stdout (redirected `1>/dev/null` while capturing stderr).
+- **Docs:** Updated `README.md`'s CLI reference table and `docs/md2x-spec.md`'s API definition table `--keep-intermediate` entries to mention the CSS temp file is retained and its path printed to stderr (not suppressed by `--quiet`). Did not touch the body-open/body-close temp files or the `docs/md2x-spec.md` "Intermediate artifact cleanup" general-features bullet — out of this followup's scope.
+- **Affected source files:** `src/cli/md2x.sh`, `src/cli/test/bats/pandoc-args.bats`, `README.md`, `docs/md2x-spec.md`.
+- **Assumptions applied:** None beyond the task doc's own guidance (exact stderr wording left to implementer; used `md2x: kept intermediate CSS file: '<path>'`, matching `ensure-weasyprint.sh`'s `"md2x: ..."` prefix convention).
+- **Resolved followup:** `OUbU` — report only; removal from `plan/followups.yaml` is the manager's step.

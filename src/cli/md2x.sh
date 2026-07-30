@@ -234,6 +234,15 @@ printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
 [[ -n "${KEEP_INTERMEDIATE}" ]] \
   || trap 'rm -f "${CSS_TMP_FILE:-}" "${BODY_OPEN_TMP_FILE:-}" "${BODY_CLOSE_TMP_FILE:-}"' EXIT
 
+# Unlike the Pandoc log and the PDF header/footer overlay -- both written into the user's own
+# working/output tree, and therefore discoverable by normal directory listing -- 'CSS_TMP_FILE'
+# lives in '${TMPDIR:-/tmp}', so a user retaining it via '--keep-intermediate' has no way to find
+# it without an explicit announcement. Print to stderr (never stdout, which is the parsed data
+# channel for '--list-files'/'--to-stdout') and don't gate this on '--quiet': '--quiet' only
+# suppresses the per-file "Created ..." status line, not this one-time opt-in retention notice.
+[[ -z "${KEEP_INTERMEDIATE}" ]] \
+  || echo "md2x: kept intermediate CSS file: '${CSS_TMP_FILE}'" >&2
+
 {
   if [[ -z "${INPUT}" ]]; then
     # Each record is '<md-file><tab><search-root>'; an empty root means the file was
