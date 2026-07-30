@@ -52,7 +52,7 @@ phases:
             branch: phase-01-task-04-document-find-pipe-abort-seman
             commit:
                 - 487e0c9
-            merge: null
+            merge: 33d6bf18f33da4e92e3cc65a2d99ed24981c8b48
         - number: 5
           slug: document-weasyprint-ssrf-caveat
           title: Document WeasyPrint SSRF Caveat For Library Consumers
