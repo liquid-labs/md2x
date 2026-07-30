@@ -15,7 +15,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-01-fix-single-page-combined-file
-            commit: []
+            commit:
+                - c8af4b5
             merge: null
         - number: 2
           slug: add-toc-preprocessor-script
