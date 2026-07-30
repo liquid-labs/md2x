@@ -37,7 +37,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-03-add-toc-flag-and-conflict-chec
-            commit: []
+            commit:
+                - 25126ab
             merge: null
         - number: 4
           slug: wire-preprocessor-into-generate-page
