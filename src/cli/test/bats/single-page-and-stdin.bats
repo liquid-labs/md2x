@@ -61,6 +61,21 @@ teardown() {
   local pdf_count
   pdf_count="$(find . -maxdepth 1 -name '*.pdf' | wc -l | tr -d ' ')"
   assert_equal "${pdf_count}" '1' 'output pdf file count'
+
+  # Regression coverage: the default-title concatenation target and the file
+  # 'generate-page()' is told to read used to diverge (see
+  # plan/notes/pipeline-verification.md), so pandoc silently received an empty buffer
+  # and the CLI printed a 'cat: ... No such file' diagnostic while still exiting 0.
+  # Assert on both the symptom (no diagnostic) and the content (both chapters present,
+  # in order), rather than just the output file's existence.
+  refute_stderr_contains 'cat:'
+
+  local run_input after_one
+  run_input="$(md2x_pandoc_capture input)"
+  after_one="${run_input#*Chapter One}"
+  [[ "${after_one}" == *'Chapter Two'* ]] \
+    || md2x_fail "expected 'Chapter Two' to follow 'Chapter One' in the concatenated input" \
+      "got: ${run_input}"
 }
 
 # --- stdin '-' -------------------------------------------------------------------------
