@@ -30,7 +30,7 @@ phases:
             branch: phase-01-task-02-add-toc-preprocessor-script
             commit:
                 - 6ca40b6
-            merge: null
+            merge: 100d577
         - number: 3
           slug: add-toc-flag-and-conflict-check
           title: Add Toc Flag And Conflict Check
