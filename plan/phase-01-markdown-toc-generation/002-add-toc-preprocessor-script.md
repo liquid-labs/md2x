@@ -216,3 +216,44 @@ architectural_impact: true
 - `src/cli/test/bats/real-toolchain-e2e.bats` — the local-setup pattern for a bats file that
   deliberately does not use `md2x_setup`.
 - `src/cli/test/helpers/assertions.bash` — available assertions.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-07-30
+- **Validation summary:** `make test-cli` passes (105/105), including all 33 new
+  `toc-preprocess.bats` cases and every pre-existing case unchanged. `make test` passes overall
+  (test-cli 105/105 plus test-node 22/22, 100% coverage on the untouched Node side).
+  `python3 -c "import ast,sys; ast.parse(open('src/cli/lib/toc-preprocess.py').read())"`
+  succeeds; `grep -nE '^\s*(import|from) ' src/cli/lib/toc-preprocess.py` shows only `math`,
+  `re`, `sys`. Piping a document through the script with `--mode on` and discarding stderr
+  yields no `md2x:` line on stdout. `CHARS_PER_RENDERED_LINE = 85` and
+  `RENDERED_LINES_PER_PAGE = 45` are named constants with comments citing
+  `plan/notes/toc-defaults-and-page-heuristic.md`. All 29 rows of the slug corpus were
+  additionally cross-checked directly against `slugify()`/`allocate_slug()` in an ad hoc
+  Python harness before being folded into the bats corpus case.
+- **Affected source files:**
+  - `src/cli/lib/toc-preprocess.py` (new)
+  - `src/cli/test/bats/toc-preprocess.bats` (new)
+- **Decisions:**
+  - Fence and multi-line-HTML-comment tracking share one scan pass with heading/marker
+    recognition, applying the task doc's per-line ordering (fence state, then marker/heading
+    check gated on the *pre-update* comment state, then comment-state update) literally, so a
+    line that closes a multi-line comment is itself still treated as "inside" it.
+  - `toc_link_text()` flattens only `[text](url)`/`[text][ref]` link syntax (matching the
+    toc-defaults note's literal wording) and leaves image syntax (`![alt](url)`) and autolinks
+    alone; only genuinely nested-link-invalidating syntax is flattened, everything else falls
+    through to the generic `[`/`]` escaping.
+  - `allocate_slug()`'s generic collision-retry loop is applied uniformly to empty and
+    non-empty base slugs (no special-casing), which reproduces the note's `` / `-1` / `-2`
+    empty-heading dedup sequence for free; only a final slug that is the literal empty string
+    is omitted from the TOC, so `-1`/`-2` dedup collisions on an empty base are correctly
+    rendered as linkable entries.
+  - Required test case 6 ("`--mode on` emits a TOC for a one-heading, one-line document") is
+    implemented against a two-line, two-heading document (`# Doc Title` / `## Section`) rather
+    than a literal single-heading document: per the toc-defaults note's document-title rule, a
+    document with exactly one heading always makes that heading the (excluded) document title,
+    so a true one-heading document can never produce a non-empty TOC under any mode. The test
+    instead uses the smallest document with a non-title heading, to faithfully exercise the
+    bullet's real intent (`--mode on` overriding the small-document auto-suppress heuristic).
+    See `flagged_for_manager` in this task's report for the wording tension this resolves.
