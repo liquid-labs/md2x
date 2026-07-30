@@ -1,13 +1,5 @@
 version: 2
 items:
-    - title: Unquoted path expansion breaks on spaces
-      id: 95ND
-      date: "2026-07-29"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Flagged by the planning agent for plan `test-coverage-bugfix`. In `src/cli/md2x.sh`, `for ROOT_DIR in $SEARCH_DIRS` and the unquoted `find ${ROOT_DIR} -name "*.md"` word-split on whitespace, so any input directory path containing a space breaks silently (splits into multiple bogus paths rather than erroring). Pre-existing, not touched by the `test-coverage-bugfix` plan (explicitly out of scope there — that plan''s tests must not assert space-containing paths work, only that the change doesn''t make this worse). Worth a maintainer fix: quote `${ROOT_DIR}` and iterate `SEARCH_DIRS` via a null-safe or newline-safe mechanism instead of unquoted word-splitting.'
     - title: Race on concurrent cold ~/.md2x bootstrap
       id: AOJw
       date: "2026-07-29"
