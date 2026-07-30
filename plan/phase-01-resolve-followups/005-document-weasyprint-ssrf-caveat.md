@@ -25,3 +25,13 @@ This is a **documentation-only** task: add a caveat to `docs/md2x-spec.md`'s Nod
 - `docs/md2x-spec.md`'s `### Node library` subsection (under `## API definition`) — the primary edit location.
 - `README.md`'s "As a Node library" section — optional secondary pointer.
 - `plan/followups.yaml` item `Kjs2` — full original followup text.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-07-30
+- **Summary:** Added an "SSRF/local-file caveat" bullet to `docs/md2x-spec.md`'s `### Node library` subsection (under `## API definition`), alongside the existing Returns/Throws/Requires bullets, stating that WeasyPrint fetches external resources referenced in converted HTML/CSS (image `src`, CSS `url()`/`@import`, including `file://` URLs) with no built-in allowlist, and that embedding applications rendering untrusted Markdown should apply network egress restrictions or a WeasyPrint URL-fetcher override. Also added a short pointer sentence in `README.md`'s "As a Node library" section linking to the spec's fuller caveat. No source code was changed; `docs/architecture.md` was left untouched per the task doc's guidance.
+- **Validation:** Re-read the edited `docs/md2x-spec.md` section in context — reads clearly alongside the existing bullets. `make test` passed in full (66 bash e2e/unit checks + 17 Jest tests, 100% coverage on `md2x.js`). The `grep -rn "Kjs2" plan/followups.yaml` check is not-applicable at this stage: the task doc's own wording notes removal happens after the report is applied by the manager via `followups_remove`; `Kjs2` is still present in this worktree's `plan/followups.yaml` as expected, and is reported below as the resolved followup id for the manager to act on.
+- **Affected files:** `docs/md2x-spec.md`, `README.md`.
+- **Assumptions applied:** None beyond the task doc's own text — no `## Assumptions` section was present.
+- **Resolved followup id:** `Kjs2` (for the manager to remove from `plan/followups.yaml`).

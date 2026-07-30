@@ -57,7 +57,7 @@ const outputFiles = md2x({
 })
 ```
 
-`md2x()` shells out to the built CLI (`bin/md2x`) under the hood via `shelljs` and returns the list of generated file paths.
+`md2x()` shells out to the built CLI (`bin/md2x`) under the hood via `shelljs` and returns the list of generated file paths. Applications embedding `md2x()` against externally-authored Markdown should review the [WeasyPrint SSRF/local-file caveat](docs/md2x-spec.md#node-library) before doing so.
 
 ## Features
 
