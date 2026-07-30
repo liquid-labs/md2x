@@ -141,15 +141,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: AGENTS.md (two spots) and docs/project-structure.md (one spot) still describe docs/architecture.md as '(planned)'/not-yet-existing, contradicting reality — those three files belong to Phase 01 task 002's file set, out of this task's boundaries.
-    - title: docs/md2x-spec.md's 'Consistent styling' Gene
-      id: LUhO
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:doc-updates
-        - priority:unspecified
-        - effort:unspecified
-      text: docs/md2x-spec.md's 'Consistent styling' General features bullet and UC1's outcome description both still claim PDF output gets the built-in GitHub CSS, which is no longer true (WeasyPrint rejects the --css process-substitution delivery). Already accurately noted in README.md's Features list next to followup TNLq; fixing the underlying CSS gap itself is out of scope, neither claim was named in this task's Requirements.
     - title: bats PDF cases can cold-install weasyprint
       id: efJF
       date: "2026-07-29"
