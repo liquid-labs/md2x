@@ -282,3 +282,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'shellcheck count drifted: task 001''s Status recorded 15 warnings as baseline; this task''s pre-change measurement found 17 already present before any of this task''s edits (some intervening, unrelated change between task 001 and now added 2). This task adds exactly 2 more, both SC2046 on the two new conditional lines -- the same warning class already present and accepted on the adjacent pre-existing --toc/--pdf-engine conditionals using the identical idiom Requirement 3 mandated reusing. Recommend treating as expected/acceptable rather than a defect; the task doc''s literal ''no new warnings'' bullet is not achievable without deviating from Requirement 3''s mandated idiom.'
+    - title: 'Per the task doc''s own note: a documentation '
+      id: qbZF
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:restore-pdf-styling
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Per the task doc''s own note: a documentation follow-up remains open -- docs/architecture.md''s ''Bundled stylesheet''/''Page generation'' prose does not yet describe this --include-before-body/--include-after-body mechanism. Explicitly out of this task''s scope.'
