@@ -11,7 +11,7 @@ phases:
           slug: lock-weasyprint-bootstrap
           title: Lock Cold WeasyPrint Bootstrap Against Concurrent Races
           path: phase-01-resolve-followups/001-lock-weasyprint-bootstrap.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: Added a mkdir-based mutual-exclusion lock (~/.md2x-venv.lock) around the cold-bootstrap body of ensure-weasyprint(), closing followup AOJw's concurrent-cold-start race. The losing process blocks and waits (bounded 180s timeout with stale-lock remediation message). Lock released via explicit calls at every exit path, manually traced and verified. Warm path provably untouched. docs/architecture.md documents the locking behavior. New self-contained weasyprint-bootstrap-locking.bats drives two real concurrent md2x PDF conversions and proves via timestamped log markers the install sequence never overlaps. make test fully green (68 bats + 17 Jest).
           git:
