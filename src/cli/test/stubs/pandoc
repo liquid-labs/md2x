@@ -20,6 +20,14 @@
 # 1-based invocation number recorded in 'pandoc.count'. Those fds are readable exactly
 # once, so the stub always drains them.
 #
+# Two env vars let a test drive the stub's own stderr/exit behaviour, following the
+# same override convention '../stubs/pdftk' uses for 'MD2X_TEST_STUB_PAGE_COUNT' /
+# 'MD2X_TEST_STUB_PAGE_DIMENSIONS':
+#
+#   * MD2X_TEST_STUB_STDERR    -- content written to the stub's own stderr (default:
+#                                  nothing written).
+#   * MD2X_TEST_STUB_EXIT_CODE -- exit code the stub returns (default: 0).
+#
 # Kept compatible with bash 3.2: the test PATH is deliberately minimal.
 
 STUB_NAME='pandoc'
@@ -94,4 +102,7 @@ fi
 
 [[ -z "${LOG_FILE}" ]] || printf 'md2x-test-stub: pandoc log\n' > "${LOG_FILE}"
 
-exit 0
+# --- test-controlled stderr / exit-code overrides -----------------------------------
+[[ -z "${MD2X_TEST_STUB_STDERR:-}" ]] || printf '%s\n' "${MD2X_TEST_STUB_STDERR}" >&2
+
+exit "${MD2X_TEST_STUB_EXIT_CODE:-0}"

@@ -3,7 +3,7 @@
 # Behavioural coverage for the flags that change what md2x hands to 'pandoc' and 'gs':
 # '--infer-title' (title metadata), '--no-toc' (table-of-contents suppression, format-
 # dependent), '--infer-version' (the Ghostscript footer's version string), and
-# '--keep-intermediate' (retaining the Pandoc log and PDF overlay). See
+# '--keep-intermediate' (retaining the Pandoc log, PDF overlay, and CSS temp file). See
 # docs/md2x-spec.md's 'General features' and API definition table.
 #
 # Every case uses '--flatten-dirs' with an input file in the case's own working
@@ -144,4 +144,28 @@ teardown() {
   assert_success
   assert_file_not_exists 'pandoc-log.log'
   assert_file_not_exists './report-overlay.pdf'
+}
+
+@test "--keep-intermediate retains the css temp file handed to pandoc after conversion" {
+  md2x_write_doc 'report.md'
+
+  md2x_run --keep-intermediate --output-format pdf --flatten-dirs --output-path . report.md
+
+  assert_success
+  local css_tmp_file
+  css_tmp_file="$(md2x_stub_last_call_args pandoc | grep '\.css$')"
+  [[ -n "${css_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --css argument ending in .css'
+  assert_file_exists "${css_tmp_file}"
+}
+
+@test "without --keep-intermediate, the css temp file handed to pandoc is removed after conversion" {
+  md2x_write_doc 'report.md'
+
+  md2x_run --output-format pdf --flatten-dirs --output-path . report.md
+
+  assert_success
+  local css_tmp_file
+  css_tmp_file="$(md2x_stub_last_call_args pandoc | grep '\.css$')"
+  [[ -n "${css_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --css argument ending in .css'
+  assert_file_not_exists "${css_tmp_file}"
 }
