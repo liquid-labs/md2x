@@ -40,7 +40,7 @@ phases:
             branch: phase-01-task-03-add-toc-flag-and-conflict-chec
             commit:
                 - 25126ab
-            merge: null
+            merge: "8855999"
         - number: 4
           slug: wire-preprocessor-into-generate-page
           title: Wire Preprocessor Into Generate Page
