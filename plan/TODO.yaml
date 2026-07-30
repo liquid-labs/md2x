@@ -46,3 +46,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 5
+          slug: add-real-toolchain-toc-e2e-cases
+          title: Add Real Toolchain TOC E2E Cases
+          path: phase-01-markdown-toc-generation/005-add-real-toolchain-toc-e2e-cases.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
