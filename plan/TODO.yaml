@@ -75,7 +75,7 @@ phases:
           slug: surface-css-temp-file-path
           title: Surface The CSS Temp File Path Under --keep-intermediate
           path: phase-01-resolve-followups/007-surface-css-temp-file-path.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Added a one-time stderr announcement of the CSS temp file's path in src/cli/md2x.sh, printed whenever --keep-intermediate is set (independent of --quiet), firing exactly once per invocation. Extended bats coverage and updated README.md/docs/md2x-spec.md. Full make test suite (67 bats, 17 Jest, 100% coverage) is green.
           git:
