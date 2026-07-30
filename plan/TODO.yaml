@@ -33,7 +33,7 @@ phases:
           slug: update-stale-pdf-styling-docs
           title: Update Stale Pdf Styling Docs
           path: phase-01-restore-pdf-styling/003-update-stale-pdf-styling-docs.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: 'Corrected the two doc locations that described the pre-task-001 broken CSS delivery: README.md''s Features bullet now states PDF gets consistent GitHub-style CSS unconditionally (restored to pre-regression wording, dropping the TNLq followup reference), and docs/architecture.md''s ''Bundled stylesheet'' section now describes the actual landed mechanism (mktemp .css temp file passed to --css, cleaned up unless --keep-intermediate). docs/md2x-spec.md needed no edit: both LUhO-flagged passages already state PDF gets the built-in CSS with no hedge, verified accurate post-task-001. All TNLq references scrubbed from the three in-scope docs.'
           git:
