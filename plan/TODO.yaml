@@ -16,3 +16,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: extend-visual-smoke-test-for-css
+          title: Extend Visual Smoke Test For Css
+          path: phase-01-restore-pdf-styling/002-extend-visual-smoke-test-for-css.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
