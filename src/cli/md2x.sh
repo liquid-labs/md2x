@@ -43,7 +43,12 @@ from stdin.
 Options:
   -D, --flatten-dirs         Write all output files directly into
                               --output-path instead of mirroring the input
-                              directory structure.
+                              directory structure. Without this flag, each
+                              output file is written under --output-path at
+                              the path its input occupies relative to the
+                              directory argument it was found under; a file
+                              named directly on the command line goes
+                              straight into --output-path.
       --infer-title          Embed the title (from --title, or otherwise the
                               filename) as document metadata via Pandoc
                               (e.g. the HTML <title> element).
@@ -88,7 +93,7 @@ EOF
   exit 0
 fi
 
-for EXEC in gs pandoc pdftk python3; do
+for EXEC in gs pandoc pdftk python3 jq; do
   type "${EXEC}" >/dev/null || {
     echo "Required executable '${EXEC}' not found for 'md2x'. Add to 'PATH' or install." >&2
     exit 2
@@ -222,6 +227,7 @@ fi
   
   if [[ -n "${SINGLE_PAGE}" ]] || [[ -n "${INPUT}" ]]; then
     TITLE="${TITLE:-output}"
+    mkdir -p "${OUTPUT_PATH}"
     BASE_OUTPUT="${OUTPUT_PATH}/${TITLE:-output}.${OUTPUT_FORMAT}"
     MD_FILE="${TITLE:-input}.md"
     generate-page
@@ -236,9 +242,10 @@ fi
     [[ -n "${NAMED_FILE}" ]] || continue
     printf '%s\t\n' "${NAMED_FILE}"
   done <<< "${MD_FILES}"
-  for ROOT_DIR in $SEARCH_DIRS; do
-    find ${ROOT_DIR} -name "*.md" | while IFS= read -r FOUND_FILE; do
+  while IFS= read -r ROOT_DIR; do
+    [[ -n "${ROOT_DIR}" ]] || continue
+    find "${ROOT_DIR}" -name "*.md" | while IFS= read -r FOUND_FILE; do
       printf '%s\t%s\n' "${FOUND_FILE}" "${ROOT_DIR}"
     done
-  done | sort
+  done <<< "${SEARCH_DIRS}" | sort
 )
