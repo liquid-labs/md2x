@@ -5,6 +5,7 @@ phases:
     - number: 1
       slug: resolve-followups
       title: Resolve Followups
+      diff_base: 20dd1d1c81d02eb9ae67edbe5bbdbd4be4458715
       tasks:
         - number: 1
           slug: lock-weasyprint-bootstrap
