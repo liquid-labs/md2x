@@ -42,15 +42,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: bin/md2x hard-requires Homebrew on macOS (brew --prefix gnu-getopt) - undocumented, possible followup, out of scope here
-    - title: aI57 mirrored-output bug visible in smoke-tes
-      id: ZQ0m
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: aI57 mirrored-output bug visible in smoke-test output (test-out/./src/cli/test/tiny-doc.docx) - pre-existing, task 002 owns the fix per plan
     - title: 'docs/project-structure.md and AGENTS.md have '
       id: LPg7
       date: "2026-07-29"
