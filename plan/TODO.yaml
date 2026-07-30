@@ -69,7 +69,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-06-stub-weasyprint-bootstrap-in-b
-            commit: []
+            commit:
+                - 0788ca0
             merge: null
         - number: 7
           slug: surface-css-temp-file-path
