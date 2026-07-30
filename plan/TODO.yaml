@@ -25,7 +25,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-02-fix-html-output-naming
-            commit: []
+            commit:
+                - 6935ec1
             merge: null
         - number: 3
           slug: fix-md2x-js-shell-injection
