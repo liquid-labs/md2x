@@ -45,3 +45,18 @@ inside the outer `for-loop | sort` pipe, itself inside a `< <(...)` process subs
 - `src/cli/test/bats/exit-codes.bats` — likely home for the new bats case.
 - `src/cli/test/helpers/common.bash` — `md2x_path_without`'s "fail loudly on a silent no-op" pattern, useful as a model for the root-user guard.
 - `plan/followups.yaml` item `8ZmD` — full original followup text.
+
+## Status
+
+- **Outcome:** succeeded (2026-07-30).
+- **Empirical findings** (via a scratch script mirroring the exact pipe structure, plus the built `bin/md2x` CLI, both under `bash 5.3.15`):
+  - A `find` failure on one search root (e.g. `chmod 000` on the root) never aborts the overall script — it still exits `0`. Process-substitution (`< <(...)`) subshell failures are invisible to the parent script's `errexit`/`pipefail`.
+  - Under the inner pipe's `pipefail`, the pipe's exit status is `find`'s non-zero status, because the downstream `while read` loop always exits `0` (it just drains whatever `find` emitted, or nothing). That non-zero status trips `errexit` in the *outer* per-root `while read ROOT_DIR` loop.
+  - Consequence: any root listed **after** the failing root in `${SEARCH_DIRS}` is silently skipped entirely (never attempted), even if it is perfectly readable. Roots listed **before** the failing one are unaffected and their files are still converted.
+  - Within the *same* failing root, `find` completes its full traversal before reporting its own non-zero status (it only errors on the specific unreadable entry, not the whole invocation), so files found in sibling subtrees of a nested unreadable directory are still processed. When the root directory itself is unreadable (the fixture this task's bats cases use), nothing is ever discovered under it, so nothing is lost — there's just nothing to have found.
+  - `stderr` carries `find`'s own `Permission denied` line; the script does not add any error/warning of its own for this case.
+- **Documentation:** added a comment at the nested `find "${ROOT_DIR}" -name "*.md" | while ...` site in `src/cli/md2x.sh` explaining this behavior and the `pipefail`/process-substitution mechanics behind it.
+- **Tests:** added two bats cases to `src/cli/test/bats/exit-codes.bats` — one with the unreadable root listed first (proves a later readable root's output is silently dropped), one with it listed second (proves only the failing root's own output is dropped, an earlier readable root's output survives). Both guard against running as `root` via `(( $(id -u) != 0 ))`, following `md2x_path_without`'s "fail loudly rather than silently no-op" pattern, and the file's `teardown()` was hardened to restore the fixture directory's permissions unconditionally (not just at the end of a passing test body) so bats' own temp-directory cleanup never trips over a leftover mode-000 directory.
+- **Validation:** `make test` — full suite green (68 bats cases including the 2 new ones, 17 Jest tests, coverage unchanged at 100%).
+- **No behavior change:** per this task's `## Assumptions`, no functional change was made to the abort/continue semantics. Flagged for the manager: the "unreadable root dropped, and everything listed after it also silently dropped, with a zero exit code" behavior looks like a genuine latent bug (silent data loss with no error signal) — out of scope to fix here, but worth a follow-up.
+- **Resolves:** followup `8ZmD`.

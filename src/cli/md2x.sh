@@ -284,6 +284,19 @@ printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
   done <<< "${MD_FILES}"
   while IFS= read -r ROOT_DIR; do
     [[ -n "${ROOT_DIR}" ]] || continue
+    # Empirically confirmed abort/continue behavior for a 'find' failure here (e.g. an
+    # unreadable ROOT_DIR), since it isn't obvious from reading alone: under 'pipefail',
+    # this pipe's exit status is the rightmost non-zero status among {find, while} --
+    # and the 'while read' loop always exits 0 (it just drains whatever 'find' emitted,
+    # or nothing, then hits EOF), so a 'find' error becomes THIS pipe's exit status.
+    # That trips 'errexit' in the outer 'while read ROOT_DIR' loop above, aborting it
+    # right there: any root listed *after* the failing one in '${SEARCH_DIRS}' is never
+    # even attempted (silently dropped), while roots listed before it, and files 'find'
+    # already emitted for the SAME root before erroring deeper in its tree, are kept.
+    # None of this reaches the top-level script: '< <(...)' process-substitution
+    # failures are invisible to the parent's own 'errexit'/'pipefail', so 'md2x' still
+    # exits 0 overall and silently omits the unprocessed roots' files. See
+    # 'exit-codes.bats'' "unreadable search root" cases and followup 8ZmD.
     find "${ROOT_DIR}" -name "*.md" | while IFS= read -r FOUND_FILE; do
       printf '%s\t%s\n' "${FOUND_FILE}" "${ROOT_DIR}"
     done
