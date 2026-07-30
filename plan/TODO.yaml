@@ -18,7 +18,7 @@ phases:
             branch: phase-01-task-01-fix-css-delivery-and-stream-ha
             commit:
                 - 240e72a
-            merge: null
+            merge: bc3052b
         - number: 2
           slug: extend-visual-smoke-test-for-css
           title: Extend Visual Smoke Test For Css
