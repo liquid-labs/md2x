@@ -10,6 +10,10 @@ import shell from 'shelljs'
 shell.config.silent = true
 const execOptions = { shell : '/bin/bash' }
 
+// Escapes a value for safe interpolation inside a single-quoted bash argument: close the quote, emit an escaped
+// literal quote, reopen the quote. This is the standard POSIX single-quote escape idiom.
+const shellQuote = (value) => `'${String(value).replace(/'/g, "'\\''")}'`
+
 const md2x = ({
   markdown,
   format = 'pdf',
@@ -22,7 +26,7 @@ const md2x = ({
   singlePage = false,
   sources
 }) => {
-  const sourceSpec = `${sources ? `'${sources.join("' '")}'` : ''}` // will generate file below; see note on bugginess
+  const sourceSpec = sources ? sources.map(shellQuote).join(' ') : '' // will generate file below; see note on bugginess
   if (!title && sourceSpec === "'-'") {
     title = 'Report'
   }
@@ -43,13 +47,13 @@ const md2x = ({
     options.push('--no-toc')
   }
   if (title) {
-    options.push(`--title '${title}'`)
+    options.push(`--title ${shellQuote(title)}`)
   }
   if (singlePage) {
     options.push('--single-page')
   }
   if (outputPath) {
-    options.push(`--output-path '${outputPath}'`)
+    options.push(`--output-path ${shellQuote(outputPath)}`)
   }
 
   const command = `npx md2x ${options.join(' ')} ${sourceSpec}`
@@ -66,7 +70,7 @@ const md2x = ({
     const stagingFile = fsPath.join(stagingDir, `${title}.md`)
     shell.ShellString(markdown).to(stagingFile)
     try {
-      result = shell.exec(command + ' ' + stagingFile, execOptions)
+      result = shell.exec(command + ' ' + shellQuote(stagingFile), execOptions)
     }
     finally { shell.rm('-r', stagingDir) }// cleanup
   }
