@@ -53,3 +53,11 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Discovered during toc-generation planning (2026-07-30). The `--single-page` concatenation target (`<title>.md` or `input.md`, built in src/cli/md2x.sh) is written into the user''s current working directory and is never removed after conversion, even when `--keep-intermediate` is NOT specified. Every other intermediate artifact (Pandoc log, PDF header/footer overlay) is cleaned up by default and only kept with --keep-intermediate; this one is not. Worth a maintainer decision: clean it up by default (respecting --keep-intermediate like the other intermediates), or document the exception if it''s intentional.'
+    - title: generate-page() shadows COMBINED_FILE
+      id: roct
+      date: "2026-07-30"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Discovered during toc-generation planning (2026-07-30). src/cli/lib/generate-page.sh (~line 152) reassigns the caller''s global COMBINED_FILE variable for its own PDF-overlay merge target, reusing the same name md2x.sh''s --single-page path uses for the concatenated-input file. Harmless today because the two uses don''t currently overlap in a way that causes observable breakage, but it''s a live shadowing hazard: a future change to either the --single-page flow or generate-page()''s overlay merge could silently clobber the other''s value. Worth renaming one of the two variables to remove the collision.'
