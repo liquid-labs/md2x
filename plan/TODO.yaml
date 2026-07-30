@@ -33,7 +33,7 @@ phases:
           slug: add-toc-flag-and-conflict-check
           title: Add Toc Flag And Conflict Check
           path: phase-01-markdown-toc-generation/003-add-toc-flag-and-conflict-check.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Implemented --toc as a long-only, boolean setSimpleOptions entry alongside --no-toc, confirmed it does not steal -t, added a fatal conflict check placed before the network-triggering ensure-weasyprint call, and resolved both flags into a TOC_MODE (auto/on/off) variable nothing yet consumes (task 004's job). Rewrote --help and added the mirrored Node wrapper option. make test (78 bats + 23 Jest) and make lint all green. One validation checklist item does not hold due to a pre-existing, out-of-scope TITLE-overwrite bug.
           git:
