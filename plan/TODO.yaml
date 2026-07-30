@@ -16,3 +16,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: fix-html-output-naming
+          title: Fix HTML Output Filename To Drop -base Suffix
+          path: phase-01-resolve-followups/002-fix-html-output-naming.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
