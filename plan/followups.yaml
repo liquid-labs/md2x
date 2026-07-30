@@ -43,12 +43,3 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Surfaced while resolving the pdf-engine-weasyprint plan-branch merge conflict. The bats suite (src/cli/test/bats/) stubs pandoc/gs/pdftk on PATH but not python3, and the merged src/cli/md2x.sh now calls ensure-weasyprint (real python3 -m venv + pip install weasyprint) for every --output-format pdf invocation. On this dev machine ~/.md2x/venv/bin/weasyprint already existed, so make test-cli''s PDF cases took the cheap warm-path check and passed quickly (55/55). On a machine that has never run md2x — including a fresh CI runner — the first PDF-format bats case would trigger a real, ~1-minute, network-dependent WeasyPrint install rather than staying hermetic like the rest of the stubbed suite. Worth a maintainer decision: stub/short-circuit ensure-weasyprint in the bats harness, or document/accept the one-time cold-CI cost.'
-    - title: 'Design note (not a required fix): unlike pand'
-      id: OUbU
-      date: "2026-07-30"
-      tags:
-        - type:ambiguity
-        - plan/phase:restore-pdf-styling
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Design note (not a required fix): unlike pandoc-log.log and the PDF overlay (both written into the user''s working/output directory), the CSS temp file lives in the system TMPDIR and its path is never surfaced to the user, so --keep-intermediate currently leaves it effectively undiscoverable/orphaned outside the user''s working tree. Implemented per the task doc''s explicit ''either is acceptable'' framing (gated on KEEP_INTERMEDIATE, matching the prescribed line), but flagging for task 003 or a follow-up to consider: always removing it regardless of the flag, or surfacing its path when retained.'
