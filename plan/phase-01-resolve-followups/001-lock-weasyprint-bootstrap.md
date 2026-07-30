@@ -36,3 +36,26 @@ This is a scoped bugfix to one file's concurrency behavior; no CLI flag, output 
 - `docs/architecture.md`'s `### WeasyPrint bootstrap` subsection — update to mention locking.
 - `src/cli/test/bats/real-toolchain-e2e.bats` — model for a bats file with its own local setup/teardown independent of `md2x_setup`.
 - `plan/followups.yaml` item `AOJw` — full original followup text.
+
+## Status
+
+**Outcome:** succeeded. Date: 2026-07-30.
+
+Closes followup `AOJw`. `ensure-weasyprint()` in `src/cli/lib/ensure-weasyprint.sh` now guards its cold-bootstrap body (`python3 -m venv` / `ensurepip` / `pip install`) with a `mkdir`-based lock directory, `${HOME}/.md2x-venv.lock` (a sibling of `.md2x`, not nested inside it, so acquiring the lock never depends on `.md2x` existing yet). `mkdir` is atomic on POSIX filesystems, so exactly one concurrent invocation wins it; a losing process blocks and waits (re-checking `-x "${WEASYPRINT_BIN}"` on every poll, since the winner may finish mid-wait), bounded by a 180s timeout via a new `ensure-weasyprint-lock-timeout-fail()` that prints an explicit manual-remediation message (modeled on `ensure-weasyprint-fail()`'s existing pattern) rather than hanging forever or auto-clearing state it doesn't own. The lock is released via explicit `rmdir ... || true` calls at every exit point that holds it (the winner's success path, the "winner-already-finished-while-we-waited" recheck path, and every `ensure-weasyprint-fail()` call site) rather than a script-level `EXIT` trap, since `src/cli/md2x.sh` registers its own `trap ... EXIT` later (for `CSS_TMP_FILE`) that would otherwise silently clobber one set here. All exit paths were traced manually (see Validation) and confirmed to release the lock exactly when they hold it. The warm path is untouched: still a single `-x` test, no lock directory ever created or removed on that path (covered by a dedicated bats case).
+
+`docs/architecture.md`'s `### WeasyPrint bootstrap` subsection has a new paragraph describing the locking behavior, the timeout, and the trap-ordering rationale.
+
+New test coverage: `src/cli/test/bats/weasyprint-bootstrap-locking.bats`, a self-contained bats file with its own `weasyprint_lock_setup`/`weasyprint_lock_teardown` (modeled on `real-toolchain-e2e.bats`'s `e2e_setup`/`e2e_teardown`; does not call `md2x_setup`/`md2x_use_stub_path`). It builds a private `HOME` with no pre-existing `.md2x`, symlinks the repo's real stub `pandoc`/`gs`/`pdftk`, passes through real `bash`/`brew`/`git`/`jq`/`perl`, and installs a fake `python3` that intercepts `-m venv`/`-m ensurepip`/`-m pip install`, logging high-resolution (`perl -MTime::HiRes`) timestamped `venv-start`/`install-end` markers tagged by an `MD2X_TEST_WPL_ID` env var to a shared log. Two concurrent `md2x` PDF conversions (in separate cwds, sharing `HOME`) are launched and asserted: both exit 0; their logged bootstrap intervals never overlap; exactly one `venv-start`/`install-end` pair appears in the combined log (proof the loser's post-wait recheck short-circuited it rather than redoing the install); the resulting `weasyprint` binary is executable; no lock directory is left behind. A second case proves the warm path never touches the lock or spawns the fake `python3` at all. **Verified the test actually catches the regression it targets**: temporarily reverted `ensure-weasyprint.sh` to the old unlocked implementation and confirmed the new bats case fails with a genuine logged overlap before restoring the fix.
+
+**Validation:**
+- `make test` — full suite green: 68/68 bats cases (including both new `weasyprint-bootstrap-locking.bats` cases) and 17/17 Jest tests.
+- Manual exit-path trace of `ensure-weasyprint()` — all paths confirmed to release the lock exactly when held (see above); full trace recorded during implementation.
+- Warm-path no-lock-touched assertion — covered by the "warm path (pre-existing weasyprint) never touches the lock" bats case.
+- `grep -rn "AOJw" plan/followups.yaml` still finds the entry — removal is the manager's step, not this task's; **resolved followup id `AOJw` is reported here for the manager to remove.**
+
+**Assumptions applied:** none beyond what's stated in Requirements — both the lock mechanism choice (`mkdir`-based lock directory, not staging-dir+rename) and the wait-vs-fail-fast choice (bounded blocking wait, per the task doc's stated preference) were explicit either/or decisions left to this task; both are documented inline as code comments per the task doc's instruction.
+
+**Files touched:**
+- `src/cli/lib/ensure-weasyprint.sh`
+- `docs/architecture.md`
+- `src/cli/test/bats/weasyprint-bootstrap-locking.bats` (new)
