@@ -23,7 +23,7 @@ phases:
           slug: add-toc-preprocessor-script
           title: Add TOC Preprocessor Script
           path: phase-01-markdown-toc-generation/002-add-toc-preprocessor-script.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: Implemented src/cli/lib/toc-preprocess.py, a stdlib-only Python 3 Markdown-in/Markdown-out preprocessor that scans ATX/setext headings (respecting fence and multi-line-HTML-comment block state), reproduces Pandoc's gfm_auto_identifiers slug algorithm exactly (verified against all 29 corpus rows), resolves the <!-- md2x:toc --> marker and on/off/auto mode contract, and emits a nested, deduplicated [Heading](#slug) bullet list at the correct placement per the calibrated page/section heuristic. Added toc-preprocess.bats with 33 cases covering the slug corpus, heading-recognition table, marker handling, placement, all heuristic boundaries, mode overrides, the note's section-counting worked examples, CRLF pass-through, and link-text flattening/escaping. make test fully green. Nothing calls the script yet -- task 004 wires it into generate-page.sh.
           git:
