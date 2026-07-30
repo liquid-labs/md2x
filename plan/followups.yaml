@@ -87,15 +87,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Phase-01 correctness review (test-coverage-bugfix plan) found: the aI57 fix''s file-discovery process substitution in src/cli/md2x.sh now nests a per-root inner pipe (find ${ROOT_DIR} -name "*.md" | while IFS= read -r FOUND_FILE; do ...; done) inside the existing outer for-loop | sort pipe. Under set -o pipefail/errexit, a find failure on one search root now surfaces only after that root''s already-discovered files drain through the inner while loop, rather than aborting the instant the bare find command failed as in the pre-fix code. Net abort-or-not behavior is likely unchanged, but the abort point and how much partial file-list reaches the loop first has shifted. Low confidence, minor severity - worth a one-line comment or a targeted bats case (an existing-but-unreadable search root) if the maintainer wants to pin down or preserve the original immediate-abort semantics.'
-    - title: md2x.sh discovery pipe overhead
-      id: r38C
-      date: "2026-07-29"
-      tags:
-        - plan/phase:automated-test-coverage
-        - type:optimization
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 efficiency review (test-coverage-bugfix plan) found: the aI57 fix''s file-discovery change (tab-separated <md-file><tab><search-root> records for the mirrored-output derivation) adds one extra piped while/read/printf subshell per search-root iteration versus the prior direct `find | sort`. Still O(n) in matched files, no new fork-per-file, but a real (if small) constant-factor increase for many search roots or very large *.md trees. Suggestion severity, low confidence - no action needed unless profiling on realistic input-tree sizes shows this pass is material to CLI runtime. If it ever is, consider `find ... -printf ''%p\t${ROOT_DIR}\n''` instead of piping through read/printf.'
     - title: e2e suite always runs in make test
       id: EWuE
       date: "2026-07-29"
