@@ -8,15 +8,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Flagged by the planning agent for plan `pdf-engine-weasyprint`. The new WeasyPrint bootstrap (src/cli/lib/ensure-weasyprint.sh, introduced by that plan) creates `~/.md2x/venv` in place on first PDF conversion (python3 -m venv + ensurepip + pip install weasyprint), gated by a simple `[[ -x ~/.md2x/venv/bin/weasyprint ]]` existence check. If two `md2x` processes race a cold bootstrap concurrently (e.g. two PDF conversions kicked off at once on a machine that has never run md2x before), their venv-creation and pip-install steps can interleave and corrupt the shared `~/.md2x/venv` directory. The plan deliberately deferred hardening this (no staging-dir build + atomic rename, no lockfile) in favor of matching the repo''s plain-bash style; a partially-built venv is expected to self-heal on a later run since the `-x` gate simply fails again and retries the bootstrap, but a genuinely concurrent race during the initial cold start is not guarded against. Worth a maintainer decision: accept the risk (probably fine given cold-start is a one-time, human-triggered event) or add a lockfile/staging-dir mechanism.'
-    - title: --output-format html on a per-file conversion
-      id: c2s9
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: --output-format html on a per-file conversion produces <title>-base.html rather than <title>.html - undocumented in docs/md2x-spec.md or README.md - candidate followup
     - title: md2x.js shell injection risk
       id: arUf
       date: "2026-07-29"
