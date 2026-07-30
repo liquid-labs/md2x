@@ -154,18 +154,18 @@ e2e_assert_zip_magic() {
   md2x_run --output-format html --flatten-dirs --output-path . tiny-doc.md
 
   assert_success
-  assert_file_exists './tiny-doc-base.html'
-  e2e_assert_nonempty './tiny-doc-base.html'
+  assert_file_exists './tiny-doc.html'
+  e2e_assert_nonempty './tiny-doc.html'
   # 'Tiny Doc' is the fixture's own heading text; '<style>' is the bundled GitHub CSS
   # 'generate-page.sh' embeds via '--css'. Neither marker exists in stub output, so this
   # is proof a real Pandoc conversion happened.
-  assert_file_contains './tiny-doc-base.html' 'Tiny Doc'
-  assert_file_contains './tiny-doc-base.html' '<style>'
+  assert_file_contains './tiny-doc.html' 'Tiny Doc'
+  assert_file_contains './tiny-doc.html' '<style>'
   # 'class="markdown-body"' is the '--include-before-body' wrapper div (task 004 /
   # followup TNLq): direct proof, against real (non-stub) Pandoc output, that the div
   # genuinely lands around the rendered body so 'github.css''s bare '.markdown-body'
   # selectors match.
-  assert_file_contains './tiny-doc-base.html' 'class="markdown-body"'
+  assert_file_contains './tiny-doc.html' 'class="markdown-body"'
 }
 
 @test "e2e: tiny-doc.md converts to a real, non-empty DOCX" {

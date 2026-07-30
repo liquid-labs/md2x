@@ -156,6 +156,19 @@ teardown() {
   css_tmp_file="$(md2x_stub_last_call_args pandoc | grep '\.css$' || true)"
   [[ -n "${css_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --css argument ending in .css'
   assert_file_exists "${css_tmp_file}"
+  assert_stderr_contains "${css_tmp_file}"
+}
+
+@test "--quiet --keep-intermediate still prints the retained css temp file path to stderr" {
+  md2x_write_doc 'report.md'
+
+  md2x_run --quiet --keep-intermediate --output-format pdf --flatten-dirs --output-path . report.md
+
+  assert_success
+  local css_tmp_file
+  css_tmp_file="$(md2x_stub_last_call_args pandoc | grep '\.css$' || true)"
+  [[ -n "${css_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --css argument ending in .css'
+  assert_stderr_contains "${css_tmp_file}"
 }
 
 @test "without --keep-intermediate, the css temp file handed to pandoc is removed after conversion" {

@@ -1,40 +1,5 @@
 version: 2
 items:
-    - title: Race on concurrent cold ~/.md2x bootstrap
-      id: AOJw
-      date: "2026-07-29"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Flagged by the planning agent for plan `pdf-engine-weasyprint`. The new WeasyPrint bootstrap (src/cli/lib/ensure-weasyprint.sh, introduced by that plan) creates `~/.md2x/venv` in place on first PDF conversion (python3 -m venv + ensurepip + pip install weasyprint), gated by a simple `[[ -x ~/.md2x/venv/bin/weasyprint ]]` existence check. If two `md2x` processes race a cold bootstrap concurrently (e.g. two PDF conversions kicked off at once on a machine that has never run md2x before), their venv-creation and pip-install steps can interleave and corrupt the shared `~/.md2x/venv` directory. The plan deliberately deferred hardening this (no staging-dir build + atomic rename, no lockfile) in favor of matching the repo''s plain-bash style; a partially-built venv is expected to self-heal on a later run since the `-x` gate simply fails again and retries the bootstrap, but a genuinely concurrent race during the initial cold start is not guarded against. Worth a maintainer decision: accept the risk (probably fine given cold-start is a one-time, human-triggered event) or add a lockfile/staging-dir mechanism.'
-    - title: --output-format html on a per-file conversion
-      id: c2s9
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: --output-format html on a per-file conversion produces <title>-base.html rather than <title>.html - undocumented in docs/md2x-spec.md or README.md - candidate followup
-    - title: md2x.js shell injection risk
-      id: arUf
-      date: "2026-07-29"
-      tags:
-        - plan/phase:automated-test-coverage
-        - type:security
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 security review (test-coverage-bugfix plan) found: src/node/md2x.js builds its shell command by naively single-quoting caller-supplied values with no escaping of embedded single quotes (options.push(`--title ''${title}''`) at md2x.js:43, `--output-path ''${outputPath}''` at md2x.js:49, sourceSpec join at md2x.js:25), then executes via shell.exec(command, { shell: ''/bin/bash'' }) (md2x.js:56, 66). Any of title/outputPath/sources containing a single quote breaks out of the quoting; a crafted value can execute arbitrary shell commands with the Node process''s privileges. md2x() is the exported library API and docs/md2x-spec.md documents these as plain caller-supplied strings (e.g. a document title), so externally-influenced input is plausible. Not introduced by the test-coverage-bugfix diff (src/node/md2x.js is unchanged), but task 004''s new src/node/md2x.test.js (lines 74-88) now asserts the exact unescaped command string as correct/expected behavior with no accompanying caveat, unlike the same file''s explicit "documents CURRENT buggy behavior" treatment of followups udVi/egcc. Worth a maintainer fix: escape embedded single quotes in title/outputPath/each sources entry, or switch to an argv-array invocation (child_process.execFile) that never round-trips through a shell.'
-    - title: md2x.sh find-pipe abort shift
-      id: 8ZmD
-      date: "2026-07-29"
-      tags:
-        - plan/phase:automated-test-coverage
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 correctness review (test-coverage-bugfix plan) found: the aI57 fix''s file-discovery process substitution in src/cli/md2x.sh now nests a per-root inner pipe (find ${ROOT_DIR} -name "*.md" | while IFS= read -r FOUND_FILE; do ...; done) inside the existing outer for-loop | sort pipe. Under set -o pipefail/errexit, a find failure on one search root now surfaces only after that root''s already-discovered files drain through the inner while loop, rather than aborting the instant the bare find command failed as in the pre-fix code. Net abort-or-not behavior is likely unchanged, but the abort point and how much partial file-list reaches the loop first has shifted. Low confidence, minor severity - worth a one-line comment or a targeted bats case (an existing-but-unreadable search root) if the maintainer wants to pin down or preserve the original immediate-abort semantics.'
     - title: Validation check 6 (python3 preflight failure
       id: egW0
       date: "2026-07-29"
@@ -44,29 +9,39 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Validation check 6 (python3 preflight failure) was not exercised live: brew''s self-location depends on /opt/homebrew/bin staying on PATH, which also hosts python3/gs/pandoc on this dev machine, so a live PATH-exclusion test could not be safely constructed. Verified by code inspection (identical preflight-loop idiom as gs/pandoc/pdftk) instead. Recommend re-verifying live in an environment where python3 is not colocated with brew/gs/pandoc.'
-    - title: WeasyPrint SSRF risk via lib usage
-      id: Kjs2
-      date: "2026-07-29"
-      tags:
-        - type:security
-        - plan/phase:weasyprint-pdf-engine
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Flagged by the phase-01 (weasyprint-pdf-engine) phase-review security lens, minor/low-confidence. Pinning --pdf-engine to WeasyPrint (this phase) makes WeasyPrint the actual PDF renderer again (previously this path errored on Pandoc >= 3.4, so it was unreachable in practice). WeasyPrint''s default posture fetches external resources referenced in rendered HTML (image src, @import/url() in CSS, including file:// URLs) with no built-in allowlist. md2x is a CLI a user runs against their own documents (low risk there), but it''s also published as an npm library (src/node/md2x.js, md2x({ markdown, ... })) that a consuming application could embed to render externally-supplied Markdown — in which case resource references in that content could be used for SSRF or local file disclosure via WeasyPrint''s fetch behavior. Nothing in this phase''s diff changes or introduces that fetch behavior (intrinsic to WeasyPrint, and was already true of the previous wkhtmltopdf-based path when it worked), but this phase is what makes it reachable again. Worth a maintainer decision: document the caveat for library consumers (a caller embedding md2x against externally-authored content should apply the same precautions as any other SSRF-capable rendering path — network egress restrictions, or a WeasyPrint URL fetcher override), or decide it''s out of scope / the caller''s responsibility.'
-    - title: bats PDF cases can cold-install weasyprint
-      id: efJF
-      date: "2026-07-29"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Surfaced while resolving the pdf-engine-weasyprint plan-branch merge conflict. The bats suite (src/cli/test/bats/) stubs pandoc/gs/pdftk on PATH but not python3, and the merged src/cli/md2x.sh now calls ensure-weasyprint (real python3 -m venv + pip install weasyprint) for every --output-format pdf invocation. On this dev machine ~/.md2x/venv/bin/weasyprint already existed, so make test-cli''s PDF cases took the cheap warm-path check and passed quickly (55/55). On a machine that has never run md2x — including a fresh CI runner — the first PDF-format bats case would trigger a real, ~1-minute, network-dependent WeasyPrint install rather than staying hermetic like the rest of the stubbed suite. Worth a maintainer decision: stub/short-circuit ensure-weasyprint in the bats harness, or document/accept the one-time cold-CI cost.'
-    - title: 'Design note (not a required fix): unlike pand'
-      id: OUbU
+    - title: 'Genuine latent bug: a healthy, readable searc'
+      id: S92a
       date: "2026-07-30"
       tags:
         - type:ambiguity
-        - plan/phase:restore-pdf-styling
+        - plan/phase:resolve-followups
         - priority:unspecified
         - effort:unspecified
-      text: 'Design note (not a required fix): unlike pandoc-log.log and the PDF overlay (both written into the user''s working/output directory), the CSS temp file lives in the system TMPDIR and its path is never surfaced to the user, so --keep-intermediate currently leaves it effectively undiscoverable/orphaned outside the user''s working tree. Implemented per the task doc''s explicit ''either is acceptable'' framing (gated on KEEP_INTERMEDIATE, matching the prescribed line), but flagging for task 003 or a follow-up to consider: always removing it regardless of the flag, or surfacing its path when retained.'
+      text: 'Genuine latent bug: a healthy, readable search root''s files silently vanish (zero exit code, no error beyond find''s own stderr line) merely because it''s listed after an unreadable root. Not fixed per this task''s explicit no-behavior-change assumption. Needs a maintainer decision: abort loudly, or process every root independently regardless of one root''s failure.'
+    - title: 'Informational only: WEASYPRINT_LOCK_TIMEOUT_S'
+      id: ZP4P
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:resolve-followups
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Informational only: WEASYPRINT_LOCK_TIMEOUT_SECS=180 and WEASYPRINT_LOCK_POLL_SECS=1 are fixed constants, not exposed via env-var override, matching the file''s existing style. Worth a maintainer note if future needs (e.g. CI wanting a shorter timeout) arise, but out of this task''s scope.'
+    - title: md2x.js sources:[] edge case behavior change
+      id: GuQR
+      date: "2026-07-30"
+      tags:
+        - type:bug
+        - plan/phase:resolve-followups
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 (resolve-followups) phase-review correctness lens found: in src/node/md2x.js, the pre-diff sourceSpec construction (`sources ? \`''${sources.join("'' ''")}''\` : ''''`) took the truthy branch for `sources: []` and produced a literal empty-quoted shell argument (`''''`), which the CLI received as one empty positional argument. Task 003''s shellQuote refactor (`sources ? sources.map(shellQuote).join('' '') : ''''`) instead produces a genuinely empty string for `sources: []`, so no source argument is emitted at all — a materially different CLI code path (zero positional args vs one empty one). Neither the pre- nor post-diff test suite exercises this exact edge case, so it wasn''t caught by coverage. Worth a maintainer decision: pick the intended behavior for `sources: []` deliberately (preserve the old empty-arg behavior, or keep the new no-arg behavior) and add a Jest case covering it.'
+    - title: WeasyPrint lock failure misdiagnosis
+      id: zwH4
+      date: "2026-07-30"
+      tags:
+        - type:bug
+        - plan/phase:resolve-followups
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 (resolve-followups) phase-review correctness lens found (low confidence): in src/cli/lib/ensure-weasyprint.sh''s cold-bootstrap lock loop (lines ~85-95), every `mkdir "${WEASYPRINT_LOCK_DIR}"` failure is treated identically as "another process holds the lock" and polled for up to the full 180s timeout before reporting a stale-lock message. If mkdir instead fails for an unrelated, persistent reason (e.g. unwritable $HOME), the process still busy-waits the full 180s and then reports a misleading diagnosis pointing at the wrong remediation (rm -rf ~/.md2x-venv.lock, which wouldn''t fix a permissions issue). Worth a maintainer fix: distinguish EEXIST-style contention (confirm via `[[ -d "${WEASYPRINT_LOCK_DIR}" ]]` after a failed mkdir) from other mkdir failure modes, and fail fast with an accurate message on the latter.'
