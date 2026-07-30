@@ -69,8 +69,8 @@ Worked examples against this repository's own docs:
 | Document | Headings | Section level | Count |
 | --- | --- | --- | --- |
 | `README.md` | one `#`, six `##` | 2 | 6 |
-| `docs/md2x-spec.md` | one `#`, five `##` | 2 | 5 |
-| `src/cli/test/tiny-doc.md` | one `#`, one `##` | 2 | 1 |
+| `docs/md2x-spec.md` | one `#`, eight `##` | 2 | 8 |
+| `src/cli/test/tiny-doc.md` | one `#`, one `##`, one `###` | 2 | 1 |
 | `--single-page` of three chapter files, each starting `# Chapter N` | three `#` | 1 | 3 |
 | A document with no headings | — | — | 0 |
 
@@ -161,12 +161,12 @@ against the estimator above:
 | synthetic structured, 8 sections | 683 | 105 | 4 | 4 |
 | synthetic structured, 10 sections | 853 | 131 | 5 | 4 |
 | synthetic structured, 12 sections | 1023 | 157 | 5 | 5 |
-| synthetic dense prose, 200 words | 203 | 13 | 1 | 1 |
-| synthetic dense prose, 400 words | 403 | 21 | 2 | 2 |
-| synthetic dense prose, 600 words | 603 | 27 | 2 | 2 |
-| synthetic dense prose, 800 words | 803 | 33 | 3 | 2 |
-| synthetic dense prose, 1000 words | 1003 | 41 | 3 | 3 |
-| synthetic dense prose, 1200 words | 1203 | 47 | 4 | 4 |
+| synthetic dense prose, 200 words | 203 | 9 | 1 | 1 |
+| synthetic dense prose, 400 words | 403 | 15 | 2 | 2 |
+| synthetic dense prose, 600 words | 603 | 21 | 2 | 2 |
+| synthetic dense prose, 800 words | 803 | 29 | 3 | 2 |
+| synthetic dense prose, 1000 words | 1003 | 35 | 3 | 3 |
+| synthetic dense prose, 1200 words | 1203 | 41 | 4 | 4 |
 | `AGENTS.md` | 741 | 81 | 3 | 3 |
 | `README.md` | 904 | 104 | 4 | 4 |
 | `docs/project-structure.md` | 971 | 100 | 4 | 4 |
