@@ -54,4 +54,4 @@ phases:
             branch: phase-01-task-04-wrap-generated-body-in-markdow
             commit:
                 - d08a989
-            merge: null
+            merge: c46d8b7
