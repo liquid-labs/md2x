@@ -15,7 +15,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-01-task-01-fix-css-delivery-and-stream-ha
-            commit: []
+            commit:
+                - 240e72a
             merge: null
         - number: 2
           slug: extend-visual-smoke-test-for-css
