@@ -56,3 +56,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 6
+          slug: update-readme-and-changelog
+          title: Update README And CHANGELOG
+          path: phase-01-markdown-toc-generation/006-update-readme-and-changelog.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
