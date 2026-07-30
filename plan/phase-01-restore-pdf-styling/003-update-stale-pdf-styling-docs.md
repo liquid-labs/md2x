@@ -59,3 +59,15 @@ If your own re-read finds a genuine inaccuracy this description missed (e.g. wor
 ## Metadata
 
 architectural_impact: false
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-07-29
+- **Validation summary:** all four validation checks passed — `git diff README.md` shows the Features bullet restored to unconditional "every HTML/PDF page" phrasing; `git diff docs/architecture.md` shows the "Bundled stylesheet" section now describing the `mktemp`-based `.css` temp-file mechanism (and why, and its cleanup timing) instead of process substitution; `git diff docs/md2x-spec.md` is empty (see below); `grep -rn "TNLq" README.md docs/md2x-spec.md docs/architecture.md` returns no matches.
+- **`docs/md2x-spec.md` finding:** verified already accurate, no edit made. Re-read both flagged passages (the "Consistent styling" General features bullet and UC1's outcome sentence) plus a full `css`/`styl` grep of the file: neither claims or hedges that PDF output lacks the built-in CSS; both already state PDF gets styled consistently with HTML. Followup `LUhO`'s concern was that this claim was false pre-fix — it is now true post-task-001, so no textual correction is needed.
+- **System overview diagram/paragraph check (architecture.md):** confirmed neither the Mermaid diagram's `Pandoc` node ("gfm to html5 intermediate + GitHub CSS + optional TOC") nor its accompanying paragraph names the CSS-delivery mechanism specifically; both remain accurate regardless of temp-file vs. process-substitution delivery. No edit made.
+- **Consistency re-check:** re-read the "Bundled stylesheet" and "Page generation / conversion pipeline" sections together — no new contradiction introduced. The "Page generation / conversion pipeline" paragraph's cleanup sentence ("the Pandoc log and, for PDF, the overlay file") does not enumerate the CSS temp file (which `generate-page.sh` now also cleans up, for every output format, not just PDF); this is a pre-existing omission rather than a new contradiction — flagged below for the manager's awareness rather than edited, since the task doc scoped no edit to that section.
+- **Affected files:** `README.md`, `docs/architecture.md` (both repo-relative to worktree root).
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>

@@ -80,7 +80,7 @@ Every invocation, whichever entry point it starts from, performs the same sequen
 
 ### Bundled stylesheet
 
-`src/cli/lib/github.css` is embedded inline into every Pandoc invocation via process substitution (`--css <(echo "$CSS")`), so styling has no external file dependency at runtime — the CSS travels with the built CLI rather than being read from disk at conversion time.
+`src/cli/lib/github.css` is embedded into the built CLI at build time — `bash-rollup` inlines its contents into a heredoc in `generate-page.sh` — so styling has no external file dependency at runtime; the CSS travels with the built CLI rather than being read from disk at conversion time. At conversion time, `generate-page()` writes that embedded content to a `mktemp`-created, `.css`-suffixed temporary file and passes that file's path to Pandoc's `--css`, rather than a process-substitution file descriptor, because WeasyPrint (the pinned `--pdf-engine`) MIME-sniffs `--css` from its path's file extension and cannot sniff a type from a process-substitution `/dev/fd/N` path. The temporary file is removed after the Pandoc invocation unless `--keep-intermediate` is given.
 
 ### Node library wrapper
 
