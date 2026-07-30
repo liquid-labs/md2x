@@ -153,7 +153,7 @@ teardown() {
 
   assert_success
   local css_tmp_file
-  css_tmp_file="$(md2x_stub_last_call_args pandoc | grep '\.css$')"
+  css_tmp_file="$(md2x_stub_last_call_args pandoc | grep '\.css$' || true)"
   [[ -n "${css_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --css argument ending in .css'
   assert_file_exists "${css_tmp_file}"
 }
@@ -165,7 +165,7 @@ teardown() {
 
   assert_success
   local css_tmp_file
-  css_tmp_file="$(md2x_stub_last_call_args pandoc | grep '\.css$')"
+  css_tmp_file="$(md2x_stub_last_call_args pandoc | grep '\.css$' || true)"
   [[ -n "${css_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --css argument ending in .css'
   assert_file_not_exists "${css_tmp_file}"
 }
