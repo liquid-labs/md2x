@@ -193,15 +193,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Phase-01 (restore-pdf-styling) phase-review''s documentation link-chain check found: CHANGELOG.md is not reachable from README.md (README links only to AGENTS.md, docs/md2x-spec.md, docs/architecture.md, docs/project-structure.md, which all cross-link back into that same reachable set). Pre-existing condition, not introduced or touched by this phase''s diff (confirmed via git log — CHANGELOG.md''s own history and this phase''s README.md diff don''t intersect). Worth a maintainer decision: add a README link to CHANGELOG.md, or explicitly treat CHANGELOG.md as exempt from the project''s link-chain convention.'
-    - title: 'shellcheck count drifted: task 001''s Status r'
-      id: ZfSv
-      date: "2026-07-30"
-      tags:
-        - type:ambiguity
-        - plan/phase:restore-pdf-styling
-        - priority:unspecified
-        - effort:unspecified
-      text: 'shellcheck count drifted: task 001''s Status recorded 15 warnings as baseline; this task''s pre-change measurement found 17 already present before any of this task''s edits (some intervening, unrelated change between task 001 and now added 2). This task adds exactly 2 more, both SC2046 on the two new conditional lines -- the same warning class already present and accepted on the adjacent pre-existing --toc/--pdf-engine conditionals using the identical idiom Requirement 3 mandated reusing. Recommend treating as expected/acceptable rather than a defect; the task doc''s literal ''no new warnings'' bullet is not achievable without deviating from Requirement 3''s mandated idiom.'
     - title: 'Per the task doc''s own note: a documentation '
       id: qbZF
       date: "2026-07-30"
