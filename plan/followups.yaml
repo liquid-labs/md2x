@@ -79,15 +79,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Design note (not a required fix): unlike pandoc-log.log and the PDF overlay (both written into the user''s working/output directory), the CSS temp file lives in the system TMPDIR and its path is never surfaced to the user, so --keep-intermediate currently leaves it effectively undiscoverable/orphaned outside the user''s working tree. Implemented per the task doc''s explicit ''either is acceptable'' framing (gated on KEEP_INTERMEDIATE, matching the prescribed line), but flagging for task 003 or a follow-up to consider: always removing it regardless of the flag, or surfacing its path when retained.'
-    - title: CSS temp file leaks on pandoc failure
-      id: 9hZL
-      date: "2026-07-30"
-      tags:
-        - plan/phase:restore-pdf-styling
-        - type:optimization
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 (restore-pdf-styling) combined review found: in src/cli/lib/generate-page.sh, CSS_TMP_FILE is created via mktemp+mv before the Pandoc invocation and only removed by the unconditional cleanup line that runs after both pandoc branches. Under this file''s errexit/pipefail, a non-zero Pandoc/WeasyPrint exit (which this same phase''s fix now deliberately lets propagate) aborts generate-page() immediately, so that cleanup line never runs and CSS_TMP_FILE is left behind in ${TMPDIR:-/tmp} on every failed conversion. Same pattern as the pre-existing pandoc-log.log cleanup placement, but now extended to a system-tempdir artifact that''s less visible to the user. Suggested fix: guarantee removal on the abnormal-exit path too, e.g. a trap set immediately after the file is created.'
     - title: CSS temp file recreated per file in batch
       id: QBKX
       date: "2026-07-30"
