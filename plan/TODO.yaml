@@ -13,6 +13,7 @@ phases:
           path: phase-01-markdown-toc-generation/001-fix-single-page-combined-file-naming.md
           done: false
           tier: sonnet-med
+          digest: 'Fixed the --single-page-without---title defect where md2x.sh concatenated inputs into COMBINED_FILE but told generate-page() to read a differently-derived MD_FILE, silently converting an empty document while exiting 0. Fix: MD_FILE="${COMBINED_FILE}" guarded to the single-page branch. Tightened bats coverage. make test-cli passes all 72 cases.'
           git:
             branch: phase-01-task-01-fix-single-page-combined-file
             commit:
