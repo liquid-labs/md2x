@@ -10,11 +10,6 @@ generate-page() {
 
 # TODO: support 'author' if known
   # echo "generate-page for ${MD_FILE}..."
-  # slurp in default CSS
-  CSS=$(cat <<'EOF'
-source ./github.css # bash-rollup-no-recur
-EOF
-)
 
   # matches a linky thing; captures from '[...](' in $1, skips './' if present, and captures rest up but excluding '.md'
   #                   [....]      link not abs or ext                       add './' back in place
@@ -22,17 +17,12 @@ EOF
   # perl -pe 's/(\[[^\]]+\]\()(?!\/|https?:\/\/)(?:\.\/)?(.*)\.md\s*\)$/$1.\/$2.docx)/g'
   LINK_CONVERTER='perl -pe '"'"'s/(\[[^\]]+\]\()(?!\/|https?:\/\/)(?:\.\/)?(.*)\.md\s*\)$/$1.\/$2.'${OUTPUT_FORMAT}")/g'"
 
-  # WeasyPrint (the pinned '--pdf-engine') MIME-sniffs '--css' from its path extension,
-  # so it needs a real file ending in '.css' rather than a process-substitution
-  # '/dev/fd/N' path. macOS's native (BSD) 'mktemp' -- unlike GNU coreutils' -- only
-  # randomizes a *trailing* run of 'X's: a template with a literal suffix after the
-  # 'X's (e.g. 'md2x-css.XXXXXX.css') is returned verbatim, unrandomized, so a second
-  # call collides with the first call's still-open file. Create the file with a
-  # trailing-only template, then rename it to add the '.css' suffix.
-  CSS_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-css.XXXXXX")"
-  mv "${CSS_TMP_FILE}" "${CSS_TMP_FILE}.css"
-  CSS_TMP_FILE="${CSS_TMP_FILE}.css"
-  printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
+  # '$CSS' is static, deterministic content (github.css) that never varies across
+  # 'generate-page()' calls within a single md2x invocation, but a batch/directory
+  # conversion calls this function once per input file. 'CSS_TMP_FILE' is therefore
+  # created once, up front, by the caller (md2x.sh) rather than here -- recreating an
+  # identical file on every call would be redundant filesystem I/O (see followup QBKX).
+  # This function only consumes the already-populated '${CSS_TMP_FILE}'.
 
   # 'github.css' scopes every rule under a bare '.markdown-body' class selector, and
   # neither Pandoc's default html5 template nor a '-V'/'--variable' metadata hook puts
@@ -48,11 +38,20 @@ EOF
   printf '%s' "${MARKDOWN_BODY_OPEN}" > "${BODY_OPEN_TMP_FILE}"
   printf '%s' "${MARKDOWN_BODY_CLOSE}" > "${BODY_CLOSE_TMP_FILE}"
 
+  # Passed as separate, already-quoted array elements rather than folded into an
+  # unquoted command-substitution string (the pattern the other conditional flags below
+  # still use): a mktemp-produced path built from a '${TMPDIR}' containing whitespace
+  # would otherwise get IFS-word-split into extra, misaligned pandoc arguments instead
+  # of failing loudly.
+  INCLUDE_BODY_ARGS=()
+  [[ "${OUTPUT_FORMAT}" == 'docx' ]] \
+    || INCLUDE_BODY_ARGS=(--include-before-body "${BODY_OPEN_TMP_FILE}" --include-after-body "${BODY_CLOSE_TMP_FILE}")
+
   if [[ -z "${INPUT}" ]]; then
     pandoc \
       $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
       $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
-      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo "--include-before-body ${BODY_OPEN_TMP_FILE} --include-after-body ${BODY_CLOSE_TMP_FILE}" ) \
+      "${INCLUDE_BODY_ARGS[@]}" \
       --quiet \
       --standalone \
       --from gfm \
@@ -73,7 +72,7 @@ EOF
     pandoc \
       $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
       $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
-      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo "--include-before-body ${BODY_OPEN_TMP_FILE} --include-after-body ${BODY_CLOSE_TMP_FILE}" ) \
+      "${INCLUDE_BODY_ARGS[@]}" \
       --quiet \
       --standalone \
       --from gfm \
@@ -86,7 +85,10 @@ EOF
       1>/dev/null
   fi
   [[ -n "${KEEP_INTERMEDIATE}" ]] || rm pandoc-log.log
-  [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${CSS_TMP_FILE}"
+  # Ordinary-completion cleanup for this call's own body-open/body-close temp files. If
+  # a Pandoc/WeasyPrint failure above aborted this function under 'errexit' instead of
+  # reaching here, the caller's script-level EXIT trap (see md2x.sh) removes them -- and
+  # 'CSS_TMP_FILE' -- on that path instead; see followups 9hZL/MwYH.
   [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${BODY_OPEN_TMP_FILE}"
   [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${BODY_CLOSE_TMP_FILE}"
 
