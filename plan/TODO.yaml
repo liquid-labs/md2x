@@ -57,7 +57,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-05-document-weasyprint-ssrf-cavea
-            commit: []
+            commit:
+                - 28d411c
             merge: null
         - number: 6
           slug: stub-weasyprint-bootstrap-in-bats
