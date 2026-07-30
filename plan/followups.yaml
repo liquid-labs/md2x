@@ -210,3 +210,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Surfaced while resolving the pdf-engine-weasyprint plan-branch merge conflict. src/cli/test/bats/real-toolchain-e2e.bats'' PDF case skips with "pandoc''s PDF engine is unavailable: ''weasyprint'' not found" — it probes for weasyprint on PATH before running. Under the now-merged self-managed WeasyPrint design, weasyprint is deliberately never expected on PATH (md2x calls it via the absolute ~/.md2x/venv/bin/weasyprint path instead), so this guard will now always fire and the PDF e2e case will always skip, even though the conversion would in fact succeed via the managed venv binary. Worth a maintainer fix: update the guard to probe for the venv binary (or just attempt a conversion and let ensure-weasyprint''s own bootstrap/preflight handle unavailability) so this case actually exercises the real toolchain again.'
+    - title: The mktemp deviation (BSD mktemp does not ran
+      id: qEQi
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:restore-pdf-styling
+        - priority:unspecified
+        - effort:unspecified
+      text: The mktemp deviation (BSD mktemp does not randomize a literal suffix after the X's) is worth the manager/planner's awareness beyond this task doc's own Status note, since the same incorrect assumption could resurface if another task or doc repeats it (e.g. task 003's doc updates, or docs/architecture.md's 'Bundled stylesheet' section, if it ever describes the temp-file mechanism at an implementation level).
