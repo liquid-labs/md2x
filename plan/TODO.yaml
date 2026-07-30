@@ -11,7 +11,7 @@ phases:
           slug: fix-css-delivery-and-stream-handling
           title: Fix Css Delivery And Stream Handling
           path: phase-01-restore-pdf-styling/001-fix-css-delivery-and-stream-handling.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: 'Replaced generate-page()''s process-substitution --css delivery with a real .css-suffixed temp file per call (so WeasyPrint can MIME-sniff the stylesheet), and removed the 2>&1 | grep ... || true construct from both Pandoc invocations so stderr flows untouched to the CLI''s real stderr — never onto the parsed --to-stdout/--list-files stdout channel, and never masking a genuine fatal exit under errexit. Added an explicit 1>/dev/null on Pandoc''s own stdout as defense-in-depth. Extended the pandoc test stub with MD2X_TEST_STUB_STDERR/MD2X_TEST_STUB_EXIT_CODE overrides and added bats coverage. Discovered and fixed a real defect in the task doc''s mktemp guidance: on macOS (BSD) mktemp, a literal suffix after the X''s is not randomized — fixed with a trailing-X-only mktemp + mv-to-add-suffix.'
           git:
