@@ -25,6 +25,7 @@ phases:
           path: phase-01-restore-pdf-styling/002-extend-visual-smoke-test-for-css.md
           done: false
           tier: sonnet-med
+          digest: 'Implemented all three infrastructure requirements (enriched fixture, PDF-styling checklist in the manual smoke-test script, kept opt-in-only) and then actually ran the pipeline end-to-end against a real WeasyPrint-bootstrapped environment. The real run reveals that task 001''s CSS-delivery fix, while itself correct, does not fully close followup TNLq: WeasyPrint now loads github.css (visible via its own parse warnings), but the generated <body> never receives class="markdown-body", so essentially every rule that matters (font stack, code-block background, table borders) is scoped under a selector that never matches anything, and the rendered PDF shows a serif body font, borderless table, and code with no background. Confirmed directly by rasterizing the real PDF to PNG and visually inspecting it, and by grepping embedded font names (Times-New-Roman for body text) and the intermediate HTML (<body> has no class attribute). Only the heading-size-hierarchy checklist item passes, and only incidentally via browser/Pandoc UA defaults, not via github.css. This is exactly the class of gap the new checklist mechanism was built to catch, and it did — but the underlying fix belongs to generate-page.sh, which is explicitly out of this task''s scope.'
           git:
             branch: phase-01-task-02-extend-visual-smoke-test-for-c
             commit:
