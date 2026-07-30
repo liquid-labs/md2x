@@ -47,7 +47,7 @@ phases:
           slug: wrap-generated-body-in-markdown-body-div
           title: Wrap Generated Body In Markdown Body Div
           path: phase-01-restore-pdf-styling/004-wrap-generated-body-in-markdown-body-div.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: 'Implemented the --include-before-body/--include-after-body markdown-body-div wrapping mechanism in generate-page() exactly as specified: new MARKDOWN_BODY_OPEN/MARKDOWN_BODY_CLOSE literals written to trailing-X-only mktemp temp files, referenced in both Pandoc invocations via the file''s existing conditional-word-splitting idiom, gated out of docx, and cleaned up under the existing KEEP_INTERMEDIATE gate. Extended the pandoc test stub to parse/capture the two new flags and added the full bats coverage specified (pdf/html wrap assertions, docx-exclusion regression guard, keep-intermediate temp-file pairs, a real-Pandoc e2e assertion). make all && make test-cli passes 66/66. Performed the full real PDF render, rasterized it, and visually confirmed all four styling checklist items now render correctly -- followup TNLq/yJ9C''s visual bug is now genuinely fixed, not just mechanically wired. Also ran a real (non-stub) docx conversion confirming zero <div leakage into word/document.xml.'
           git:
