@@ -54,3 +54,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Pre-existing, out-of-scope bug (not introduced by this task): src/cli/md2x.sh''s per-file conversion loop unconditionally overwrites TITLE from each input file''s basename, so --title/-t has zero effect on a directly-named, non-single-page, non-stdin conversion''s output filename or --infer-title metadata -- contradicting docs/md2x-spec.md''s API table and this task doc''s own validation example. A naive fix would make every file in a multi-file/directory batch collide on one output name -- needs its own design decision. Recommend a dedicated followup to define and fix --title precedence for per-file/batch conversion.'
+    - title: Task doc's 'Mode overrides' bullet ('--mode o
+      id: ntBH
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:markdown-toc-generation
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Task doc''s ''Mode overrides'' bullet (''--mode on emits a TOC for a one-heading, one-line document'') is in tension with the toc-defaults note''s unconditional document-title-exclusion rule: a genuine one-heading document can never produce a non-empty TOC under any mode, since its sole heading is always the excluded title. Resolved by testing the real intent (mode overriding the size-based auto-suppress heuristic) against the smallest document with a non-title heading; documented in the bats test''s inline comment and the task doc''s Status/Decisions entry. Flagging in case the task doc bullet wording should be tightened for future readers -- implemented behavior is spec-correct, no code defect.'
