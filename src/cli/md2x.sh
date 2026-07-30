@@ -277,7 +277,7 @@ printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
     TITLE="${TITLE:-output}"
     mkdir -p "${OUTPUT_PATH}"
     BASE_OUTPUT="${OUTPUT_PATH}/${TITLE:-output}.${OUTPUT_FORMAT}"
-    MD_FILE="${TITLE:-input}.md"
+    [[ -z "${SINGLE_PAGE}" ]] || MD_FILE="${COMBINED_FILE}"
     generate-page
   fi
 } < <(

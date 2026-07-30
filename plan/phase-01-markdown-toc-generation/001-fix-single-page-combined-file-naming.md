@@ -77,3 +77,30 @@ Scope: `src/cli/md2x.sh` and `src/cli/test/bats/single-page-and-stdin.bats`. No 
 - `src/cli/md2x.sh` lines ~192–196 and ~276–282 — the two halves of the defect.
 - `src/cli/test/bats/single-page-and-stdin.bats` — the case to tighten; its first case shows the
   ordering-assertion idiom to copy.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-07-30
+- **Validation summary:** `make test-cli` passes (72/72, including the two modified/added
+  assertions in `single-page-and-stdin.bats`). Manual reproduction re-run after the fix
+  produces a non-empty `output.html` containing both `Alpha` and `Beta` headings, exits 0,
+  and emits no `cat:` diagnostic on stderr. `git diff src/cli/md2x.sh` shows a single-line
+  change in the single-page/stdin call-site block. `grep -n 'MD_FILE=' src/cli/md2x.sh`
+  shows the single-page assignment now referencing `COMBINED_FILE`.
+- **Affected source files:**
+  - `src/cli/md2x.sh`
+  - `src/cli/test/bats/single-page-and-stdin.bats`
+- **Decisions:** `MD_FILE="${COMBINED_FILE}"` is guarded with
+  `[[ -z "${SINGLE_PAGE}" ]] || MD_FILE="${COMBINED_FILE}"` rather than an unconditional
+  assignment, per the task doc's note that `MD_FILE` must only be reassigned on the
+  single-page side of the shared `if` block — an unconditional assignment would dereference
+  `COMBINED_FILE` (unset under `nounset` on the stdin-only path, since it is only set inside
+  the earlier `[[ -n "${SINGLE_PAGE}" ]]` block) and break the untouched stdin path. This
+  keeps the diff to one changed line, as the Validation section requires, while leaving
+  `MD_FILE` unset (and unused, since `generate-page()`'s `INPUT` branch never reads it) on
+  the stdin path.
+  - Requirement 4's regression assertion (`refute_stderr_contains 'cat:'`) was folded into
+    the same tightened test case as requirement 3's content assertions, rather than added as
+    a separate `@test`, since both apply to "that invocation" (the single `md2x_run` call in
+    the existing `--title`-absent case).
