@@ -40,7 +40,7 @@ phases:
             branch: phase-01-task-03-fix-md2x-js-shell-injection
             commit:
                 - ce5c15a
-            merge: null
+            merge: ffcc4534cc098a6d9e441dae69385a407cfeebb7
         - number: 4
           slug: document-find-pipe-abort-semantics
           title: Pin Down And Document Find-Pipe Abort Semantics
