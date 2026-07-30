@@ -63,6 +63,7 @@ describe('md2x', () => {
       ['inferTitle', '--infer-title'],
       ['inferVersion', '--infer-version'],
       ['noToc', '--no-toc'],
+      ['toc', '--toc'],
       ['singlePage', '--single-page']
     ])('adds %s as %s, and only that flag, when set', (option, flag) => {
       md2x({ sources : ['a.md'], [option] : true })

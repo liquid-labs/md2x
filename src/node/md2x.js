@@ -21,6 +21,7 @@ const md2x = ({
   inferTitle,
   inferVersion,
   noToc,
+  toc,
   outputPath,
   title,
   singlePage = false,
@@ -45,6 +46,9 @@ const md2x = ({
   }
   if (noToc) {
     options.push('--no-toc')
+  }
+  if (toc) {
+    options.push('--toc')
   }
   if (title) {
     options.push(`--title ${shellQuote(title)}`)
