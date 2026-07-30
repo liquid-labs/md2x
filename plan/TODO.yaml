@@ -43,3 +43,13 @@ phases:
             commit:
                 - d485599
             merge: d314405
+        - number: 4
+          slug: wrap-generated-body-in-markdown-body-div
+          title: Wrap Generated Body In Markdown Body Div
+          path: phase-01-restore-pdf-styling/004-wrap-generated-body-in-markdown-body-div.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
