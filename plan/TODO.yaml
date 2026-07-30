@@ -18,7 +18,7 @@ phases:
             branch: phase-01-task-01-lock-weasyprint-bootstrap
             commit:
                 - c80287d
-            merge: null
+            merge: e6f5bbf53f98a9d91d9168835b327d71d0baee91
         - number: 2
           slug: fix-html-output-naming
           title: Fix HTML Output Filename To Drop -base Suffix
