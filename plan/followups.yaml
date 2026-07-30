@@ -255,3 +255,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Phase-01 (restore-pdf-styling) combined review found: in src/cli/lib/generate-page.sh, CSS_TMP_FILE is created via mktemp+mv before the Pandoc invocation and only removed by the unconditional cleanup line that runs after both pandoc branches. Under this file''s errexit/pipefail, a non-zero Pandoc/WeasyPrint exit (which this same phase''s fix now deliberately lets propagate) aborts generate-page() immediately, so that cleanup line never runs and CSS_TMP_FILE is left behind in ${TMPDIR:-/tmp} on every failed conversion. Same pattern as the pre-existing pandoc-log.log cleanup placement, but now extended to a system-tempdir artifact that''s less visible to the user. Suggested fix: guarantee removal on the abnormal-exit path too, e.g. a trap set immediately after the file is created.'
+    - title: CSS temp file recreated per file in batch
+      id: QBKX
+      date: "2026-07-30"
+      tags:
+        - plan/phase:restore-pdf-styling
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 (restore-pdf-styling) combined review found: $CSS is static, deterministic content that never varies across generate-page() calls within a single md2x invocation, but src/cli/md2x.sh calls generate-page() once per Markdown file inside a loop when converting a directory or multiple files (--flatten-dirs/recursive batch mode). The new mktemp+mv+printf sequence in generate-page.sh now performs real filesystem I/O (two process spawns plus a file write) once per input file in a batch conversion, to recreate identical content each time, where the prior process-substitution delivery was a per-invocation in-memory pipe. For a project with many Markdown files this is an easily-avoidable linear per-file cost. Suggested fix: hoist CSS temp-file creation out of generate-page() to run once per md2x invocation (e.g. in src/cli/md2x.sh before the per-file loop), passing the path in; clean up once after the batch completes.'
