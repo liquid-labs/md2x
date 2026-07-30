@@ -291,3 +291,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Per the task doc''s own note: a documentation follow-up remains open -- docs/architecture.md''s ''Bundled stylesheet''/''Page generation'' prose does not yet describe this --include-before-body/--include-after-body mechanism. Explicitly out of this task''s scope.'
+    - title: markdown-body flags unquoted word-split risk
+      id: 5gem
+      date: "2026-07-30"
+      tags:
+        - plan/phase:restore-pdf-styling
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 (restore-pdf-styling) task 004 incremental review found: in src/cli/lib/generate-page.sh, the new --include-before-body/--include-after-body flag+value pairs are injected via an unquoted command substitution ($( ... echo "--include-before-body ${BODY_OPEN_TMP_FILE} --include-after-body ${BODY_CLOSE_TMP_FILE}" )) that relies on IFS word-splitting to separate the two flag/value pairs into four distinct pandoc arguments. If ${TMPDIR} (or the /tmp fallback) contains a space, the mktemp-produced paths embedded in this string would split into extra, misaligned tokens on the pandoc command line, silently corrupting the invocation rather than failing loudly. Differs from the existing --pdf-engine=${WEASYPRINT_BIN} idiom, which fuses flag and value into a single ''=''-joined token immune to this failure mode. Low real-world likelihood (TMPDIR rarely contains spaces) but worth a maintainer decision: restructure to pass flag+value as individually-quoted array elements, or fuse with ''='' if pandoc''s flag parsing accepts that form for these two options.'
