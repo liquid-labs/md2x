@@ -246,3 +246,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Load-bearing finding, needs a decision: github.css''s rules are essentially all scoped under .markdown-body, but nothing in generate-page()''s Pandoc invocation ever adds that class to the generated <body> (confirmed via tiny-doc-base.html inspection). As a result, task 001''s CSS-delivery fix did not actually resolve followup TNLq''s visual gap — real PDF output still renders with a default serif font, no table borders, and no code-block background. This needs either reopening/amending task 001''s scope, or a new task/followup targeting src/cli/lib/generate-page.sh (e.g. a custom Pandoc template or --include-before-body/--include-after-body wrapper adding class="markdown-body") before this plan can be considered to have actually restored PDF styling. Full observation detail (per checklist item) is recorded in the task doc''s new ## Status section.'
+    - title: CSS temp file leaks on pandoc failure
+      id: 9hZL
+      date: "2026-07-30"
+      tags:
+        - plan/phase:restore-pdf-styling
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 (restore-pdf-styling) combined review found: in src/cli/lib/generate-page.sh, CSS_TMP_FILE is created via mktemp+mv before the Pandoc invocation and only removed by the unconditional cleanup line that runs after both pandoc branches. Under this file''s errexit/pipefail, a non-zero Pandoc/WeasyPrint exit (which this same phase''s fix now deliberately lets propagate) aborts generate-page() immediately, so that cleanup line never runs and CSS_TMP_FILE is left behind in ${TMPDIR:-/tmp} on every failed conversion. Same pattern as the pre-existing pandoc-log.log cleanup placement, but now extended to a system-tempdir artifact that''s less visible to the user. Suggested fix: guarantee removal on the abnormal-exit path too, e.g. a trap set immediately after the file is created.'
