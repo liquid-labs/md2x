@@ -5,6 +5,7 @@ phases:
     - number: 1
       slug: restore-pdf-styling
       title: Restore Pdf Styling
+      diff_base: 8a8e424602aa39ad12fac92ffe49f6f23b5800f9
       tasks:
         - number: 1
           slug: fix-css-delivery-and-stream-handling
