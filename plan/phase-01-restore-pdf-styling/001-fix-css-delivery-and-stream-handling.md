@@ -4,7 +4,7 @@
 
 Fix followup `TNLq`'s root cause in `src/cli/lib/generate-page.sh`: `generate-page()` delivers the bundled GitHub CSS to Pandoc via `--css <(echo "${CSS}")` — a process-substitution path (`/dev/fd/N`) with no `.css` extension. WeasyPrint (the pinned `--pdf-engine`, wired in by the `pdf-engine-weasyprint` plan) cannot MIME-sniff a stylesheet from that path and silently drops it; HTML/DOCX output is unaffected since Pandoc's own `--css` handling doesn't depend on the path's extension. This task replaces that delivery mechanism with a real temp file, and — because WeasyPrint will now actually load the stylesheet and start emitting roughly ten non-fatal, multi-line `WARNING` lines per PDF conversion (per `TNLq`'s own investigation) — restructures how the conversion pipeline's stderr is handled so those warnings can never leak onto the CLI's real stdout (a parsed data channel via `--to-stdout`/`--list-files`) and a genuine fatal Pandoc/WeasyPrint error can never be silently swallowed.
 
-This is not a standard-skill task; there is no dedicated CSS-delivery or stderr-handling skill to invoke. Follow the [Procedure](#procedure) below.
+This is not a standard-skill task; there is no dedicated CSS-delivery or stderr-handling skill to invoke. Follow the [Requirements](#requirements) below.
 
 Scope is `src/cli/lib/generate-page.sh` plus the test-support files needed to cover the change: `src/cli/test/stubs/pandoc` and one or more `src/cli/test/bats/*.bats` files. Do not touch `docs/architecture.md`, `README.md`, or `docs/md2x-spec.md` — those belong to task 003 (`phase-01-restore-pdf-styling/003-update-stale-pdf-styling-docs.md`), which depends on this task landing first.
 
