@@ -36,3 +36,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 4
+          slug: wire-preprocessor-into-generate-page
+          title: Wire Preprocessor Into Generate Page
+          path: phase-01-markdown-toc-generation/004-wire-preprocessor-into-generate-page.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
