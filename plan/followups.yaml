@@ -219,3 +219,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: The mktemp deviation (BSD mktemp does not randomize a literal suffix after the X's) is worth the manager/planner's awareness beyond this task doc's own Status note, since the same incorrect assumption could resurface if another task or doc repeats it (e.g. task 003's doc updates, or docs/architecture.md's 'Bundled stylesheet' section, if it ever describes the temp-file mechanism at an implementation level).
+    - title: 'Design note (not a required fix): unlike pand'
+      id: OUbU
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:restore-pdf-styling
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Design note (not a required fix): unlike pandoc-log.log and the PDF overlay (both written into the user''s working/output directory), the CSS temp file lives in the system TMPDIR and its path is never surfaced to the user, so --keep-intermediate currently leaves it effectively undiscoverable/orphaned outside the user''s working tree. Implemented per the task doc''s explicit ''either is acceptable'' framing (gated on KEEP_INTERMEDIATE, matching the prescribed line), but flagging for task 003 or a follow-up to consider: always removing it regardless of the flag, or surfacing its path when retained.'
