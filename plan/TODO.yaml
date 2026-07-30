@@ -67,6 +67,7 @@ phases:
           path: phase-01-resolve-followups/006-stub-weasyprint-bootstrap-in-bats.md
           done: false
           tier: sonnet-med
+          digest: Made md2x_setup()'s default bats harness hermetic against WeasyPrint's cold-bootstrap path by adding a private per-case HOME override pre-populated with a fake, executable ~/.md2x/venv/bin/weasyprint, so ensure-weasyprint.sh's -x gate passes immediately and the real ~1-minute install never triggers for default-setup cases. HOME is saved/restored symmetrically with PATH. Added a harness-smoke.bats case asserting the fake binary's presence and that the cold-bootstrap notice never appears. Confirmed real-toolchain-e2e.bats untouched. Full make test (67 bats + JS suite) is green.
           git:
             branch: phase-01-task-06-stub-weasyprint-bootstrap-in-b
             commit:
