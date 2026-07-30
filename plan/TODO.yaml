@@ -27,7 +27,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-02-extend-visual-smoke-test-for-c
-            commit: []
+            commit:
+                - 60edbc9
             merge: null
         - number: 3
           slug: update-stale-pdf-styling-docs
