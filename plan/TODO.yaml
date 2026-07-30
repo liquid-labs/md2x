@@ -36,7 +36,7 @@ phases:
           done: false
           tier: sonnet-med
           git:
-            branch: null
+            branch: phase-01-task-03-add-toc-flag-and-conflict-chec
             commit: []
             merge: null
         - number: 4
