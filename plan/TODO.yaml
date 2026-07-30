@@ -27,7 +27,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-01-task-02-add-toc-preprocessor-script
-            commit: []
+            commit:
+                - 6ca40b6
             merge: null
         - number: 3
           slug: add-toc-flag-and-conflict-check
