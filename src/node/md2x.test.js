@@ -48,14 +48,14 @@ describe('md2x', () => {
       md2x({ sources : ['a.md'] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format pdf 'a.md'")
+      expect(command).toBe("npx md2x --list-files --output-format 'pdf' 'a.md'")
     })
 
     test('honors a non-default output format', () => {
       md2x({ sources : ['a.md'], format : 'html' })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format html 'a.md'")
+      expect(command).toBe("npx md2x --list-files --output-format 'html' 'a.md'")
     })
 
     test.each([
@@ -68,7 +68,7 @@ describe('md2x', () => {
       md2x({ sources : ['a.md'], [option] : true })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(`npx md2x --list-files --output-format pdf ${flag} 'a.md'`)
+      expect(command).toBe(`npx md2x --list-files --output-format 'pdf' ${flag} 'a.md'`)
     })
 
     test('single-quotes title and output path and places them in source order', () => {
@@ -76,7 +76,7 @@ describe('md2x', () => {
 
       const [command] = shell.exec.mock.calls[0]
       expect(command).toBe(
-        "npx md2x --list-files --output-format pdf --title 'My Report' --output-path './out dir' 'a.md'"
+        "npx md2x --list-files --output-format 'pdf' --title 'My Report' --output-path './out dir' 'a.md'"
       )
     })
 
@@ -84,7 +84,7 @@ describe('md2x', () => {
       md2x({ sources : ['a.md', 'b.md', 'c dir/d.md'] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format pdf 'a.md' 'b.md' 'c dir/d.md'")
+      expect(command).toBe("npx md2x --list-files --output-format 'pdf' 'a.md' 'b.md' 'c dir/d.md'")
     })
 
     // 'sourceSpec' is built by escaping and single-quoting each source individually and space-joining the result,
@@ -94,7 +94,7 @@ describe('md2x', () => {
       md2x({ sources : ['-'] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format pdf --title 'Report' '-'")
+      expect(command).toBe("npx md2x --list-files --output-format 'pdf' --title 'Report' '-'")
     })
 
     // followup arUf: title/outputPath/sources are caller-supplied and were previously interpolated into raw
@@ -107,7 +107,16 @@ describe('md2x', () => {
 
       const [command] = shell.exec.mock.calls[0]
       expect(command).toBe(
-        "npx md2x --list-files --output-format pdf --title 'O'\\''Brien'\\''s Report' 'a.md'"
+        "npx md2x --list-files --output-format 'pdf' --title 'O'\\''Brien'\\''s Report' 'a.md'"
+      )
+    })
+
+    test('escapes an embedded single quote in format so it cannot break out of its quoted span', () => {
+      md2x({ sources : ['a.md'], format : "pdf'; touch /tmp/pwned; '" })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command).toBe(
+        "npx md2x --list-files --output-format 'pdf'\\''; touch /tmp/pwned; '\\''' 'a.md'"
       )
     })
 
@@ -116,7 +125,7 @@ describe('md2x', () => {
 
       const [command] = shell.exec.mock.calls[0]
       expect(command).toBe(
-        "npx md2x --list-files --output-format pdf --output-path './out'\\''; touch /tmp/pwned; '\\''' 'a.md'"
+        "npx md2x --list-files --output-format 'pdf' --output-path './out'\\''; touch /tmp/pwned; '\\''' 'a.md'"
       )
     })
 
@@ -124,7 +133,7 @@ describe('md2x', () => {
       md2x({ sources : ["a'.md", 'b.md'] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format pdf 'a'\\''.md' 'b.md'")
+      expect(command).toBe("npx md2x --list-files --output-format 'pdf' 'a'\\''.md' 'b.md'")
     })
   })
 
@@ -188,7 +197,7 @@ describe('md2x', () => {
       // The command template always inserts a space before the (here empty, since 'sources' is not given)
       // 'sourceSpec', and the staging-file append adds a second space, so two spaces separate the last flag from
       // the (now single-quoted, per followup arUf) staging file path.
-      expect(command).toBe(`npx md2x --list-files --output-format pdf --title 'Title'  '${stagingFile}'`)
+      expect(command).toBe(`npx md2x --list-files --output-format 'pdf' --title 'Title'  '${stagingFile}'`)
 
       expect(shell.rm).toHaveBeenCalledTimes(1)
       expect(shell.rm).toHaveBeenCalledWith('-r', stagingDir)
@@ -210,7 +219,7 @@ describe('md2x', () => {
       const [command] = shell.exec.mock.calls[0]
       const escapedStagingFile = `'${stagingFile.replace(/'/g, "'\\''")}'`
       expect(command).toBe(
-        `npx md2x --list-files --output-format pdf --title 'O'\\''Brien'  ${escapedStagingFile}`
+        `npx md2x --list-files --output-format 'pdf' --title 'O'\\''Brien'  ${escapedStagingFile}`
       )
 
       expect(files).toEqual(["/out/O'Brien.pdf"])

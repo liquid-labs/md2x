@@ -33,7 +33,7 @@ const md2x = ({
   if (!title && markdown !== undefined) {
     title = 'Report'
   }
-  const options = ['--list-files', `--output-format ${format}`]
+  const options = ['--list-files', `--output-format ${shellQuote(format)}`]
   if (flattenDirs) {
     options.push('--flatten-dirs')
   }
