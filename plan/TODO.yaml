@@ -79,5 +79,6 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-07-surface-css-temp-file-path
-            commit: []
+            commit:
+                - a3d9330
             merge: null
