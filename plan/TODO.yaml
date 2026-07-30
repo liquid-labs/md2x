@@ -28,7 +28,7 @@ phases:
             branch: phase-01-task-02-fix-html-output-naming
             commit:
                 - 6935ec1
-            merge: null
+            merge: 61ead9601df3da5bdff550b6ed7c88b0e73a5299
         - number: 3
           slug: fix-md2x-js-shell-injection
           title: Close Shell Injection Risk In md2x.js Command Building
