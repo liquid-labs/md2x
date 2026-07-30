@@ -22,40 +22,73 @@ EOF
   # perl -pe 's/(\[[^\]]+\]\()(?!\/|https?:\/\/)(?:\.\/)?(.*)\.md\s*\)$/$1.\/$2.docx)/g'
   LINK_CONVERTER='perl -pe '"'"'s/(\[[^\]]+\]\()(?!\/|https?:\/\/)(?:\.\/)?(.*)\.md\s*\)$/$1.\/$2.'${OUTPUT_FORMAT}")/g'"
 
+  # WeasyPrint (the pinned '--pdf-engine') MIME-sniffs '--css' from its path extension,
+  # so it needs a real file ending in '.css' rather than a process-substitution
+  # '/dev/fd/N' path. macOS's native (BSD) 'mktemp' -- unlike GNU coreutils' -- only
+  # randomizes a *trailing* run of 'X's: a template with a literal suffix after the
+  # 'X's (e.g. 'md2x-css.XXXXXX.css') is returned verbatim, unrandomized, so a second
+  # call collides with the first call's still-open file. Create the file with a
+  # trailing-only template, then rename it to add the '.css' suffix.
+  CSS_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-css.XXXXXX")"
+  mv "${CSS_TMP_FILE}" "${CSS_TMP_FILE}.css"
+  CSS_TMP_FILE="${CSS_TMP_FILE}.css"
+  printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
+
+  # 'github.css' scopes every rule under a bare '.markdown-body' class selector, and
+  # neither Pandoc's default html5 template nor a '-V'/'--variable' metadata hook puts
+  # that class anywhere in the generated document. '--include-before-body'/
+  # '--include-after-body' inject literal content just inside the opening/closing
+  # '<body>' tag, so wrapping the whole rendered body in this div satisfies those
+  # selectors exactly as well as a class on '<body>' itself would (see task doc
+  # plan/phase-01-restore-pdf-styling/004-wrap-generated-body-in-markdown-body-div.md).
+  MARKDOWN_BODY_OPEN='<div class="markdown-body">'
+  MARKDOWN_BODY_CLOSE='</div>'
+  BODY_OPEN_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-body-open.XXXXXX")"
+  BODY_CLOSE_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-body-close.XXXXXX")"
+  printf '%s' "${MARKDOWN_BODY_OPEN}" > "${BODY_OPEN_TMP_FILE}"
+  printf '%s' "${MARKDOWN_BODY_CLOSE}" > "${BODY_CLOSE_TMP_FILE}"
+
   if [[ -z "${INPUT}" ]]; then
     pandoc \
       $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
       $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
+      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo "--include-before-body ${BODY_OPEN_TMP_FILE} --include-after-body ${BODY_CLOSE_TMP_FILE}" ) \
       --quiet \
       --standalone \
       --from gfm \
       --to ${INTERMEDIDATE_FORMAT} \
-      --css <(echo "${CSS}") \
+      --css "${CSS_TMP_FILE}" \
       --metadata-file <(echo "${SETTINGS}") \
       <(cat "${MD_FILE}" | eval $LINK_CONVERTER) \
       -o "${BASE_OUTPUT}" \
       --log 'pandoc-log.log' \
-      2>&1 | { grep -vE '(\(\d+/\d+\)\s*$|Done|Unsupported stylesheet type)' || true; }
-    # ^^ the 'grep' removes the 'Loading pages (1/6)' progress messages (previous pdf-engine) sent to stderr, while
-    # hopefully allowing actual error messages through. WeasyPrint also reports 'Unsupported stylesheet type' for
-    # the '--css' process-substitution file (no '.css' extension for it to sniff a MIME type from), which is
-    # filtered here for the same reason -- see this task's notes for the known follow-up to restore PDF styling.
+      1>/dev/null
+    # Pandoc's own stdout is inert when '-o <file>' is given; the explicit redirect
+    # guarantees stdout purity for '--to-stdout'/'--list-files' by construction rather
+    # than by relying on that behavior. Stderr is left untouched: WeasyPrint runs as a
+    # Pandoc subprocess and inherits Pandoc's stderr fd, so its warning/progress chatter
+    # (and any real fatal error) flows straight to the CLI's own real stderr, where
+    # 'errexit' still catches a non-zero Pandoc exit since nothing pipes or masks it.
   else
     pandoc \
       $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
       $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
+      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || echo "--include-before-body ${BODY_OPEN_TMP_FILE} --include-after-body ${BODY_CLOSE_TMP_FILE}" ) \
       --quiet \
       --standalone \
       --from gfm \
       --to ${INTERMEDIDATE_FORMAT} \
-      --css <(echo "${CSS}") \
+      --css "${CSS_TMP_FILE}" \
       --metadata-file <(echo "${SETTINGS}") \
       <(echo "${INPUT}" | eval $LINK_CONVERTER) \
       -o "${BASE_OUTPUT}" \
       --log 'pandoc-log.log' \
-      2>&1 | { grep -vE '(\(\d+/\d+\)\s*$|Done|Unsupported stylesheet type)' || true; }
+      1>/dev/null
   fi
   [[ -n "${KEEP_INTERMEDIATE}" ]] || rm pandoc-log.log
+  [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${CSS_TMP_FILE}"
+  [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${BODY_OPEN_TMP_FILE}"
+  [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${BODY_CLOSE_TMP_FILE}"
 
   if [[ "${OUTPUT_FORMAT}" == 'pdf' ]]; then
     # generate headers and footers as a separate document and overlay them.

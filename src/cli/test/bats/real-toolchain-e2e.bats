@@ -157,6 +157,11 @@ e2e_assert_zip_magic() {
   # is proof a real Pandoc conversion happened.
   assert_file_contains './tiny-doc-base.html' 'Tiny Doc'
   assert_file_contains './tiny-doc-base.html' '<style>'
+  # 'class="markdown-body"' is the '--include-before-body' wrapper div (task 004 /
+  # followup TNLq): direct proof, against real (non-stub) Pandoc output, that the div
+  # genuinely lands around the rendered body so 'github.css''s bare '.markdown-body'
+  # selectors match.
+  assert_file_contains './tiny-doc-base.html' 'class="markdown-body"'
 }
 
 @test "e2e: tiny-doc.md converts to a real, non-empty DOCX" {

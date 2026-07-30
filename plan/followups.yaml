@@ -210,3 +210,102 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Surfaced while resolving the pdf-engine-weasyprint plan-branch merge conflict. src/cli/test/bats/real-toolchain-e2e.bats'' PDF case skips with "pandoc''s PDF engine is unavailable: ''weasyprint'' not found" — it probes for weasyprint on PATH before running. Under the now-merged self-managed WeasyPrint design, weasyprint is deliberately never expected on PATH (md2x calls it via the absolute ~/.md2x/venv/bin/weasyprint path instead), so this guard will now always fire and the PDF e2e case will always skip, even though the conversion would in fact succeed via the managed venv binary. Worth a maintainer fix: update the guard to probe for the venv binary (or just attempt a conversion and let ensure-weasyprint''s own bootstrap/preflight handle unavailability) so this case actually exercises the real toolchain again.'
+    - title: The mktemp deviation (BSD mktemp does not ran
+      id: qEQi
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:restore-pdf-styling
+        - priority:unspecified
+        - effort:unspecified
+      text: The mktemp deviation (BSD mktemp does not randomize a literal suffix after the X's) is worth the manager/planner's awareness beyond this task doc's own Status note, since the same incorrect assumption could resurface if another task or doc repeats it (e.g. task 003's doc updates, or docs/architecture.md's 'Bundled stylesheet' section, if it ever describes the temp-file mechanism at an implementation level).
+    - title: 'Design note (not a required fix): unlike pand'
+      id: OUbU
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:restore-pdf-styling
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Design note (not a required fix): unlike pandoc-log.log and the PDF overlay (both written into the user''s working/output directory), the CSS temp file lives in the system TMPDIR and its path is never surfaced to the user, so --keep-intermediate currently leaves it effectively undiscoverable/orphaned outside the user''s working tree. Implemented per the task doc''s explicit ''either is acceptable'' framing (gated on KEEP_INTERMEDIATE, matching the prescribed line), but flagging for task 003 or a follow-up to consider: always removing it regardless of the flag, or surfacing its path when retained.'
+    - title: docs/architecture.md's 'Page generation / con
+      id: djfw
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:restore-pdf-styling
+        - priority:unspecified
+        - effort:unspecified
+      text: docs/architecture.md's 'Page generation / conversion pipeline' component description says intermediate-artifact cleanup covers 'the Pandoc log and, for PDF, the overlay file' — it does not mention the CSS temp file, which generate-page.sh now also creates and cleans up (for every output format, not just PDF). Pre-existing omission, not a contradiction introduced by this task's edits; task doc explicitly scoped no edit to that section — flagging for the manager to decide whether a follow-up doc task should tighten that sentence.
+    - title: 'Load-bearing finding, needs a decision: githu'
+      id: yJ9C
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:restore-pdf-styling
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Load-bearing finding, needs a decision: github.css''s rules are essentially all scoped under .markdown-body, but nothing in generate-page()''s Pandoc invocation ever adds that class to the generated <body> (confirmed via tiny-doc-base.html inspection). As a result, task 001''s CSS-delivery fix did not actually resolve followup TNLq''s visual gap — real PDF output still renders with a default serif font, no table borders, and no code-block background. This needs either reopening/amending task 001''s scope, or a new task/followup targeting src/cli/lib/generate-page.sh (e.g. a custom Pandoc template or --include-before-body/--include-after-body wrapper adding class="markdown-body") before this plan can be considered to have actually restored PDF styling. Full observation detail (per checklist item) is recorded in the task doc''s new ## Status section.'
+    - title: CSS temp file leaks on pandoc failure
+      id: 9hZL
+      date: "2026-07-30"
+      tags:
+        - plan/phase:restore-pdf-styling
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 (restore-pdf-styling) combined review found: in src/cli/lib/generate-page.sh, CSS_TMP_FILE is created via mktemp+mv before the Pandoc invocation and only removed by the unconditional cleanup line that runs after both pandoc branches. Under this file''s errexit/pipefail, a non-zero Pandoc/WeasyPrint exit (which this same phase''s fix now deliberately lets propagate) aborts generate-page() immediately, so that cleanup line never runs and CSS_TMP_FILE is left behind in ${TMPDIR:-/tmp} on every failed conversion. Same pattern as the pre-existing pandoc-log.log cleanup placement, but now extended to a system-tempdir artifact that''s less visible to the user. Suggested fix: guarantee removal on the abnormal-exit path too, e.g. a trap set immediately after the file is created.'
+    - title: CSS temp file recreated per file in batch
+      id: QBKX
+      date: "2026-07-30"
+      tags:
+        - plan/phase:restore-pdf-styling
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 (restore-pdf-styling) combined review found: $CSS is static, deterministic content that never varies across generate-page() calls within a single md2x invocation, but src/cli/md2x.sh calls generate-page() once per Markdown file inside a loop when converting a directory or multiple files (--flatten-dirs/recursive batch mode). The new mktemp+mv+printf sequence in generate-page.sh now performs real filesystem I/O (two process spawns plus a file write) once per input file in a batch conversion, to recreate identical content each time, where the prior process-substitution delivery was a per-invocation in-memory pipe. For a project with many Markdown files this is an easily-avoidable linear per-file cost. Suggested fix: hoist CSS temp-file creation out of generate-page() to run once per md2x invocation (e.g. in src/cli/md2x.sh before the per-file loop), passing the path in; clean up once after the batch completes.'
+    - title: CHANGELOG.md unreachable from README
+      id: vjPJ
+      date: "2026-07-30"
+      tags:
+        - plan/phase:restore-pdf-styling
+        - type:documentation
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 (restore-pdf-styling) phase-review''s documentation link-chain check found: CHANGELOG.md is not reachable from README.md (README links only to AGENTS.md, docs/md2x-spec.md, docs/architecture.md, docs/project-structure.md, which all cross-link back into that same reachable set). Pre-existing condition, not introduced or touched by this phase''s diff (confirmed via git log — CHANGELOG.md''s own history and this phase''s README.md diff don''t intersect). Worth a maintainer decision: add a README link to CHANGELOG.md, or explicitly treat CHANGELOG.md as exempt from the project''s link-chain convention.'
+    - title: 'shellcheck count drifted: task 001''s Status r'
+      id: ZfSv
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:restore-pdf-styling
+        - priority:unspecified
+        - effort:unspecified
+      text: 'shellcheck count drifted: task 001''s Status recorded 15 warnings as baseline; this task''s pre-change measurement found 17 already present before any of this task''s edits (some intervening, unrelated change between task 001 and now added 2). This task adds exactly 2 more, both SC2046 on the two new conditional lines -- the same warning class already present and accepted on the adjacent pre-existing --toc/--pdf-engine conditionals using the identical idiom Requirement 3 mandated reusing. Recommend treating as expected/acceptable rather than a defect; the task doc''s literal ''no new warnings'' bullet is not achievable without deviating from Requirement 3''s mandated idiom.'
+    - title: 'Per the task doc''s own note: a documentation '
+      id: qbZF
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:restore-pdf-styling
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Per the task doc''s own note: a documentation follow-up remains open -- docs/architecture.md''s ''Bundled stylesheet''/''Page generation'' prose does not yet describe this --include-before-body/--include-after-body mechanism. Explicitly out of this task''s scope.'
+    - title: markdown-body flags unquoted word-split risk
+      id: 5gem
+      date: "2026-07-30"
+      tags:
+        - plan/phase:restore-pdf-styling
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 (restore-pdf-styling) task 004 incremental review found: in src/cli/lib/generate-page.sh, the new --include-before-body/--include-after-body flag+value pairs are injected via an unquoted command substitution ($( ... echo "--include-before-body ${BODY_OPEN_TMP_FILE} --include-after-body ${BODY_CLOSE_TMP_FILE}" )) that relies on IFS word-splitting to separate the two flag/value pairs into four distinct pandoc arguments. If ${TMPDIR} (or the /tmp fallback) contains a space, the mktemp-produced paths embedded in this string would split into extra, misaligned tokens on the pandoc command line, silently corrupting the invocation rather than failing loudly. Differs from the existing --pdf-engine=${WEASYPRINT_BIN} idiom, which fuses flag and value into a single ''=''-joined token immune to this failure mode. Low real-world likelihood (TMPDIR rarely contains spaces) but worth a maintainer decision: restructure to pass flag+value as individually-quoted array elements, or fuse with ''='' if pandoc''s flag parsing accepts that form for these two options.'
+    - title: Two more temp files added to errexit leak
+      id: MwYH
+      date: "2026-07-30"
+      tags:
+        - plan/phase:restore-pdf-styling
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Phase-01 (restore-pdf-styling) task 004 incremental review found: BODY_OPEN_TMP_FILE/BODY_CLOSE_TMP_FILE are created unconditionally on every generate-page() call, mirroring CSS_TMP_FILE. Because md2x.sh runs with errexit and generate-page() can be invoked once per file inside a multi-file conversion loop, a mid-invocation pandoc failure skips the cleanup lines the same way it already skips CSS_TMP_FILE cleanup (tracked in followup 9hZL) -- this diff adds two more per-invocation temp files to that same leak surface, tripling (from one file to three) the stray temp files left behind per failed conversion in a batch run. Not blocking -- reproduces an existing, task-doc-mandated pattern rather than introducing a new one. If addressed, do so together with the pre-existing CSS_TMP_FILE leak (followup 9hZL), e.g. via a single trap-based cleanup, rather than as a separate fix.'
