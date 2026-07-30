@@ -62,7 +62,7 @@ teardown() {
   md2x_run --output-format html --flatten-dirs --output-path . report.md
 
   assert_success
-  assert_file_exists './report-base.html'
+  assert_file_exists './report.html'
   assert_stub_called pandoc
   refute_stub_called gs
   refute_stub_called pdftk
@@ -128,6 +128,20 @@ teardown() {
   run_input="$(md2x_pandoc_capture input)"
   [[ "${run_input}" == *'Piped Heading'* ]] \
     || md2x_fail "expected the piped markdown to reach pandoc, got: ${run_input}"
+}
+
+@test "harness: a pdf conversion under the default setup never triggers the real weasyprint bootstrap" {
+  assert_file_exists "${HOME}/.md2x/venv/bin/weasyprint"
+
+  md2x_write_doc 'report.md'
+  md2x_run --flatten-dirs --output-path . report.md
+
+  assert_success
+  assert_file_exists './report.pdf'
+  # Absent the fake binary's '-x' gate short-circuiting it, 'ensure-weasyprint()' would
+  # print this notice before falling into the real, network-dependent bootstrap.
+  [[ "${stderr}" != *'md2x: installing weasyprint'* ]] \
+    || md2x_fail "cold weasyprint bootstrap ran under the default md2x_setup: ${stderr}"
 }
 
 @test "harness: md2x_path_without genuinely removes a binary from PATH" {

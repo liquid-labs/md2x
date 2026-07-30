@@ -43,7 +43,12 @@ from stdin.
 Options:
   -D, --flatten-dirs         Write all output files directly into
                               --output-path instead of mirroring the input
-                              directory structure.
+                              directory structure. Without this flag, each
+                              output file is written under --output-path at
+                              the path its input occupies relative to the
+                              directory argument it was found under; a file
+                              named directly on the command line goes
+                              straight into --output-path.
       --infer-title          Embed the title (from --title, or otherwise the
                               filename) as document metadata via Pandoc
                               (e.g. the HTML <title> element).
@@ -88,7 +93,7 @@ EOF
   exit 0
 fi
 
-for EXEC in gs pandoc pdftk python3; do
+for EXEC in gs pandoc pdftk python3 jq; do
   type "${EXEC}" >/dev/null || {
     echo "Required executable '${EXEC}' not found for 'md2x'. Add to 'PATH' or install." >&2
     exit 2
@@ -189,6 +194,55 @@ if [[ -n "${SINGLE_PAGE}" ]]; then
   ! [[ -f "${COMBINED_FILE}" ]] || rm "${COMBINED_FILE}"
 fi
 
+# '$CSS' (the embedded github.css content) is static, deterministic content that never
+# varies across 'generate-page()' calls within one md2x invocation, but the per-file
+# loop below (and the single-page/stdin call further down) can invoke 'generate-page()'
+# many times. Create the backing temp file once, here, rather than once per call --
+# see followup QBKX. The 'bash-rollup' inline directive resolves relative to this
+# file's own directory ('src/cli'), hence 'lib/github.css' rather than the bare
+# './github.css' generate-page.sh (in 'src/cli/lib') used.
+CSS=$(cat <<'EOF'
+source ./lib/github.css # bash-rollup-no-recur
+EOF
+)
+
+# WeasyPrint (the pinned '--pdf-engine') MIME-sniffs '--css' from its path extension, so
+# it needs a real file ending in '.css' rather than a process-substitution '/dev/fd/N'
+# path. macOS's native (BSD) 'mktemp' -- unlike GNU coreutils' -- only randomizes a
+# *trailing* run of 'X's: a template with a literal suffix after the 'X's (e.g.
+# 'md2x-css.XXXXXX.css') is returned verbatim, unrandomized, so a second call collides
+# with the first call's still-open file. Create the file with a trailing-only template,
+# then rename it to add the '.css' suffix.
+CSS_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-css.XXXXXX")"
+mv "${CSS_TMP_FILE}" "${CSS_TMP_FILE}.css"
+CSS_TMP_FILE="${CSS_TMP_FILE}.css"
+printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
+
+# 'generate-page()' can run once per input file, under this script's 'errexit'. A
+# failing Pandoc/WeasyPrint invocation aborts the whole script immediately, skipping any
+# cleanup written after the loop below -- so a plain post-loop 'rm' would still leak
+# 'CSS_TMP_FILE' (and 'generate-page()'s own per-call body-open/body-close temp files)
+# on that path. Registering this trap up front instead guarantees they are removed
+# whether the script ends normally or aborts mid-batch: it always fires at real script
+# exit (bash runs an 'EXIT' trap on every exit path, including one triggered by
+# 'errexit'), by which point 'BODY_OPEN_TMP_FILE'/'BODY_CLOSE_TMP_FILE' hold either
+# already-removed paths (the normal case -- 'generate-page()' cleans up its own files
+# directly at the end of every successful call, so 'rm -f' here is a harmless no-op) or
+# the one in-flight call's not-yet-cleaned files (the failure case). The ':-' defaults
+# keep the trap itself safe under 'nounset' if it fires before any 'generate-page()'
+# call has run at all. See followups 9hZL/MwYH/QBKX.
+[[ -n "${KEEP_INTERMEDIATE}" ]] \
+  || trap 'rm -f "${CSS_TMP_FILE:-}" "${BODY_OPEN_TMP_FILE:-}" "${BODY_CLOSE_TMP_FILE:-}"' EXIT
+
+# Unlike the Pandoc log and the PDF header/footer overlay -- both written into the user's own
+# working/output tree, and therefore discoverable by normal directory listing -- 'CSS_TMP_FILE'
+# lives in '${TMPDIR:-/tmp}', so a user retaining it via '--keep-intermediate' has no way to find
+# it without an explicit announcement. Print to stderr (never stdout, which is the parsed data
+# channel for '--list-files'/'--to-stdout') and don't gate this on '--quiet': '--quiet' only
+# suppresses the per-file "Created ..." status line, not this one-time opt-in retention notice.
+[[ -z "${KEEP_INTERMEDIATE}" ]] \
+  || echo "md2x: kept intermediate CSS file: '${CSS_TMP_FILE}'" >&2
+
 {
   if [[ -z "${INPUT}" ]]; then
     # Each record is '<md-file><tab><search-root>'; an empty root means the file was
@@ -212,7 +266,6 @@ fi
         # '--output-path', which is just as likely not to exist yet.
         mkdir -p "${BASE_OUTPUT}"
         BASE_OUTPUT="${BASE_OUTPUT}/${TITLE}"
-        if [[ "${OUTPUT_FORMAT}" == 'html' ]]; then BASE_OUTPUT="${BASE_OUTPUT}-base"; fi
         BASE_OUTPUT="${BASE_OUTPUT}.${OUTPUT_FORMAT}"
         
         generate-page
@@ -222,6 +275,7 @@ fi
   
   if [[ -n "${SINGLE_PAGE}" ]] || [[ -n "${INPUT}" ]]; then
     TITLE="${TITLE:-output}"
+    mkdir -p "${OUTPUT_PATH}"
     BASE_OUTPUT="${OUTPUT_PATH}/${TITLE:-output}.${OUTPUT_FORMAT}"
     MD_FILE="${TITLE:-input}.md"
     generate-page
@@ -236,9 +290,23 @@ fi
     [[ -n "${NAMED_FILE}" ]] || continue
     printf '%s\t\n' "${NAMED_FILE}"
   done <<< "${MD_FILES}"
-  for ROOT_DIR in $SEARCH_DIRS; do
-    find ${ROOT_DIR} -name "*.md" | while IFS= read -r FOUND_FILE; do
+  while IFS= read -r ROOT_DIR; do
+    [[ -n "${ROOT_DIR}" ]] || continue
+    # Empirically confirmed abort/continue behavior for a 'find' failure here (e.g. an
+    # unreadable ROOT_DIR), since it isn't obvious from reading alone: under 'pipefail',
+    # this pipe's exit status is the rightmost non-zero status among {find, while} --
+    # and the 'while read' loop always exits 0 (it just drains whatever 'find' emitted,
+    # or nothing, then hits EOF), so a 'find' error becomes THIS pipe's exit status.
+    # That trips 'errexit' in the outer 'while read ROOT_DIR' loop above, aborting it
+    # right there: any root listed *after* the failing one in '${SEARCH_DIRS}' is never
+    # even attempted (silently dropped), while roots listed before it, and files 'find'
+    # already emitted for the SAME root before erroring deeper in its tree, are kept.
+    # None of this reaches the top-level script: '< <(...)' process-substitution
+    # failures are invisible to the parent's own 'errexit'/'pipefail', so 'md2x' still
+    # exits 0 overall and silently omits the unprocessed roots' files. See
+    # 'exit-codes.bats'' "unreadable search root" cases and followup 8ZmD.
+    find "${ROOT_DIR}" -name "*.md" | while IFS= read -r FOUND_FILE; do
       printf '%s\t%s\n' "${FOUND_FILE}" "${ROOT_DIR}"
     done
-  done | sort
+  done <<< "${SEARCH_DIRS}" | sort
 )

@@ -1,145 +1,5 @@
 version: 2
 items:
-    - title: Undocumented jq dependency in md2x.sh
-      id: baU7
-      date: "2026-07-29"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Flagged by the planning agent for plan `test-coverage-bugfix`. `src/cli/md2x.sh` (around the VERSION= line) runs `VERSION=$(OUTPUT=$(git status --porcelain) && [ -z "${OUTPUT}" ] && cat package.json | jq ''.version'' || echo ''working'')` on every invocation, not just under `--infer-version` — it shells out to `git` and `jq` and reads `package.json` from the CWD unconditionally. `jq` is not named in the binary preflight check (`gs`/`pandoc`/`pdftk` only), nor in AGENTS.md''s, README.md''s, or docs/md2x-spec.md''s prerequisite lists. When `jq` is missing, the command degrades silently to the literal string ''working'' rather than failing loudly. Worth a maintainer decision: add `jq` to the documented prerequisites and preflight check, or replace it with something that doesn''t add a hidden dependency.'
-    - title: Unquoted path expansion breaks on spaces
-      id: 95ND
-      date: "2026-07-29"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Flagged by the planning agent for plan `test-coverage-bugfix`. In `src/cli/md2x.sh`, `for ROOT_DIR in $SEARCH_DIRS` and the unquoted `find ${ROOT_DIR} -name "*.md"` word-split on whitespace, so any input directory path containing a space breaks silently (splits into multiple bogus paths rather than erroring). Pre-existing, not touched by the `test-coverage-bugfix` plan (explicitly out of scope there — that plan''s tests must not assert space-containing paths work, only that the change doesn''t make this worse). Worth a maintainer fix: quote `${ROOT_DIR}` and iterate `SEARCH_DIRS` via a null-safe or newline-safe mechanism instead of unquoted word-splitting.'
-    - title: Race on concurrent cold ~/.md2x bootstrap
-      id: AOJw
-      date: "2026-07-29"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Flagged by the planning agent for plan `pdf-engine-weasyprint`. The new WeasyPrint bootstrap (src/cli/lib/ensure-weasyprint.sh, introduced by that plan) creates `~/.md2x/venv` in place on first PDF conversion (python3 -m venv + ensurepip + pip install weasyprint), gated by a simple `[[ -x ~/.md2x/venv/bin/weasyprint ]]` existence check. If two `md2x` processes race a cold bootstrap concurrently (e.g. two PDF conversions kicked off at once on a machine that has never run md2x before), their venv-creation and pip-install steps can interleave and corrupt the shared `~/.md2x/venv` directory. The plan deliberately deferred hardening this (no staging-dir build + atomic rename, no lockfile) in favor of matching the repo''s plain-bash style; a partially-built venv is expected to self-heal on a later run since the `-x` gate simply fails again and retries the bootstrap, but a genuinely concurrent race during the initial cold start is not guarded against. Worth a maintainer decision: accept the risk (probably fine given cold-start is a one-time, human-triggered event) or add a lockfile/staging-dir mechanism.'
-    - title: package.json bin references missing file
-      id: IxJH
-      date: "2026-07-28"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'package.json declares a second bin entrypoint, "liq-gen-roles-ref": "bin/liq-gen-roles-ref.sh", but no such file exists anywhere in the repo (only bin/md2x is present). Found while authoring docs/project-structure.md during this session''s doc-authoring round. Looks like leftover/incorrect package.json content — either the file was never added, was removed without updating package.json, or the entry belongs to a different package. Worth a maintainer review: either restore/add the script or remove the stale bin entry.'
-    - title: md2x_run helper exists because git status --p
-      id: eCzQ
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: 'md2x_run helper exists because git status --porcelain emits ''fatal: not a git repository'' stderr noise on every invocation outside a repo; tasks 002-005 should use md2x_run not bare run'
-    - title: bin/md2x hard-requires Homebrew on macOS (bre
-      id: H7ej
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: bin/md2x hard-requires Homebrew on macOS (brew --prefix gnu-getopt) - undocumented, possible followup, out of scope here
-    - title: aI57 mirrored-output bug visible in smoke-tes
-      id: ZQ0m
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: aI57 mirrored-output bug visible in smoke-test output (test-out/./src/cli/test/tiny-doc.docx) - pre-existing, task 002 owns the fix per plan
-    - title: 'docs/project-structure.md and AGENTS.md have '
-      id: LPg7
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: docs/project-structure.md and AGENTS.md have minor stale doc references (smoke-test target missing from table, docs marked '(planned)' though they exist) - out of this task's scope, phase-02 task 001 owns architecture doc updates
-    - title: --single-page and stdin still do not create -
-      id: MPHT
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: --single-page and stdin still do not create --output-path when missing (same class of bug as the flatten-dirs fix, one-line mkdir -p, but explicitly out of this task's scope per requirement 6) - candidate followup for consistency
-    - title: --flatten-dirs help text in src/cli/md2x.sh n
-      id: rm3a
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: --flatten-dirs help text in src/cli/md2x.sh not updated to match the more precise README.md/spec wording (task named only README and spec) - trivial, candidate followup
-    - title: --output-format html on a per-file conversion
-      id: c2s9
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:automated-test-coverage
-        - priority:unspecified
-        - effort:unspecified
-      text: --output-format html on a per-file conversion produces <title>-base.html rather than <title>.html - undocumented in docs/md2x-spec.md or README.md - candidate followup
-    - title: md2x.js shell injection risk
-      id: arUf
-      date: "2026-07-29"
-      tags:
-        - plan/phase:automated-test-coverage
-        - type:security
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 security review (test-coverage-bugfix plan) found: src/node/md2x.js builds its shell command by naively single-quoting caller-supplied values with no escaping of embedded single quotes (options.push(`--title ''${title}''`) at md2x.js:43, `--output-path ''${outputPath}''` at md2x.js:49, sourceSpec join at md2x.js:25), then executes via shell.exec(command, { shell: ''/bin/bash'' }) (md2x.js:56, 66). Any of title/outputPath/sources containing a single quote breaks out of the quoting; a crafted value can execute arbitrary shell commands with the Node process''s privileges. md2x() is the exported library API and docs/md2x-spec.md documents these as plain caller-supplied strings (e.g. a document title), so externally-influenced input is plausible. Not introduced by the test-coverage-bugfix diff (src/node/md2x.js is unchanged), but task 004''s new src/node/md2x.test.js (lines 74-88) now asserts the exact unescaped command string as correct/expected behavior with no accompanying caveat, unlike the same file''s explicit "documents CURRENT buggy behavior" treatment of followups udVi/egcc. Worth a maintainer fix: escape embedded single quotes in title/outputPath/each sources entry, or switch to an argv-array invocation (child_process.execFile) that never round-trips through a shell.'
-    - title: md2x.sh find-pipe abort shift
-      id: 8ZmD
-      date: "2026-07-29"
-      tags:
-        - plan/phase:automated-test-coverage
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 correctness review (test-coverage-bugfix plan) found: the aI57 fix''s file-discovery process substitution in src/cli/md2x.sh now nests a per-root inner pipe (find ${ROOT_DIR} -name "*.md" | while IFS= read -r FOUND_FILE; do ...; done) inside the existing outer for-loop | sort pipe. Under set -o pipefail/errexit, a find failure on one search root now surfaces only after that root''s already-discovered files drain through the inner while loop, rather than aborting the instant the bare find command failed as in the pre-fix code. Net abort-or-not behavior is likely unchanged, but the abort point and how much partial file-list reaches the loop first has shifted. Low confidence, minor severity - worth a one-line comment or a targeted bats case (an existing-but-unreadable search root) if the maintainer wants to pin down or preserve the original immediate-abort semantics.'
-    - title: md2x.sh discovery pipe overhead
-      id: r38C
-      date: "2026-07-29"
-      tags:
-        - plan/phase:automated-test-coverage
-        - type:optimization
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 efficiency review (test-coverage-bugfix plan) found: the aI57 fix''s file-discovery change (tab-separated <md-file><tab><search-root> records for the mirrored-output derivation) adds one extra piped while/read/printf subshell per search-root iteration versus the prior direct `find | sort`. Still O(n) in matched files, no new fork-per-file, but a real (if small) constant-factor increase for many search roots or very large *.md trees. Suggestion severity, low confidence - no action needed unless profiling on realistic input-tree sizes shows this pass is material to CLI runtime. If it ever is, consider `find ... -printf ''%p\t${ROOT_DIR}\n''` instead of piping through read/printf.'
-    - title: e2e suite always runs in make test
-      id: EWuE
-      date: "2026-07-29"
-      tags:
-        - plan/phase:automated-test-coverage
-        - type:optimization
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Phase-01 efficiency review (test-coverage-bugfix plan) found: task 005''s four real-toolchain e2e cases are wired into the default make test/test-cli path (by design, per the task doc) rather than behind a separate opt-in target, so any machine with a working pandoc on PATH performs 2-3 real Pandoc/Ghostscript/pdftk conversions on every make test invocation, raising wall-clock from ~12.4s to ~13.9-17.5s (measured by task 005 itself). Deliberate, pre-accepted trade-off, not a correctness problem. Suggestion severity - optional enhancement: an environment-variable escape hatch (e.g. MD2X_SKIP_E2E=1) that bats setup checks to skip the e2e-tagged cases during rapid local iteration, while leaving make test unchanged by default for CI/gate purposes.'
-    - title: PDF output currently ships with NO GitHub-mar
-      id: TNLq
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:weasyprint-pdf-engine
-        - priority:unspecified
-        - effort:unspecified
-      text: PDF output currently ships with NO GitHub-markdown CSS styling — WeasyPrint rejects the --css process-substitution file outright (no .css extension to sniff MIME type), so the stylesheet never loads for PDF output (HTML/DOCX unaffected). Fixed only the stdout-purity symptom (filtered the resulting stderr message); did not restructure CSS delivery — a real temp .css file does make WeasyPrint load styles but then emits ~10 non-fatal multi-line WARNING lines per conversion with no reliable machine-parseable boundary for stdout-purity filtering. Recommend a small dedicated follow-up task to restore PDF styling and decide how to handle WeasyPrint's CSS-compatibility warnings, ideally with a visual check of rendered output. Not caught by any of the 8 written Validation checks.
     - title: Validation check 6 (python3 preflight failure
       id: egW0
       date: "2026-07-29"
@@ -149,64 +9,39 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Validation check 6 (python3 preflight failure) was not exercised live: brew''s self-location depends on /opt/homebrew/bin staying on PATH, which also hosts python3/gs/pandoc on this dev machine, so a live PATH-exclusion test could not be safely constructed. Verified by code inspection (identical preflight-loop idiom as gs/pandoc/pdftk) instead. Recommend re-verifying live in an environment where python3 is not colocated with brew/gs/pandoc.'
-    - title: 'Pre-existing, unrelated architecture note: ge'
-      id: rndR
-      date: "2026-07-29"
+    - title: 'Genuine latent bug: a healthy, readable searc'
+      id: S92a
+      date: "2026-07-30"
       tags:
         - type:ambiguity
-        - plan/phase:weasyprint-pdf-engine
+        - plan/phase:resolve-followups
         - priority:unspecified
         - effort:unspecified
-      text: 'Pre-existing, unrelated architecture note: generate-page()''s pandoc ... 2>&1 | grep -v ... pattern has always merged the pdf-engine''s stderr into the CLI''s real stdout rather than true stderr; this task''s fix only patches the one new message WeasyPrint surfaced. Any future pdf-engine-emitted stderr text not matching the grep pattern would still leak onto stdout. Worth a more structural fix at some point, out of scope here.'
-    - title: WeasyPrint SSRF risk via lib usage
-      id: Kjs2
-      date: "2026-07-29"
-      tags:
-        - type:security
-        - plan/phase:weasyprint-pdf-engine
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Flagged by the phase-01 (weasyprint-pdf-engine) phase-review security lens, minor/low-confidence. Pinning --pdf-engine to WeasyPrint (this phase) makes WeasyPrint the actual PDF renderer again (previously this path errored on Pandoc >= 3.4, so it was unreachable in practice). WeasyPrint''s default posture fetches external resources referenced in rendered HTML (image src, @import/url() in CSS, including file:// URLs) with no built-in allowlist. md2x is a CLI a user runs against their own documents (low risk there), but it''s also published as an npm library (src/node/md2x.js, md2x({ markdown, ... })) that a consuming application could embed to render externally-supplied Markdown — in which case resource references in that content could be used for SSRF or local file disclosure via WeasyPrint''s fetch behavior. Nothing in this phase''s diff changes or introduces that fetch behavior (intrinsic to WeasyPrint, and was already true of the previous wkhtmltopdf-based path when it worked), but this phase is what makes it reachable again. Worth a maintainer decision: document the caveat for library consumers (a caller embedding md2x against externally-authored content should apply the same precautions as any other SSRF-capable rendering path — network egress restrictions, or a WeasyPrint URL fetcher override), or decide it''s out of scope / the caller''s responsibility.'
-    - title: docs/architecture.md's Pointers section still
-      id: yn0V
-      date: "2026-07-29"
+      text: 'Genuine latent bug: a healthy, readable search root''s files silently vanish (zero exit code, no error beyond find''s own stderr line) merely because it''s listed after an unreadable root. Not fixed per this task''s explicit no-behavior-change assumption. Needs a maintainer decision: abort loudly, or process every root independently regardless of one root''s failure.'
+    - title: 'Informational only: WEASYPRINT_LOCK_TIMEOUT_S'
+      id: ZP4P
+      date: "2026-07-30"
       tags:
         - type:ambiguity
-        - plan/phase:doc-updates
+        - plan/phase:resolve-followups
         - priority:unspecified
         - effort:unspecified
-      text: docs/architecture.md's Pointers section still calls docs/project-structure.md '(planned)' — pre-existing staleness, unrelated to this plan, not in the task's Requirements list.
-    - title: AGENTS.md (two spots) and docs/project-struct
-      id: tTl2
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:doc-updates
-        - priority:unspecified
-        - effort:unspecified
-      text: AGENTS.md (two spots) and docs/project-structure.md (one spot) still describe docs/architecture.md as '(planned)'/not-yet-existing, contradicting reality — those three files belong to Phase 01 task 002's file set, out of this task's boundaries.
-    - title: docs/md2x-spec.md's 'Consistent styling' Gene
-      id: LUhO
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:doc-updates
-        - priority:unspecified
-        - effort:unspecified
-      text: docs/md2x-spec.md's 'Consistent styling' General features bullet and UC1's outcome description both still claim PDF output gets the built-in GitHub CSS, which is no longer true (WeasyPrint rejects the --css process-substitution delivery). Already accurately noted in README.md's Features list next to followup TNLq; fixing the underlying CSS gap itself is out of scope, neither claim was named in this task's Requirements.
-    - title: bats PDF cases can cold-install weasyprint
-      id: efJF
-      date: "2026-07-29"
+      text: 'Informational only: WEASYPRINT_LOCK_TIMEOUT_SECS=180 and WEASYPRINT_LOCK_POLL_SECS=1 are fixed constants, not exposed via env-var override, matching the file''s existing style. Worth a maintainer note if future needs (e.g. CI wanting a shorter timeout) arise, but out of this task''s scope.'
+    - title: md2x.js sources:[] edge case behavior change
+      id: GuQR
+      date: "2026-07-30"
       tags:
         - type:bug
+        - plan/phase:resolve-followups
         - priority:unspecified
         - effort:unspecified
-      text: 'Surfaced while resolving the pdf-engine-weasyprint plan-branch merge conflict. The bats suite (src/cli/test/bats/) stubs pandoc/gs/pdftk on PATH but not python3, and the merged src/cli/md2x.sh now calls ensure-weasyprint (real python3 -m venv + pip install weasyprint) for every --output-format pdf invocation. On this dev machine ~/.md2x/venv/bin/weasyprint already existed, so make test-cli''s PDF cases took the cheap warm-path check and passed quickly (55/55). On a machine that has never run md2x — including a fresh CI runner — the first PDF-format bats case would trigger a real, ~1-minute, network-dependent WeasyPrint install rather than staying hermetic like the rest of the stubbed suite. Worth a maintainer decision: stub/short-circuit ensure-weasyprint in the bats harness, or document/accept the one-time cold-CI cost.'
-    - title: e2e PDF case skip guard now stale
-      id: zjG5
-      date: "2026-07-29"
+      text: 'Phase-01 (resolve-followups) phase-review correctness lens found: in src/node/md2x.js, the pre-diff sourceSpec construction (`sources ? \`''${sources.join("'' ''")}''\` : ''''`) took the truthy branch for `sources: []` and produced a literal empty-quoted shell argument (`''''`), which the CLI received as one empty positional argument. Task 003''s shellQuote refactor (`sources ? sources.map(shellQuote).join('' '') : ''''`) instead produces a genuinely empty string for `sources: []`, so no source argument is emitted at all — a materially different CLI code path (zero positional args vs one empty one). Neither the pre- nor post-diff test suite exercises this exact edge case, so it wasn''t caught by coverage. Worth a maintainer decision: pick the intended behavior for `sources: []` deliberately (preserve the old empty-arg behavior, or keep the new no-arg behavior) and add a Jest case covering it.'
+    - title: WeasyPrint lock failure misdiagnosis
+      id: zwH4
+      date: "2026-07-30"
       tags:
         - type:bug
+        - plan/phase:resolve-followups
         - priority:unspecified
         - effort:unspecified
-      text: 'Surfaced while resolving the pdf-engine-weasyprint plan-branch merge conflict. src/cli/test/bats/real-toolchain-e2e.bats'' PDF case skips with "pandoc''s PDF engine is unavailable: ''weasyprint'' not found" — it probes for weasyprint on PATH before running. Under the now-merged self-managed WeasyPrint design, weasyprint is deliberately never expected on PATH (md2x calls it via the absolute ~/.md2x/venv/bin/weasyprint path instead), so this guard will now always fire and the PDF e2e case will always skip, even though the conversion would in fact succeed via the managed venv binary. Worth a maintainer fix: update the guard to probe for the venv binary (or just attempt a conversion and let ensure-weasyprint''s own bootstrap/preflight handle unavailability) so this case actually exercises the real toolchain again.'
+      text: 'Phase-01 (resolve-followups) phase-review correctness lens found (low confidence): in src/cli/lib/ensure-weasyprint.sh''s cold-bootstrap lock loop (lines ~85-95), every `mkdir "${WEASYPRINT_LOCK_DIR}"` failure is treated identically as "another process holds the lock" and polled for up to the full 180s timeout before reporting a stale-lock message. If mkdir instead fails for an unrelated, persistent reason (e.g. unwritable $HOME), the process still busy-waits the full 180s and then reports a misleading diagnosis pointing at the wrong remediation (rm -rf ~/.md2x-venv.lock, which wouldn''t fix a permissions issue). Worth a maintainer fix: distinguish EEXIST-style contention (confirm via `[[ -d "${WEASYPRINT_LOCK_DIR}" ]]` after a failed mkdir) from other mkdir failure modes, and fail fast with an accurate message on the latter.'

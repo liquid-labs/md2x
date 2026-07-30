@@ -48,14 +48,14 @@ describe('md2x', () => {
       md2x({ sources : ['a.md'] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format pdf 'a.md'")
+      expect(command).toBe("npx md2x --list-files --output-format 'pdf' 'a.md'")
     })
 
     test('honors a non-default output format', () => {
       md2x({ sources : ['a.md'], format : 'html' })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format html 'a.md'")
+      expect(command).toBe("npx md2x --list-files --output-format 'html' 'a.md'")
     })
 
     test.each([
@@ -68,7 +68,7 @@ describe('md2x', () => {
       md2x({ sources : ['a.md'], [option] : true })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(`npx md2x --list-files --output-format pdf ${flag} 'a.md'`)
+      expect(command).toBe(`npx md2x --list-files --output-format 'pdf' ${flag} 'a.md'`)
     })
 
     test('single-quotes title and output path and places them in source order', () => {
@@ -76,7 +76,7 @@ describe('md2x', () => {
 
       const [command] = shell.exec.mock.calls[0]
       expect(command).toBe(
-        "npx md2x --list-files --output-format pdf --title 'My Report' --output-path './out dir' 'a.md'"
+        "npx md2x --list-files --output-format 'pdf' --title 'My Report' --output-path './out dir' 'a.md'"
       )
     })
 
@@ -84,17 +84,56 @@ describe('md2x', () => {
       md2x({ sources : ['a.md', 'b.md', 'c dir/d.md'] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format pdf 'a.md' 'b.md' 'c dir/d.md'")
+      expect(command).toBe("npx md2x --list-files --output-format 'pdf' 'a.md' 'b.md' 'c dir/d.md'")
     })
 
-    // 'sourceSpec' is always built as `'${sources.join("' '")}'`, so a lone '-' source becomes the quoted string
-    // "'-'". The default-title check compares against that quoted form, so the 'Report' default applies for a
-    // lone '-' (stdin) source.
+    // 'sourceSpec' is built by escaping and single-quoting each source individually and space-joining the result,
+    // so a lone '-' source becomes the quoted string "'-'". The default-title check compares against that quoted
+    // form, so the 'Report' default applies for a lone '-' (stdin) source.
     test('applies the default title for a lone "-" source (followup udVi, fixed)', () => {
       md2x({ sources : ['-'] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format pdf --title 'Report' '-'")
+      expect(command).toBe("npx md2x --list-files --output-format 'pdf' --title 'Report' '-'")
+    })
+
+    // followup arUf: title/outputPath/sources are caller-supplied and were previously interpolated into raw
+    // single quotes with no escaping, so an embedded single quote could break out of the quoted span and inject
+    // arbitrary shell syntax. These cases assert the escaping helper closes that off: an embedded quote is
+    // rendered as the standard POSIX escape "'\''", which keeps the value safely inside its own quoted span and
+    // cannot terminate it early.
+    test('escapes an embedded single quote in title so it cannot break out of its quoted span', () => {
+      md2x({ sources : ['a.md'], title : "O'Brien's Report" })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command).toBe(
+        "npx md2x --list-files --output-format 'pdf' --title 'O'\\''Brien'\\''s Report' 'a.md'"
+      )
+    })
+
+    test('escapes an embedded single quote in format so it cannot break out of its quoted span', () => {
+      md2x({ sources : ['a.md'], format : "pdf'; touch /tmp/pwned; '" })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command).toBe(
+        "npx md2x --list-files --output-format 'pdf'\\''; touch /tmp/pwned; '\\''' 'a.md'"
+      )
+    })
+
+    test('escapes an embedded single quote in outputPath so it cannot break out of its quoted span', () => {
+      md2x({ sources : ['a.md'], outputPath : "./out'; touch /tmp/pwned; '" })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command).toBe(
+        "npx md2x --list-files --output-format 'pdf' --output-path './out'\\''; touch /tmp/pwned; '\\''' 'a.md'"
+      )
+    })
+
+    test('escapes an embedded single quote in one sources entry without affecting adjacent entries', () => {
+      md2x({ sources : ["a'.md", 'b.md'] })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command).toBe("npx md2x --list-files --output-format 'pdf' 'a'\\''.md' 'b.md'")
     })
   })
 
@@ -157,12 +196,33 @@ describe('md2x', () => {
       const [command] = shell.exec.mock.calls[0]
       // The command template always inserts a space before the (here empty, since 'sources' is not given)
       // 'sourceSpec', and the staging-file append adds a second space, so two spaces separate the last flag from
-      // the staging file path.
-      expect(command).toBe(`npx md2x --list-files --output-format pdf --title 'Title'  ${stagingFile}`)
+      // the (now single-quoted, per followup arUf) staging file path.
+      expect(command).toBe(`npx md2x --list-files --output-format 'pdf' --title 'Title'  '${stagingFile}'`)
 
       expect(shell.rm).toHaveBeenCalledTimes(1)
       expect(shell.rm).toHaveBeenCalledWith('-r', stagingDir)
       expect(files).toEqual(['/out/Title.pdf'])
+    })
+
+    // followup arUf: 'title' feeds the trailing filename component of the staging path appended to the command,
+    // so an embedded single quote there is also part of the injection surface even though the containing
+    // directory is one this code controls. Confirms the appended staging-file argument is safely escaped.
+    test('escapes an embedded single quote in title within the appended staging file path', () => {
+      shell.exec.mockReturnValue(mockExecResult(0, "/out/O'Brien.pdf\n"))
+
+      const files = md2x({ markdown : '# Hello', title : "O'Brien" })
+
+      const [, stagingDir] = shell.mkdir.mock.calls[0]
+      const stagingFile = fsPath.join(stagingDir, "O'Brien.md")
+      expect(shellStringTo).toHaveBeenCalledWith(stagingFile)
+
+      const [command] = shell.exec.mock.calls[0]
+      const escapedStagingFile = `'${stagingFile.replace(/'/g, "'\\''")}'`
+      expect(command).toBe(
+        `npx md2x --list-files --output-format 'pdf' --title 'O'\\''Brien'  ${escapedStagingFile}`
+      )
+
+      expect(files).toEqual(["/out/O'Brien.pdf"])
     })
 
     test('cleans up the staging directory even when the command fails (finally)', () => {

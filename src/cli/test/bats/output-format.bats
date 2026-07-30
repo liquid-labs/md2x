@@ -28,20 +28,16 @@ teardown() {
   assert_output_contains 'Created ./report.pdf'
 }
 
-@test "--output-format html converts to <title>-base.html" {
-  # The spec (docs/md2x-spec.md, UC2 and the API definition table) says nothing about
-  # a '-base' suffix on HTML output -- it implies the base name gets '.html' directly
-  # ('report.html'). 'src/cli/md2x.sh's per-file conversion loop appends '-base' to
-  # the base output name whenever OUTPUT_FORMAT is 'html', before the extension is
-  # appended. This case documents the actual behaviour rather than silently encoding
-  # it as correct -- flagged as a candidate followup for the manager.
+@test "--output-format html converts to <title>.html" {
+  # The spec (docs/md2x-spec.md, UC2 and the API definition table) documents the base
+  # name getting '.html' directly ('report.html'), exactly parallel to '<title>.pdf'
+  # and '<title>.docx' for the other formats.
   md2x_write_doc 'report.md'
 
   md2x_run --output-format html --flatten-dirs --output-path . report.md
 
   assert_success
-  assert_file_exists './report-base.html'
-  assert_file_not_exists './report.html'
+  assert_file_exists './report.html'
 }
 
 @test "--output-format docx converts to <title>.docx" {

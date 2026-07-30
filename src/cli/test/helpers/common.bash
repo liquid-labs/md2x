@@ -31,6 +31,13 @@
 #   * A stub invocation log ("${MD2X_TEST_STUB_LOG}") and capture directory
 #     ("${MD2X_TEST_STUB_CAPTURE_DIR}"), both outside the case's cwd so they never
 #     show up in directory listings or '*.md' searches the CLI performs.
+#   * A private 'HOME' pointing at an empty directory pre-populated with a fake,
+#     already-executable '~/.md2x/venv/bin/weasyprint'. This makes
+#     'src/cli/lib/ensure-weasyprint.sh's '-x' gate pass immediately, so a PDF-format
+#     case never falls into the real, network-dependent WeasyPrint bootstrap -- which
+#     would otherwise reach the ambient system 'python3' (never stubbed, since it is
+#     not in 'MD2X_TEST_PASSTHROUGH_TOOLS') and take about a minute on a machine that
+#     has never run md2x before.
 #
 # Keep every fixture and temp path free of spaces: the CLI word-splits '$SEARCH_DIRS'
 # and 'find ${ROOT_DIR}' unquoted, so paths with spaces are already broken upstream.
@@ -79,6 +86,7 @@ md2x_setup() {
   fi
 
   MD2X_TEST_ORIGINAL_PATH="${PATH}"
+  MD2X_TEST_ORIGINAL_HOME="${HOME}"
   MD2X_TEST_ORIGINAL_DIR="${PWD}"
 
   local tmp_root="${TMPDIR:-/tmp}"
@@ -100,10 +108,21 @@ md2x_setup() {
   MD2X_TEST_BIN_DIR="${MD2X_TEST_TMPDIR}/bin"
   MD2X_TEST_STUB_LOG="${MD2X_TEST_TMPDIR}/stub-invocations.log"
   MD2X_TEST_STUB_CAPTURE_DIR="${MD2X_TEST_TMPDIR}/captures"
+  MD2X_TEST_HOME_DIR="${MD2X_TEST_TMPDIR}/home"
   export MD2X_TEST_STUB_LOG MD2X_TEST_STUB_CAPTURE_DIR
 
   mkdir -p "${MD2X_TEST_WORK_DIR}" "${MD2X_TEST_STUB_CAPTURE_DIR}"
   : > "${MD2X_TEST_STUB_LOG}"
+
+  # Fake, already-executable WeasyPrint binary so 'ensure-weasyprint.sh's '-x' gate
+  # passes immediately and the real, network-dependent bootstrap never runs. Its
+  # contents are never executed by the stub suite -- stub 'pandoc' receives its path
+  # as an inert '--pdf-engine=<path>' argument string.
+  mkdir -p "${MD2X_TEST_HOME_DIR}/.md2x/venv/bin"
+  printf '#!/bin/sh\nexit 0\n' > "${MD2X_TEST_HOME_DIR}/.md2x/venv/bin/weasyprint"
+  chmod +x "${MD2X_TEST_HOME_DIR}/.md2x/venv/bin/weasyprint"
+  HOME="${MD2X_TEST_HOME_DIR}"
+  export HOME
 
   md2x_use_stub_path
   cd "${MD2X_TEST_WORK_DIR}"
@@ -121,7 +140,11 @@ md2x_teardown() {
     export PATH
     hash -r 2>/dev/null || true
   fi
-  unset MD2X_TEST_STUB_LOG MD2X_TEST_STUB_CAPTURE_DIR MD2X_TEST_TMPDIR
+  if [[ -n "${MD2X_TEST_ORIGINAL_HOME:-}" ]]; then
+    HOME="${MD2X_TEST_ORIGINAL_HOME}"
+    export HOME
+  fi
+  unset MD2X_TEST_STUB_LOG MD2X_TEST_STUB_CAPTURE_DIR MD2X_TEST_TMPDIR MD2X_TEST_HOME_DIR
 }
 
 # --- PATH control ------------------------------------------------------------------
