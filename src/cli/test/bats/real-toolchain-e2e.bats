@@ -153,6 +153,45 @@ e2e_assert_zip_magic() {
   [[ "${magic}" == 'PK' ]] || md2x_fail "expected '${path}' to start with the zip magic 'PK', got: ${magic}"
 }
 
+# --- TOC fixtures ------------------------------------------------------------------------
+#
+# See plan/phase-01-markdown-toc-generation/005-add-real-toolchain-toc-e2e-cases.md.
+
+# e2e_write_toc_nav_doc <path>
+# Writes a small, real multi-section document shared by the DOCX/PDF/HTML TOC-
+# navigation cases below (task doc requirement 6): a title plus four '##' sections,
+# forced into a TOC with '--toc' (bypassing the size heuristic covered elsewhere, in
+# 'toc-generation.bats'). The first section's heading starts with a digit
+# ('1. First Section') deliberately: Pandoc's docx writer cannot use an identifier
+# starting with a digit as a Word bookmark name, so it mangles both the heading's
+# bookmark and the TOC link's anchor into the same 'X<hash>' name (see
+# '../../../plan/notes/pipeline-verification.md') -- this is the case that proves
+# that mangling stays consistent.
+e2e_write_toc_nav_doc() {
+  local path="$1"
+  cat > "${path}" <<'EOF'
+# Toc Nav Doc
+
+Intro text.
+
+## 1. First Section
+
+Section one body.
+
+## Second Section
+
+Section two body.
+
+## Third Section
+
+Section three body.
+
+## Fourth Section
+
+Section four body.
+EOF
+}
+
 # --- cases -----------------------------------------------------------------------------
 
 @test "e2e: tiny-doc.md converts to real HTML with recognizable Pandoc/CSS markup" {
@@ -223,4 +262,149 @@ e2e_assert_zip_magic() {
   e2e_assert_nonempty './combined.html'
   assert_file_contains './combined.html' 'Alpha Heading'
   assert_file_contains './combined.html' 'Beta Heading'
+}
+
+# --- TOC: slug agreement with real Pandoc -------------------------------------------
+
+@test "e2e: generated TOC anchors for the slug corpus all resolve against real Pandoc's minted identifiers" {
+  e2e_require_pandoc
+
+  md2x_copy_fixture 'toc-slug-corpus.md'
+
+  # The identifiers real Pandoc mints for the fixture -- the source of truth this case
+  # checks md2x's slug algorithm against. See
+  # '../../../plan/notes/pandoc-gfm-slug-algorithm.md'.
+  local pandoc_ids
+  pandoc_ids="$(pandoc --from gfm --to html5 toc-slug-corpus.md | grep -o 'id="[^"]*"')"
+  [[ -n "${pandoc_ids}" ]] \
+    || md2x_fail 'expected real Pandoc to mint at least one identifier for the fixture'
+
+  md2x_run --toc --output-format html --flatten-dirs --output-path . toc-slug-corpus.md
+
+  assert_success
+  assert_file_exists './toc-slug-corpus.html'
+
+  # Every anchor the generated TOC used must resolve against Pandoc's identifier set --
+  # not set equality. The fixture deliberately carries headings the TOC omits by
+  # design: the document title ('Slug Corpus') and the '!!!' heading, whose slug is
+  # the empty string and therefore not linkable (see the note's 'Empty identifiers'
+  # section). The fixture also deliberately excludes the emoji-heading example from
+  # the note's reader-comparison table: Pandoc's 'emoji' extension maps the character
+  # to a name ('tada') that md2x's source-text approximation cannot reproduce -- a
+  # documented, accepted divergence (see the note's 'Known, accepted divergences'
+  # section), not something this slug-fidelity case should assert on.
+  local toc_anchors anchor
+  toc_anchors="$(grep -o 'href="#[^"]*"' './toc-slug-corpus.html' | sed -E 's/^href="#(.*)"$/\1/')"
+  [[ -n "${toc_anchors}" ]] \
+    || md2x_fail 'expected the generated HTML to carry at least one TOC anchor link'
+
+  while IFS= read -r anchor; do
+    [[ -n "${anchor}" ]] || continue
+    [[ "${pandoc_ids}" == *"id=\"${anchor}\""* ]] \
+      || md2x_fail "TOC anchor '#${anchor}' has no matching Pandoc identifier" \
+        "pandoc ids:
+${pandoc_ids}"
+  done <<< "${toc_anchors}"
+}
+
+# --- TOC: DOCX navigation is real ----------------------------------------------------
+
+@test "e2e: docx TOC links and bookmarks match, including Word's mangled numeric-heading name" {
+  e2e_require_pandoc
+
+  e2e_write_toc_nav_doc 'nav-doc.md'
+
+  md2x_run --toc --output-format docx --flatten-dirs --output-path . nav-doc.md
+
+  assert_success
+  assert_file_exists './nav-doc.docx'
+  e2e_assert_nonempty './nav-doc.docx'
+
+  local document_xml
+  document_xml="$(python3 -c "import zipfile,sys; sys.stdout.write(zipfile.ZipFile(sys.argv[1]).read('word/document.xml').decode())" './nav-doc.docx')"
+
+  [[ "${document_xml}" == *'w:bookmarkStart'* ]] \
+    || md2x_fail 'expected word/document.xml to contain at least one w:bookmarkStart'
+
+  # Every link anchor must resolve to a bookmark of the same name -- not the reverse:
+  # the document-title heading gets its own bookmark but is deliberately excluded from
+  # the TOC, so it has no corresponding 'w:anchor'.
+  local anchors bookmarks anchor
+  anchors="$(grep -o 'w:anchor="[^"]*"' <<< "${document_xml}" | sed -E 's/^w:anchor="(.*)"$/\1/' | sort -u)"
+  bookmarks="$(grep -o '<w:bookmarkStart[^>]*w:name="[^"]*"' <<< "${document_xml}" | sed -E 's/.*w:name="([^"]*)"$/\1/' | sort -u)"
+
+  [[ -n "${anchors}" ]] \
+    || md2x_fail 'expected at least one w:anchor="..." TOC link in word/document.xml'
+  # 'nav-doc.md's first section heading, '1. First Section', starts with a digit --
+  # Word forbids that as a bookmark name, so Pandoc mangles it into an 'X<hash>' name
+  # on both the heading's bookmark and the link's anchor (see
+  # '../../../plan/notes/pipeline-verification.md'). This is what proves the mangling
+  # stays consistent, headline "DOCX now gets a working TOC" behavior.
+  grep -qE '^X[0-9a-f]+$' <<< "${anchors}" \
+    || md2x_fail "expected one anchor to be a Pandoc-mangled 'X<hash>' name" \
+      "anchors:
+${anchors}"
+
+  while IFS= read -r anchor; do
+    [[ -n "${anchor}" ]] || continue
+    grep -qx -- "${anchor}" <<< "${bookmarks}" \
+      || md2x_fail "TOC link anchor '${anchor}' has no matching w:bookmarkStart" \
+        "bookmarks:
+${bookmarks}"
+  done <<< "${anchors}"
+}
+
+# --- TOC: PDF links survive the overlay stage ----------------------------------------
+
+@test "e2e: the finished PDF's TOC links and named destinations survive the pdftk overlay stage" {
+  e2e_require_pdf_engine
+
+  e2e_write_toc_nav_doc 'nav-doc.md'
+
+  # This case pins the finding recorded in
+  # '../../../plan/notes/pipeline-verification.md': 'pdftk multistamp' was verified
+  # during planning to preserve the '/Link' annotations and named destinations
+  # WeasyPrint produces for the TOC. Uncompressing the *finished* PDF -- the one
+  # that has already been through the Ghostscript header/footer overlay and 'pdftk
+  # multistamp' merge -- asserts that survival end to end, not just that WeasyPrint's
+  # own output carries them.
+  md2x_run --toc --flatten-dirs --output-path . nav-doc.md
+
+  assert_success
+  e2e_assert_nonempty './nav-doc.pdf'
+  e2e_assert_pdf_magic './nav-doc.pdf'
+
+  local uncompressed="${MD2X_TEST_WORK_DIR}/nav-doc-uncompressed.pdf"
+  pdftk './nav-doc.pdf' output "${uncompressed}" uncompress
+
+  grep -a -q '/Link' "${uncompressed}" \
+    || md2x_fail 'expected the finished PDF to carry at least one /Link annotation'
+  grep -a -q '/Dests' "${uncompressed}" \
+    || md2x_fail 'expected the finished PDF to carry at least one named destination'
+}
+
+# --- TOC: HTML anchors resolve --------------------------------------------------------
+
+@test "e2e: --toc html output's TOC anchors all resolve to a heading id in the same file" {
+  e2e_require_pandoc
+
+  e2e_write_toc_nav_doc 'nav-doc.md'
+
+  md2x_run --toc --output-format html --flatten-dirs --output-path . nav-doc.md
+
+  assert_success
+  assert_file_exists './nav-doc.html'
+
+  local ids toc_anchors anchor
+  ids="$(grep -o 'id="[^"]*"' './nav-doc.html' | sed -E 's/^id="(.*)"$/\1/')"
+  toc_anchors="$(grep -o 'href="#[^"]*"' './nav-doc.html' | sed -E 's/^href="#(.*)"$/\1/')"
+
+  [[ -n "${toc_anchors}" ]] \
+    || md2x_fail 'expected the generated HTML to carry at least one TOC anchor link'
+
+  while IFS= read -r anchor; do
+    [[ -n "${anchor}" ]] || continue
+    grep -qx -- "${anchor}" <<< "${ids}" \
+      || md2x_fail "TOC anchor '#${anchor}' has no matching id=\"${anchor}\" in the same file"
+  done <<< "${toc_anchors}"
 }
