@@ -97,3 +97,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Judgment call surfaced for visibility (not requiring action): decided not to add a new use case or Constraints/assumptions entry in docs/md2x-spec.md for the marker, since the rewritten General-features bullet already documents it behaviorally. A reviewer could reasonably prefer an explicit constraints entry instead.'
+    - title: README --title/-t row has stale wording
+      id: Qa0V
+      date: "2026-07-31"
+      tags:
+        - type:ambiguity
+        - plan/phase:title-precedence
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Surfaced during title-precedence planning (2026-07-31): README.md''s CLI reference table carries the same stale "-t/--title ... used for the output filename and the PDF header text" wording that docs/md2x-spec.md''s API table had (now being corrected there by plan/title-precedence to document the single-file-only precedence and the multi-file fatal-error case). README.md was deliberately left out of that plan''s scope. Worth a small followup to bring README.md''s row in line once the spec wording lands.'
