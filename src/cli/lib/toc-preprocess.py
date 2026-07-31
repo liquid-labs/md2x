@@ -43,6 +43,7 @@ SETEXT_DASH_RE = re.compile(r'^ {0,3}-+[ \t]*$')
 BLANK_RE = re.compile(r'^[ \t]*$')
 BLOCKQUOTE_RE = re.compile(r'^ {0,3}>')
 LIST_ITEM_RE = re.compile(r'^ {0,3}(?:[-*+][ \t]|\d+[.)][ \t])')
+INDENTED_CODE_RE = re.compile(r'^ {4,}\S')
 
 FENCE_OPEN_RE = re.compile(r'^ {0,3}(`{3,}|~{3,})(.*)$')
 FENCE_CLOSE_RE = re.compile(r'^ {0,3}(`+|~+)[ \t]*$')
@@ -187,13 +188,17 @@ def is_setext_text_candidate(line):
 
     Callers only reach this after confirming the line is not an ATX heading and
     not inside a fence; this covers the remaining exclusions (blank, blockquote,
-    list item).
+    list item, and 4+-space indented code -- a line indented 4 or more spaces is
+    CommonMark/GFM indented code, not paragraph text, and can never be setext
+    heading text).
     """
     if BLANK_RE.match(line):
         return False
     if BLOCKQUOTE_RE.match(line):
         return False
     if LIST_ITEM_RE.match(line):
+        return False
+    if INDENTED_CODE_RE.match(line):
         return False
     return True
 
@@ -383,22 +388,37 @@ def build_toc_entries(headings, slugs, title_index):
 # --- output assembly ---------------------------------------------------------------------------
 
 def build_output(contents, eols, headings, marker_indices, in_fence_for_line, mode):
-    """Builds the full output as a list of (content, eol) tuples."""
+    """Builds the full output as a list of (content, eol) tuples.
+
+    'mode == off' can never produce TOC entries ('should_attempt_toc' always
+    returns False), so it skips the slug-allocation, section-count, and
+    page-estimate passes entirely -- any recognized marker is still stripped
+    from the output, just with nothing inserted in its place. 'mode == on'
+    still needs slugs for the TOC entries it will emit, but -- like 'off' --
+    never reads 'section_count'/'estimated_pages' (both feed only the 'auto'
+    heuristic in 'should_attempt_toc'), so it skips those two passes as well.
+    """
     n = len(contents)
-
-    used_slugs = set()
-    slugs = [allocate_slug(slugify(h['text']), used_slugs) for h in headings]
-
-    title_index = compute_title_index(headings)
-    section_count = compute_top_level_sections(headings, title_index)
-
     marker_set = set(marker_indices)
-    estimator_contents = [contents[i] for i in range(n) if i not in marker_set]
-    estimator_fence = [in_fence_for_line[i] for i in range(n) if i not in marker_set]
-    estimated_pages = estimate_pages(estimator_contents, estimator_fence)
 
-    attempt = should_attempt_toc(mode, bool(marker_indices), estimated_pages, section_count)
-    entries = build_toc_entries(headings, slugs, title_index) if attempt else []
+    if mode == 'off':
+        entries = []
+    else:
+        title_index = compute_title_index(headings)
+        used_slugs = set()
+        slugs = [allocate_slug(slugify(h['text']), used_slugs) for h in headings]
+
+        if mode == 'auto':
+            section_count = compute_top_level_sections(headings, title_index)
+            estimator_contents = [contents[i] for i in range(n) if i not in marker_set]
+            estimator_fence = [in_fence_for_line[i] for i in range(n) if i not in marker_set]
+            estimated_pages = estimate_pages(estimator_contents, estimator_fence)
+        else:
+            section_count = 0
+            estimated_pages = 0
+
+        attempt = should_attempt_toc(mode, bool(marker_indices), estimated_pages, section_count)
+        entries = build_toc_entries(headings, slugs, title_index) if attempt else []
 
     toc_block = [('', '\n')] + [(line, '\n') for line in entries] + [('', '\n')] if entries else []
 

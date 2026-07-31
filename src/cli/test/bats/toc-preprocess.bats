@@ -326,6 +326,50 @@ EOF
   assert_output_contains '- [Section One](#section-one)'
 }
 
+@test "toc: recognition - a 4+-space indented line followed by a bare '===' is not a setext heading" {
+  # Regression: 'is_setext_text_candidate()' must exclude 4+-space indented lines
+  # (CommonMark/GFM indented code, per its 0-3-leading-space paragraph rule) as
+  # setext heading text -- real Pandoc mints no identifier here at all, and the
+  # bare '===' is an ordinary paragraph, not an underline. Before the fix, this
+  # false heading also shifted the level-1 heading count to 2, so 'Doc Title'
+  # was no longer recognized as the excluded document title.
+  toc_run on <<'EOF'
+# Doc Title
+
+## Real Section
+
+    indented code line
+===
+
+## Another Section
+EOF
+  assert_success
+  refute_output_contains '(#indented-code-line)'
+  refute_output_contains '- [Doc Title]'
+  assert_output_contains '- [Real Section](#real-section)'
+  assert_output_contains '- [Another Section](#another-section)'
+}
+
+@test "toc: recognition - a 4+-space indented line followed by a bare '---' is not a setext heading" {
+  # Same regression as the '===' case immediately above, but for the level-2
+  # underline character.
+  toc_run on <<'EOF'
+# Doc Title
+
+## Real Section
+
+    indented code line
+---
+
+## Another Section
+EOF
+  assert_success
+  refute_output_contains '(#indented-code-line)'
+  refute_output_contains '- [Doc Title]'
+  assert_output_contains '- [Real Section](#real-section)'
+  assert_output_contains '- [Another Section](#another-section)'
+}
+
 @test "toc: recognition - a heading-like line inside a multi-line HTML comment is not a heading" {
   toc_run on <<'EOF'
 # Doc Title
