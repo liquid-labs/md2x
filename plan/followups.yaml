@@ -61,3 +61,39 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Discovered during toc-generation planning (2026-07-30). src/cli/lib/generate-page.sh (~line 152) reassigns the caller''s global COMBINED_FILE variable for its own PDF-overlay merge target, reusing the same name md2x.sh''s --single-page path uses for the concatenated-input file. Harmless today because the two uses don''t currently overlap in a way that causes observable breakage, but it''s a live shadowing hazard: a future change to either the --single-page flow or generate-page()''s overlay merge could silently clobber the other''s value. Worth renaming one of the two variables to remove the collision.'
+    - title: Pre-existing, out-of-scope bug (not introduce
+      id: CwaE
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:markdown-toc-generation
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Pre-existing, out-of-scope bug (not introduced by this task): src/cli/md2x.sh''s per-file conversion loop unconditionally overwrites TITLE from each input file''s basename, so --title/-t has zero effect on a directly-named, non-single-page, non-stdin conversion''s output filename or --infer-title metadata -- contradicting docs/md2x-spec.md''s API table and this task doc''s own validation example. A naive fix would make every file in a multi-file/directory batch collide on one output name -- needs its own design decision. Recommend a dedicated followup to define and fix --title precedence for per-file/batch conversion.'
+    - title: Task doc's 'Mode overrides' bullet ('--mode o
+      id: ntBH
+      date: "2026-07-30"
+      tags:
+        - type:ambiguity
+        - plan/phase:markdown-toc-generation
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Task doc''s ''Mode overrides'' bullet (''--mode on emits a TOC for a one-heading, one-line document'') is in tension with the toc-defaults note''s unconditional document-title-exclusion rule: a genuine one-heading document can never produce a non-empty TOC under any mode, since its sole heading is always the excluded title. Resolved by testing the real intent (mode overriding the size-based auto-suppress heuristic) against the smallest document with a non-title heading; documented in the bats test''s inline comment and the task doc''s Status/Decisions entry. Flagging in case the task doc bullet wording should be tightened for future readers -- implemented behavior is spec-correct, no code defect.'
+    - title: toc-preprocess slug collision probe O(d²)
+      id: psgq
+      date: "2026-07-30"
+      tags:
+        - plan/phase:phase-01-markdown-toc-generation
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+      text: Surfaced by the phase-1 boundary review's efficiency lens (low confidence, not blocking). allocate_slug() in src/cli/lib/toc-preprocess.py restarts its collision probe from n=1 on every call for a given base slug, so a document with many headings that flatten to the same slug text (e.g. many identically-worded or empty-text headings) makes each successive duplicate probe linearly through all prior duplicates before finding a free base-N -- O(d^2) in the number of duplicates d for that base, rather than O(d). This mirrors Pandoc's own documented collision-probing behavior (plan/notes/pandoc-gfm-slug-algorithm.md), so it's likely intentional parity rather than an accidental regression, and real documents rarely carry enough same-text headings for this to matter. If this ever needs to scale to documents with large numbers of duplicate heading texts, track a per-base "next probe index" in a dict alongside `used` so each call starts its probe where the previous duplicate for that base left off, preserving O(1) amortized per call instead of O(d) per call.
+    - title: 'TOC marker: no spec use case added'
+      id: IcMM
+      date: "2026-07-31"
+      tags:
+        - type:ambiguity
+        - plan/phase:doc-updates
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Judgment call surfaced for visibility (not requiring action): decided not to add a new use case or Constraints/assumptions entry in docs/md2x-spec.md for the marker, since the rewritten General-features bullet already documents it behaviorally. A reviewer could reasonably prefer an explicit constraints entry instead.'

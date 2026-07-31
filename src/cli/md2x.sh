@@ -22,7 +22,7 @@ source ./lib/index.sh
 # $(npm bin)/gucci ./cloud/auths/environment/devops-admin-auths.yaml.tmpl
 
 # extract options
-eval "$(setSimpleOptions --script FLATTEN_DIRS:D INFER_TITLE: INFER_VERSION KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s NO_TOC HELP:h -- "$@")"
+eval "$(setSimpleOptions --script FLATTEN_DIRS:D INFER_TITLE: INFER_VERSION KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s TOC: NO_TOC HELP:h -- "$@")"
 
 if [[ -n "${HELP}" ]]; then
   cat <<'EOF'
@@ -72,9 +72,16 @@ Options:
                               of "Created <file>".
   -s, --to-stdout            Write the converted output to stdout (implies
                               --quiet).
-      --no-toc               Suppress the table of contents Pandoc otherwise
-                              adds for pdf/html output (docx output never
-                              receives an automatic TOC).
+      --toc                  Force a table of contents; overrides the
+                              default heuristic below (see --no-toc).
+      --no-toc               Suppress the table of contents. md2x
+                              generates the TOC itself for pdf, html, and
+                              docx alike, placed at a '<!-- md2x:toc -->'
+                              marker (or after the title, absent one).
+                              With neither flag, a TOC is added only to
+                              documents of more than about two pages with
+                              four or more top-level sections. Giving both
+                              flags is an error.
   -h, --help                 Print this help text and exit.
 
 Examples:
@@ -110,6 +117,16 @@ test_formats() {
 }
 [[ -n "${OUTPUT_FORMAT}" ]] || OUTPUT_FORMAT='pdf'
 test_formats || echoerrandexit "Unsupported output format '${OUTPUT_FORMAT}'."
+
+# '--toc' and '--no-toc' resolve to a single 'TOC_MODE' the pipeline consumes; giving
+# both is fatal, and must be checked before 'ensure-weasyprint' below, which can
+# trigger a minute-long network install on a cold machine -- the conflict must abort
+# before any conversion work begins.
+[[ -z "${TOC}" ]] || [[ -z "${NO_TOC}" ]] \
+  || echoerrandexit "Cannot specify both '--toc' and '--no-toc'."
+TOC_MODE='auto'
+[[ -z "${TOC}" ]] || TOC_MODE='on'
+[[ -z "${NO_TOC}" ]] || TOC_MODE='off'
 
 [[ -n "${OUTPUT_PATH}" ]] || OUTPUT_PATH='.'
 
@@ -206,6 +223,16 @@ source ./lib/github.css # bash-rollup-no-recur
 EOF
 )
 
+# 'src/cli/lib/toc-preprocess.py' is a source file, not a '.sh' one, so it travels
+# through the rolled-up CLI the same way -- inlined verbatim by 'bash-rollup', then
+# handed to 'python3 -c' at the call site in 'generate-page()' rather than written out
+# to a temp file, since the document itself already needs to occupy stdin. Resolves
+# relative to this file's own directory ('src/cli'), same as '$CSS' above.
+TOC_PREPROCESSOR=$(cat <<'EOF'
+source ./lib/toc-preprocess.py # bash-rollup-no-recur
+EOF
+)
+
 # WeasyPrint (the pinned '--pdf-engine') MIME-sniffs '--css' from its path extension, so
 # it needs a real file ending in '.css' rather than a process-substitution '/dev/fd/N'
 # path. macOS's native (BSD) 'mktemp' -- unlike GNU coreutils' -- only randomizes a
@@ -230,9 +257,11 @@ printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
 # directly at the end of every successful call, so 'rm -f' here is a harmless no-op) or
 # the one in-flight call's not-yet-cleaned files (the failure case). The ':-' defaults
 # keep the trap itself safe under 'nounset' if it fires before any 'generate-page()'
-# call has run at all. See followups 9hZL/MwYH/QBKX.
+# call has run at all. 'PREPROCESSED_TMP_FILE' -- the materialized, TOC-preprocessed
+# Markdown 'generate-page()' hands to Pandoc -- follows the same per-call lifecycle and
+# is covered here for the same reason. See followups 9hZL/MwYH/QBKX.
 [[ -n "${KEEP_INTERMEDIATE}" ]] \
-  || trap 'rm -f "${CSS_TMP_FILE:-}" "${BODY_OPEN_TMP_FILE:-}" "${BODY_CLOSE_TMP_FILE:-}"' EXIT
+  || trap 'rm -f "${CSS_TMP_FILE:-}" "${BODY_OPEN_TMP_FILE:-}" "${BODY_CLOSE_TMP_FILE:-}" "${PREPROCESSED_TMP_FILE:-}"' EXIT
 
 # Unlike the Pandoc log and the PDF header/footer overlay -- both written into the user's own
 # working/output tree, and therefore discoverable by normal directory listing -- 'CSS_TMP_FILE'
@@ -277,7 +306,7 @@ printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
     TITLE="${TITLE:-output}"
     mkdir -p "${OUTPUT_PATH}"
     BASE_OUTPUT="${OUTPUT_PATH}/${TITLE:-output}.${OUTPUT_FORMAT}"
-    MD_FILE="${TITLE:-input}.md"
+    [[ -z "${SINGLE_PAGE}" ]] || MD_FILE="${COMBINED_FILE}"
     generate-page
   fi
 } < <(

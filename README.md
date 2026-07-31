@@ -67,6 +67,7 @@ const outputFiles = md2x({
 - Batch conversion of whole directories, recursing to find every `*.md` file.
 - `--single-page` concatenates multiple Markdown files into one output document.
 - Rewrites relative Markdown links (`./bar.md`) to point at the sibling document's converted extension (`./bar.pdf`) in cross-linked document sets.
+- Generates the table of contents itself, as Markdown content, so PDF, HTML, and DOCX output all get the same TOC, placed wherever the author asks for it.
 
 ## CLI reference
 
@@ -85,11 +86,22 @@ md2x accepts one or more file paths, one or more directory paths (searched recur
 | `--quiet` | Suppress the "Created `<file>`" status message. |
 | `--list-files` | Print only the generated file path(s), instead of "Created `<file>`". |
 | `-s`, `--to-stdout` | Write the converted output to stdout (implies `--quiet`). |
-| `--no-toc` | Suppress the table of contents Pandoc otherwise adds for `pdf`/`html` output (`docx` output never receives an automatic TOC). |
+| `--toc` | Force a table of contents on, regardless of document size. |
+| `--no-toc` | Force the table of contents off, overriding both the default size heuristic and a `<!-- md2x:toc -->` marker in the source. Passing `--toc` and `--no-toc` together is a fatal error. |
 
 ### The PDF header/footer overlay
 
 Every PDF md2x generates gets a footer with page numbers ("Page X of Y"), and, on every page after the first, a header with the document title (from `--title`, or inferred from the filename). With `--infer-version`, the footer also shows the version string described above. This overlay is produced by rendering a standalone PostScript document with Ghostscript (`gs`) and merging it onto the Pandoc-generated PDF with `pdftk ... multistamp`.
+
+### The table of contents
+
+md2x can generate a table of contents as ordinary Markdown content, rather than relying on Pandoc's own `--toc` machinery. Because the TOC is real document content instead of a renderer-specific navigation block, it renders identically across PDF, HTML, and DOCX output — including as clickable bookmarks in DOCX, which previously received no TOC at all.
+
+To control where the TOC lands, place a `<!-- md2x:toc -->` marker on its own line anywhere in the source; md2x replaces that line with the generated list. The marker is an ordinary HTML comment, so it's invisible when the document is viewed on GitHub, in an editor, or in any other Markdown renderer. Without a marker, the TOC is inserted immediately after the document's title heading, or at the very top of the document if it has no title heading.
+
+With neither `--toc` nor `--no-toc` given, md2x adds a TOC only to documents estimated at more than about two rendered pages that also have four or more top-level sections; shorter or simpler documents get none by default. `--toc` and `--no-toc` override that default in either direction (and passing both together is a fatal error, as noted above).
+
+Two limitations carry over from the underlying heading-identifier algorithm: a heading containing an emoji character gets a TOC entry whose link may not resolve, and headings nested inside blockquotes or list items are not included in the TOC at all.
 
 ## Additional documentation
 

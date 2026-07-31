@@ -47,43 +47,52 @@ generate-page() {
   [[ "${OUTPUT_FORMAT}" == 'docx' ]] \
     || INCLUDE_BODY_ARGS=(--include-before-body "${BODY_OPEN_TMP_FILE}" --include-after-body "${BODY_CLOSE_TMP_FILE}")
 
-  if [[ -z "${INPUT}" ]]; then
-    pandoc \
-      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
-      $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
-      "${INCLUDE_BODY_ARGS[@]}" \
-      --quiet \
-      --standalone \
-      --from gfm \
-      --to ${INTERMEDIDATE_FORMAT} \
-      --css "${CSS_TMP_FILE}" \
-      --metadata-file <(echo "${SETTINGS}") \
-      <(cat "${MD_FILE}" | eval $LINK_CONVERTER) \
-      -o "${BASE_OUTPUT}" \
-      --log 'pandoc-log.log' \
-      1>/dev/null
-    # Pandoc's own stdout is inert when '-o <file>' is given; the explicit redirect
-    # guarantees stdout purity for '--to-stdout'/'--list-files' by construction rather
-    # than by relying on that behavior. Stderr is left untouched: WeasyPrint runs as a
-    # Pandoc subprocess and inherits Pandoc's stderr fd, so its warning/progress chatter
-    # (and any real fatal error) flows straight to the CLI's own real stderr, where
-    # 'errexit' still catches a non-zero Pandoc exit since nothing pipes or masks it.
-  else
-    pandoc \
-      $( [[ "${OUTPUT_FORMAT}" == 'docx' ]] || [[ -n "${NO_TOC}" ]] || echo '--toc' ) \
-      $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
-      "${INCLUDE_BODY_ARGS[@]}" \
-      --quiet \
-      --standalone \
-      --from gfm \
-      --to ${INTERMEDIDATE_FORMAT} \
-      --css "${CSS_TMP_FILE}" \
-      --metadata-file <(echo "${SETTINGS}") \
-      <(echo "${INPUT}" | eval $LINK_CONVERTER) \
-      -o "${BASE_OUTPUT}" \
-      --log 'pandoc-log.log' \
-      1>/dev/null
-  fi
+  # Materialize the TOC-preprocessed, link-converted Markdown to a real temp file
+  # rather than handing Pandoc a process substitution. A process substitution's exit
+  # status is invisible to this script's 'errexit'/'pipefail', so a failing
+  # preprocessor would otherwise hand Pandoc a truncated document and md2x would
+  # report success; as a plain pipeline under 'pipefail', any stage's failure aborts
+  # the conversion. '${TOC_PREPROCESSOR}' is the inlined 'toc-preprocess.py' source
+  # (see 'md2x.sh'); running it via 'python3 -c' lets the document occupy stdin
+  # without a fourth temp file. 'printf '%s\n'' reproduces the stdin-accumulation
+  # path's previous 'echo "${INPUT}"' behavior (one trailing newline). The
+  # preprocessor runs ahead of 'LINK_CONVERTER': the two do not interfere, since
+  # 'LINK_CONVERTER' only rewrites links whose target ends in '.md)', and generated
+  # TOC entries end in ')' directly after a '#anchor'.
+  PREPROCESSED_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-preprocessed.XXXXXX")"
+  if [[ -z "${INPUT}" ]]; then cat "${MD_FILE}"; else printf '%s\n' "${INPUT}"; fi \
+    | python3 -c "${TOC_PREPROCESSOR}" --mode "${TOC_MODE}" \
+    | eval $LINK_CONVERTER \
+    > "${PREPROCESSED_TMP_FILE}"
+
+  pandoc \
+    $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
+    "${INCLUDE_BODY_ARGS[@]}" \
+    --quiet \
+    --standalone \
+    --from gfm \
+    --to ${INTERMEDIDATE_FORMAT} \
+    --css "${CSS_TMP_FILE}" \
+    --metadata-file <(echo "${SETTINGS}") \
+    "${PREPROCESSED_TMP_FILE}" \
+    -o "${BASE_OUTPUT}" \
+    --log 'pandoc-log.log' \
+    1>/dev/null
+  # Pandoc's own stdout is inert when '-o <file>' is given; the explicit redirect
+  # guarantees stdout purity for '--to-stdout'/'--list-files' by construction rather
+  # than by relying on that behavior. Stderr is left untouched: WeasyPrint runs as a
+  # Pandoc subprocess and inherits Pandoc's stderr fd, so its warning/progress chatter
+  # (and any real fatal error) flows straight to the CLI's own real stderr, where
+  # 'errexit' still catches a non-zero Pandoc exit since nothing pipes or masks it.
+  #
+  # Pandoc's own native table-of-contents flag is retired for every format: md2x now
+  # generates the TOC itself, ahead of Pandoc, as ordinary Markdown content in
+  # '${PREPROCESSED_TMP_FILE}' -- see 'toc-preprocess.py' and
+  # 'plan/notes/toc-defaults-and-page-heuristic.md'. This is also what gives DOCX a
+  # TOC for the first time: the 'docx' short-circuit that used to gate that flag is
+  # gone along with the flag itself. The separate 'docx' short-circuit on
+  # 'INCLUDE_BODY_ARGS' above is unrelated -- that one is about the 'markdown-body'
+  # wrapper div, not the TOC.
   [[ -n "${KEEP_INTERMEDIATE}" ]] || rm pandoc-log.log
   # Ordinary-completion cleanup for this call's own body-open/body-close temp files. If
   # a Pandoc/WeasyPrint failure above aborted this function under 'errexit' instead of
@@ -91,6 +100,7 @@ generate-page() {
   # 'CSS_TMP_FILE' -- on that path instead; see followups 9hZL/MwYH.
   [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${BODY_OPEN_TMP_FILE}"
   [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${BODY_CLOSE_TMP_FILE}"
+  [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${PREPROCESSED_TMP_FILE}"
 
   if [[ "${OUTPUT_FORMAT}" == 'pdf' ]]; then
     # generate headers and footers as a separate document and overlay them.

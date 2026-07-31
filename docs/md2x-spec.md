@@ -27,7 +27,7 @@ This spec covers both of md2x's external surfaces — the `md2x` CLI and the thi
 
 - **Actor:** A developer who wants a non-PDF output.
 - **Action:** Runs `md2x --output-format html report.md` or `md2x --output-format docx report.md`.
-- **Outcome:** The file is converted with Pandoc to the requested format. Output is written as `report.html` or `report.docx` — same `<title>.<format>` naming convention as the PDF case in UC1. HTML output carries the same GitHub-style CSS; DOCX output never receives the header/footer overlay or an automatic table of contents (regardless of `--no-toc`). An unrecognized `--output-format` value is rejected with a fatal error before any conversion is attempted.
+- **Outcome:** The file is converted with Pandoc to the requested format. Output is written as `report.html` or `report.docx` — same `<title>.<format>` naming convention as the PDF case in UC1. HTML output carries the same GitHub-style CSS; DOCX output never receives the header/footer overlay, though it does receive the same automatically generated table of contents as HTML and PDF output (see [General features](#general-features)). An unrecognized `--output-format` value is rejected with a fatal error before any conversion is attempted.
 
 ### UC3: Batch-convert a directory of Markdown files
 
@@ -61,7 +61,7 @@ These requirements apply across every use case above, for both the CLI and the N
 - **Automatic WeasyPrint bootstrap (PDF output only).** On the first PDF conversion in a given environment, md2x installs [WeasyPrint](https://weasyprint.org/) — the engine Pandoc uses to render PDF output — into an isolated per-user virtual environment (`~/.md2x/venv`) if it is not already present, printing a one-time notice to stderr while it does so. WeasyPrint is not a manual prerequisite; `python3` (already required by the binary preflight check above) is what makes this possible. A failed bootstrap exits with code `2` and names the failing step (see [Exit behavior](#cli)). Stdout stays clean throughout — the `--list-files` and `--to-stdout` contracts are unaffected — and `--quiet` does not suppress the notice, since the notice is a stderr message, not the `Created <file>` status line `--quiet` controls.
 - **Consistent styling.** Every HTML or PDF output is rendered with a single, built-in GitHub-flavored CSS stylesheet. There is no per-invocation styling configuration.
 - **Automatic PDF header/footer.** Every PDF output carries a footer showing the current page and total page count ("Page X of Y") and, on every page after the first, a running header showing the document title (from `--title`, or otherwise the source filename). When `--infer-version` is set, the footer also shows a version string: the `package.json` version when `git status --porcelain` reports a clean working tree, or the literal string `working` otherwise. (The mechanism that produces this overlay is a design-level concern documented in [`docs/architecture.md`](./architecture.md), not this spec.)
-- **Table of contents.** PDF and HTML output receive an automatic table of contents from Pandoc unless `--no-toc` is given. DOCX output never receives an automatic table of contents.
+- **Table of contents.** md2x generates its own table of contents as literal Markdown content — a nested list of links to the document's headings — rather than relying on Pandoc's native `--toc` machinery, and applies it uniformly to PDF, HTML, and DOCX output alike. Placement is controlled by a `<!-- md2x:toc -->` marker: place it on its own line anywhere in the source and md2x replaces that line with the generated list; without a marker, the TOC is inserted immediately after the document's title heading, or at the very top of the document if it has none. With neither `--toc` nor `--no-toc` given, a TOC is added only to documents estimated at more than about two rendered pages that also have four or more top-level sections — shorter or simpler documents get none by default, unless a `<!-- md2x:toc -->` marker is present, which always forces the TOC on regardless of size. `--toc` forces the TOC on regardless of document size; `--no-toc` forces it off, overriding both the default heuristic and an explicit marker. Passing both `--toc` and `--no-toc` together is a fatal error (see [Exit behavior](#cli)).
 - **Cross-document link rewriting.** A relative Markdown link to a sibling `.md` file (e.g. `[Foo](./bar.md)`) is rewritten in the converted output to point at that sibling's converted filename in the current output format (e.g. `./bar.pdf`), so that a batch- or single-page-converted set of cross-linked documents remains navigable after conversion. Absolute paths and `http(s)://` links are left unchanged.
 - **Intermediate artifact cleanup.** Build-time intermediate artifacts (the Pandoc log, and, for PDF output, the header/footer overlay file) are deleted after a successful conversion unless `--keep-intermediate` is given.
 
@@ -88,10 +88,11 @@ md2x has two external surfaces: the CLI (`md2x`) and the Node library function (
 | `--quiet` | Suppress the "Created `<file>`" status message. |
 | `--list-files` | Print only the generated file path(s) instead of "Created `<file>`". |
 | `-s`, `--to-stdout` | Write the converted output to stdout instead of (only) a file. Implies `--quiet`. |
-| `--no-toc` | Suppress the automatic table of contents for `pdf`/`html` output. Has no effect on `docx` output, which never receives one. |
+| `--toc` | Force the automatically generated table of contents on, regardless of document size. |
+| `--no-toc` | Force the automatically generated table of contents off, overriding both the default size heuristic and a `<!-- md2x:toc -->` marker in the source. |
 | `-h`, `--help` | Print usage text and exit `0`, without performing the binary preflight check or any conversion. |
 
-**Exit behavior.** Exits `0` on success. Exits `2` and names the missing binary when a required external binary is absent, or names the failing step when the automatic WeasyPrint bootstrap fails (see [General features](#general-features)). Exits non-zero with a descriptive message for any input path that is neither a file nor a directory, or for an unrecognized `--output-format`.
+**Exit behavior.** Exits `0` on success. Exits `2` and names the missing binary when a required external binary is absent, or names the failing step when the automatic WeasyPrint bootstrap fails (see [General features](#general-features)). Exits non-zero with a descriptive message for any input path that is neither a file nor a directory, for an unrecognized `--output-format`, or for passing both `--toc` and `--no-toc` together (checked, and rejected, before any conversion work begins).
 
 ### Node library
 
@@ -106,6 +107,7 @@ const outputFiles = md2x({
   inferTitle, // boolean
   inferVersion, // boolean
   noToc, // boolean
+  toc, // boolean
   outputPath, // string
   title, // string
   singlePage // boolean, default false
