@@ -57,21 +57,23 @@ teardown() {
   assert_stderr_contains "'no-such-file.md' is neither a file nor a directory"
 }
 
-# --- unreadable search root: find-pipe abort/continue semantics (followup 8ZmD) ------
+# --- unreadable search root: abort loudly, not silently (followup 8ZmD) --------------
 #
 # 'src/cli/md2x.sh's file-discovery pipe nests 'find "${ROOT_DIR}" -name "*.md" | while
 # ...; done' inside a per-root outer loop, itself inside a '< <(...)' process
-# substitution feeding the main conversion loop. These two cases pin down the
-# empirically-observed behavior documented at that nesting site in 'md2x.sh': a 'find'
-# failure (e.g. an unreadable root) never aborts the overall script (still exits 0,
-# because process-substitution failures are invisible to the parent's 'errexit'), but
-# it does silently drop that root's output *and* every root listed after it -- while
-# roots listed before the failing one are unaffected.
+# substitution feeding the main conversion loop. Process-substitution failures are
+# invisible to the parent's own 'errexit'/'pipefail', so a 'find' failure (e.g. an
+# unreadable root) can't propagate its exit status to the top-level script directly;
+# 'md2x.sh' instead signals it via a sentinel temp file the top-level script checks
+# right after that process substitution closes. These two cases pin down the resulting,
+# maintainer-confirmed contract: any unreadable search root makes the whole run exit
+# non-zero and name the failing root, regardless of where it falls in the argument
+# list -- no partial run is ever silently reported as a success.
 #
 # Skipped under 'root', which can read a mode-000 directory and would make these cases
 # vacuously pass/fail differently -- same guard rationale as 'md2x_path_without' above.
 
-@test "an unreadable search root listed before a readable one still converts the readable one" {
+@test "an unreadable search root listed before a readable one aborts and names the root" {
   (( $(id -u) != 0 )) || skip "running as root can read a mode-000 directory; skip to avoid a vacuous result"
 
   mkdir -p unreadable-root
@@ -81,14 +83,15 @@ teardown() {
 
   md2x_run --output-format html --output-path out unreadable-root good-root
 
-  assert_success
+  assert_failure
   assert_stderr_contains 'Permission denied'
+  assert_stderr_contains 'unreadable-root'
   assert_file_not_exists 'out/report.html'
 
   chmod 755 unreadable-root
 }
 
-@test "an unreadable search root listed after a readable one drops only its own output" {
+@test "an unreadable search root listed after a readable one still aborts and names the root" {
   (( $(id -u) != 0 )) || skip "running as root can read a mode-000 directory; skip to avoid a vacuous result"
 
   mkdir -p unreadable-root
@@ -98,8 +101,12 @@ teardown() {
 
   md2x_run --output-format html --output-path out good-root unreadable-root
 
-  assert_success
+  assert_failure
   assert_stderr_contains 'Permission denied'
+  assert_stderr_contains 'unreadable-root'
+  # The good root's own conversion already completed before the later root's failure
+  # was discovered; a healthy root's real output is not rolled back, only the run's
+  # overall exit status is affected.
   assert_file_exists 'out/report.html'
 
   chmod 755 unreadable-root
