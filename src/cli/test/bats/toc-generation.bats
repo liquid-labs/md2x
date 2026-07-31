@@ -269,7 +269,14 @@ EOF
 # --- stdin parity ---------------------------------------------------------------------
 
 @test "the stdin '-' path gets the same TOC treatment as a file argument" {
-  md2x_run --output-format html --output-path . - <<< "$(md2x_toc_worthy_doc_text)"
+  # A here-string (or '$(...)') would strip the fixture's trailing blank padding
+  # lines -- command substitution trims trailing newlines -- silently shrinking the
+  # document back under the auto-heuristic's line-count floor. Redirect from a real
+  # file instead, so every padding line survives exactly as the file-argument cases
+  # see it.
+  md2x_write_toc_worthy_doc 'report.md'
+
+  md2x_run --output-format html --output-path . - < 'report.md'
 
   assert_success
   local run_input
@@ -292,6 +299,13 @@ EOF
     || md2x_fail 'expected the last pandoc invocation to carry a md2x-preprocessed temp file argument'
   assert_file_exists "${preprocessed_tmp_file}"
   assert_file_contains "${preprocessed_tmp_file}" '](#'
+
+  # Unlike the case's own working directory (removed wholesale by 'md2x_teardown'),
+  # 'PREPROCESSED_TMP_FILE' lives in the ambient '${TMPDIR}' -- exactly the CSS/
+  # body-open/body-close temp files do -- so a case that deliberately retains it must
+  # also delete it itself, once its assertions are done, to leave no orphan behind (see
+  # this task doc's '## Validation').
+  rm -f "${preprocessed_tmp_file}"
 }
 
 @test "without --keep-intermediate, the preprocessed temp file is removed after conversion" {

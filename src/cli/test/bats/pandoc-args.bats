@@ -22,6 +22,16 @@ setup() {
 }
 
 teardown() {
+  # 'PREPROCESSED_TMP_FILE' lives in the ambient '${TMPDIR}', not the case's own
+  # working directory that 'md2x_teardown' removes wholesale -- exactly like the CSS
+  # and body-open/body-close temp files this file's '--keep-intermediate' cases below
+  # already retain on purpose. Delete it here so those cases leave no orphan
+  # 'md2x-preprocessed.*' file behind (see this task's '## Validation'); harmless
+  # no-op for every other case, since a non-'--keep-intermediate' run has already
+  # removed the file itself by the time its test body finishes.
+  local leaked_preprocessed_tmp_file
+  leaked_preprocessed_tmp_file="$(md2x_stub_last_call_args pandoc 2>/dev/null | grep 'md2x-preprocessed\.' || true)"
+  [[ -z "${leaked_preprocessed_tmp_file}" ]] || rm -f "${leaked_preprocessed_tmp_file}"
   md2x_teardown
 }
 

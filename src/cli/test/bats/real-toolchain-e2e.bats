@@ -90,6 +90,15 @@ e2e_teardown() {
      && [[ -d "${MD2X_TEST_TMPDIR}" ]]; then
     rm -rf "${MD2X_TEST_TMPDIR}"
   fi
+  # This file's PDF case below passes '--keep-intermediate', which -- since task 004 --
+  # also retains 'generate-page()'s preprocessed-Markdown temp file, exactly like the
+  # PDF overlay it exists to prove ran. That file lives in the ambient '${TMPDIR}', not
+  # 'MD2X_TEST_TMPDIR' above, so it survives the removal two lines up; delete it here so
+  # a real-toolchain run of this file leaves no orphan 'md2x-preprocessed.*' behind (see
+  # plan/phase-01-markdown-toc-generation/004-wire-preprocessor-into-generate-page.md's
+  # '## Validation'). A serial, one-file-at-a-time bats run (this Makefile's default)
+  # never has another case racing to create one of its own at the same moment.
+  rm -f "${TMPDIR:-/tmp}"/md2x-preprocessed.* 2>/dev/null || true
   unset MD2X_TEST_TMPDIR MD2X_TEST_WORK_DIR E2E_ORIGINAL_DIR
 }
 
