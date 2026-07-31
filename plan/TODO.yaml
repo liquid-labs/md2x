@@ -11,7 +11,7 @@ phases:
           slug: fix-title-precedence-for-batch-conversions
           title: Fix Title Precedence For Per-File Conversions
           path: phase-01-title-precedence/001-fix-title-precedence-for-batch-conversions.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: 'Fixed followup CwaE: src/cli/md2x.sh''s per-file conversion loop no longer unconditionally overwrites TITLE from each input''s basename — --title/-t is now honored whenever exactly one file will be converted outside --single-page, and a new upfront gate makes combining --title with more than one file fatal before any conversion work begins. --single-page and stdin conversions unaffected. --help and docs/md2x-spec.md updated; new title-precedence.bats added covering single-file-honored, directory-search-honored, multi-file-fatal, mixed-source, and no-title regression cases.'
           git:
