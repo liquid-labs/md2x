@@ -51,7 +51,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-01-task-04-wire-preprocessor-into-generat
-            commit: []
+            commit:
+                - 67bbc72
             merge: null
         - number: 5
           slug: add-real-toolchain-toc-e2e-cases
