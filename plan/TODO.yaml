@@ -5,4 +5,14 @@ phases:
     - number: 1
       slug: title-precedence
       title: Title Precedence Fix
-      tasks: []
+      tasks:
+        - number: 1
+          slug: fix-title-precedence-for-batch-conversions
+          title: Fix Title Precedence For Per-File Conversions
+          path: phase-01-title-precedence/001-fix-title-precedence-for-batch-conversions.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
