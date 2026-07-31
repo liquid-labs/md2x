@@ -177,3 +177,67 @@ architectural_impact: true
   to extend.
 - `src/cli/test/stubs/pandoc` and `src/cli/test/helpers/stub-log.bash` — how the input buffer is
   captured and asserted on.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-07-30
+- **Validation summary:** `make test` passes in full (`test-cli` 127/127, `test-node` 23/23,
+  100% Node coverage unchanged). `test-cli`'s 127 include all 13 new `toc-generation.bats`
+  cases and every pre-existing case (updated where the task required, unchanged otherwise).
+  `grep -rn 'NO_TOC' src/cli/lib/` is empty. `grep -n -- "--toc" src/cli/lib/generate-page.sh`
+  is empty. `grep -c 'pandoc \\' src/cli/lib/generate-page.sh` is `1`. `grep -n
+  'toc-preprocess.py' src/cli/md2x.sh` shows the rollup directive, and `grep -c 'def slugify'
+  bin/md2x` (after `make all`) is `1`, confirming the inline. Manual end-to-end against the
+  real toolchain (Pandoc 3.10.1, WeasyPrint, pdftk) from a scratch directory: a forced-`--toc`,
+  four-section document converted to `html`, `pdf`, and `docx` all carry the TOC — 4
+  `href="#section...\"` anchors in the HTML, a 1-page PDF (small fixture; the point was
+  pipeline correctness, not clearing the page-count heuristic, which is already covered by the
+  bats heuristic cases), and `unzip -p doc.docx word/document.xml | grep -c 'w:anchor'` = `4`
+  in the DOCX. `ls "${TMPDIR}" | grep md2x-preprocessed` is empty both after `make test-cli` and
+  after the manual e2e run.
+- **Affected source files:**
+  - `src/cli/md2x.sh` (the `TOC_PREPROCESSOR` rollup-inline block next to `$CSS`, and the
+    script-level `EXIT` trap extended to remove `PREPROCESSED_TMP_FILE`)
+  - `src/cli/lib/generate-page.sh` (the two near-duplicate Pandoc invocations collapsed into
+    one taking a materialized, TOC-preprocessed temp file; Pandoc's native `--toc` removed
+    entirely; `PREPROCESSED_TMP_FILE` cleanup added alongside the body-open/body-close cleanup)
+  - `src/cli/test/bats/harness-smoke.bats` (removed the two now-inapplicable `--toc`-argument
+    assertions and the stale "docx never gets an automatic table of contents" comment from
+    harness-sanity cases not about TOC behavior)
+  - `src/cli/test/bats/pandoc-args.bats` (header comment updated; the six `--no-toc`/`--toc`
+    Pandoc-argument cases replaced with nine cases asserting Pandoc's `--toc` is never passed,
+    across pdf/html/docx and with/without `--no-toc`/`--toc`; `teardown()` extended to delete
+    any leaked `md2x-preprocessed.*` temp file so this file's four `--keep-intermediate` cases
+    leave no orphan)
+  - `src/cli/test/bats/real-toolchain-e2e.bats` (`e2e_teardown()` extended the same way, since
+    its real-toolchain PDF case also passes `--keep-intermediate` and this machine has a real
+    toolchain installed, so the case genuinely runs rather than skipping)
+  - `src/cli/test/bats/toc-generation.bats` (new; 13 integration cases against the built CLI
+    and stubs, per Requirement 8)
+  - `plan/phase-01-markdown-toc-generation/004-wire-preprocessor-into-generate-page.md` (this
+    file, Status only)
+- **Decisions:**
+  - The two `--keep-intermediate`-carrying test files that predate this task
+    (`pandoc-args.bats`, `real-toolchain-e2e.bats`) now also produce a retained
+    `PREPROCESSED_TMP_FILE` as a direct, mechanical consequence of Requirement 6 (cleanup gated
+    on `--keep-intermediate`, matching the existing CSS/body-open/body-close precedent). Since
+    the task's own validation explicitly requires no orphan `md2x-preprocessed.*` files after
+    `make test-cli`, and both files were already part of this task's diff (or, for
+    `real-toolchain-e2e.bats`, directly caused by this task's required behavior on a machine
+    with a real toolchain installed), the fix was applied in place rather than flagged.
+  - The integration bats fixture helper builds a TOC-worthy document as 18 structural lines (a
+    title plus 4 `##` sections with body text) plus 90 blank padding lines (108 total),
+    comfortably past both the >90-estimated-line and >=4-section floors, mirroring
+    `toc-preprocess.bats`'s own padded-document convention.
+  - The stdin-parity case redirects from a real file (`< 'report.md'`) rather than a
+    here-string/`$(...)`, since command substitution strips the fixture's trailing blank
+    padding lines and would silently shrink the document back under the heuristic's line-count
+    floor.
+  - The `--toc`-on-a-small-document case uses a title-plus-one-section fixture, not a
+    title-only one, per the task doc's calibration note: the document-title heading is always
+    excluded from the emitted TOC, so a title-only document can never show a TOC list
+    regardless of `--toc`.
+  - `toc-preprocess.py`'s `parse_args` does not derive a program name from `sys.argv[0]`
+    (confirmed unchanged), so no `prog` adjustment was needed for the `python3 -c` invocation
+    style.

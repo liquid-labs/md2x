@@ -48,7 +48,6 @@ teardown() {
   assert_stub_called pandoc
   assert_stub_called gs
   assert_stub_called pdftk
-  assert_last_call_has_arg pandoc '--toc'
 
   # The CLI removes both intermediates under 'set -o errexit'; their absence here means
   # the stubs really did create them.
@@ -116,8 +115,6 @@ teardown() {
 
   assert_success
   assert_file_exists './tiny-doc.docx'
-  # docx never gets an automatic table of contents.
-  refute_last_call_has_arg pandoc '--toc'
 }
 
 @test "harness: md2x_run can drive the CLI's stdin mode" {
