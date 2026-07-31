@@ -203,3 +203,26 @@ carries unrelated items from other plans sharing this repository, which are omit
   Constraints/assumptions entry in `docs/md2x-spec.md` for the marker, since the rewritten
   General-features bullet already documents it behaviorally. A reviewer could reasonably prefer
   an explicit constraints entry instead.
+
+## Final Task State
+
+# TODO
+
+## Purpose and scope
+
+Tracking document for the active plan.
+
+## Tasks
+
+### Phase 01 — Markdown TOC Generation
+
+- [x] [001-fix-single-page-combined-file-naming.md](./phase-01-markdown-toc-generation/001-fix-single-page-combined-file-naming.md) — tier `sonnet-med` · branch `phase-01-task-01-fix-single-page-combined-file` · commit `c8af4b5` · merge `271e90c`
+- [x] [002-add-toc-preprocessor-script.md](./phase-01-markdown-toc-generation/002-add-toc-preprocessor-script.md) — tier `sonnet-high` · branch `phase-01-task-02-add-toc-preprocessor-script` · commit `6ca40b6` · merge `100d577`
+- [x] [003-add-toc-flag-and-conflict-check.md](./phase-01-markdown-toc-generation/003-add-toc-flag-and-conflict-check.md) — tier `sonnet-med` · branch `phase-01-task-03-add-toc-flag-and-conflict-chec` · commit `25126ab` · merge `8855999`
+- [x] [004-wire-preprocessor-into-generate-page.md](./phase-01-markdown-toc-generation/004-wire-preprocessor-into-generate-page.md) — tier `sonnet-high` · branch `phase-01-task-04-wire-preprocessor-into-generat` · commit `67bbc72` · merge `70f3703`
+- [x] [005-add-real-toolchain-toc-e2e-cases.md](./phase-01-markdown-toc-generation/005-add-real-toolchain-toc-e2e-cases.md) — tier `sonnet-med` · branch `phase-01-task-05-add-real-toolchain-toc-e2e-cas` · commit `867fc39` · merge `84cc5f4`
+- [x] [006-update-readme-and-changelog.md](./phase-01-markdown-toc-generation/006-update-readme-and-changelog.md) — tier `sonnet-med` · branch `phase-01-task-06-update-readme-for-toc-feature` · commit `c9cf436` · merge `982b5a5`
+
+### Phase 02 — Documentation Updates
+
+- [x] [001-update-architecture-docs.md](./phase-02-doc-updates/001-update-architecture-docs.md) — tier `sonnet-high` · branch `phase-02-task-01-update-architecture-and-spec-d` · commit `aa50cb8` · merge `8753145`
