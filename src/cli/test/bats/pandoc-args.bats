@@ -1,10 +1,15 @@
 #!/usr/bin/env bats
 #
 # Behavioural coverage for the flags that change what md2x hands to 'pandoc' and 'gs':
-# '--infer-title' (title metadata), '--no-toc' (table-of-contents suppression, format-
-# dependent), '--infer-version' (the Ghostscript footer's version string), and
-# '--keep-intermediate' (retaining the Pandoc log, PDF overlay, and CSS temp file). See
-# docs/md2x-spec.md's 'General features' and API definition table.
+# '--infer-title' (title metadata), '--infer-version' (the Ghostscript footer's
+# version string), and '--keep-intermediate' (retaining the Pandoc log, PDF overlay,
+# and CSS temp file). Pandoc's own '--toc' is retired for every format -- md2x
+# generates the table of contents itself, ahead of Pandoc, as ordinary Markdown
+# content; this file only asserts that Pandoc's '--toc' argument never reappears.
+# The behavioural TOC coverage (placement, content, the '--toc'/'--no-toc' resolution)
+# lives in 'toc-flags.bats' (flag parsing/conflict) and 'toc-generation.bats'
+# (generated content). See docs/md2x-spec.md's 'General features' and API definition
+# table.
 #
 # Every case uses '--flatten-dirs' with an input file in the case's own working
 # directory, so output-path derivation is invariant regardless of task 002's mirrored-
@@ -46,9 +51,22 @@ teardown() {
     || md2x_fail "expected captured metadata NOT to carry a title, got: ${run_metadata}"
 }
 
-# --- --no-toc ------------------------------------------------------------------------
+# --- Pandoc's native --toc is retired -------------------------------------------------
+#
+# md2x generates the table of contents itself, ahead of Pandoc, as ordinary Markdown
+# content -- Pandoc's own '--toc' flag is never passed, in any format, regardless of
+# '--toc'/'--no-toc'. See 'toc-generation.bats' for the generated-content coverage.
 
-@test "--no-toc removes --toc from the pandoc invocation for pdf output" {
+@test "pdf output never includes --toc, without --no-toc/--toc given" {
+  md2x_write_doc 'report.md'
+
+  md2x_run --output-format pdf --flatten-dirs --output-path . report.md
+
+  assert_success
+  refute_last_call_has_arg pandoc '--toc'
+}
+
+@test "pdf output never includes --toc, with --no-toc given" {
   md2x_write_doc 'report.md'
 
   md2x_run --no-toc --output-format pdf --flatten-dirs --output-path . report.md
@@ -57,16 +75,25 @@ teardown() {
   refute_last_call_has_arg pandoc '--toc'
 }
 
-@test "without --no-toc, pdf output includes --toc" {
+@test "pdf output never includes --toc, with --toc given" {
   md2x_write_doc 'report.md'
 
-  md2x_run --output-format pdf --flatten-dirs --output-path . report.md
+  md2x_run --toc --output-format pdf --flatten-dirs --output-path . report.md
 
   assert_success
-  assert_last_call_has_arg pandoc '--toc'
+  refute_last_call_has_arg pandoc '--toc'
 }
 
-@test "--no-toc removes --toc from the pandoc invocation for html output" {
+@test "html output never includes --toc, without --no-toc/--toc given" {
+  md2x_write_doc 'report.md'
+
+  md2x_run --output-format html --flatten-dirs --output-path . report.md
+
+  assert_success
+  refute_last_call_has_arg pandoc '--toc'
+}
+
+@test "html output never includes --toc, with --no-toc given" {
   md2x_write_doc 'report.md'
 
   md2x_run --no-toc --output-format html --flatten-dirs --output-path . report.md
@@ -75,13 +102,22 @@ teardown() {
   refute_last_call_has_arg pandoc '--toc'
 }
 
-@test "without --no-toc, html output includes --toc" {
+@test "html output never includes --toc, with --toc given" {
   md2x_write_doc 'report.md'
 
-  md2x_run --output-format html --flatten-dirs --output-path . report.md
+  md2x_run --toc --output-format html --flatten-dirs --output-path . report.md
 
   assert_success
-  assert_last_call_has_arg pandoc '--toc'
+  refute_last_call_has_arg pandoc '--toc'
+}
+
+@test "docx output never includes --toc, without --no-toc/--toc given" {
+  md2x_write_doc 'report.md'
+
+  md2x_run --output-format docx --flatten-dirs --output-path . report.md
+
+  assert_success
+  refute_last_call_has_arg pandoc '--toc'
 }
 
 @test "docx output never includes --toc, with --no-toc given" {
@@ -93,10 +129,10 @@ teardown() {
   refute_last_call_has_arg pandoc '--toc'
 }
 
-@test "docx output never includes --toc, without --no-toc given" {
+@test "docx output never includes --toc, with --toc given" {
   md2x_write_doc 'report.md'
 
-  md2x_run --output-format docx --flatten-dirs --output-path . report.md
+  md2x_run --toc --output-format docx --flatten-dirs --output-path . report.md
 
   assert_success
   refute_last_call_has_arg pandoc '--toc'
