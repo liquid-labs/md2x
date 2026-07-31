@@ -54,7 +54,7 @@ phases:
             branch: phase-01-task-04-wire-preprocessor-into-generat
             commit:
                 - 67bbc72
-            merge: null
+            merge: 70f3703
         - number: 5
           slug: add-real-toolchain-toc-e2e-cases
           title: Add Real Toolchain TOC E2E Cases
