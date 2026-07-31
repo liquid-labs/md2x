@@ -62,7 +62,7 @@ phases:
           done: false
           tier: sonnet-med
           git:
-            branch: null
+            branch: phase-01-task-05-add-real-toolchain-toc-e2e-cas
             commit: []
             merge: null
         - number: 6
