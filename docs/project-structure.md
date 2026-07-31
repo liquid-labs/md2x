@@ -32,13 +32,14 @@ md2x/
 ├── src/                  # Source code
 │   ├── cli/              # Bash CLI, rolled up into bin/md2x
 │   │   ├── md2x.sh       # CLI entrypoint / argument parsing
-│   │   ├── lib/          # CLI library modules (page generation, WeasyPrint bootstrap, GitHub CSS, parameters)
+│   │   ├── lib/          # CLI library modules (page generation, TOC preprocessor, WeasyPrint bootstrap, GitHub CSS, parameters)
 │   │   └── test/         # Bash CLI test suite
 │   │       ├── bats/     # bats-core cases (*.bats), run by `make test-cli`
 │   │       ├── helpers/  # Shared bash helpers loaded by the cases
 │   │       ├── stubs/    # Fake pandoc/gs/pdftk put on the tests' PATH
 │   │       ├── manual/   # Interactive visual smoke test (`make smoke-test`)
-│   │       └── tiny-doc.md  # Fixture document
+│   │       ├── tiny-doc.md  # Fixture document
+│   │       └── toc-slug-corpus.md  # Fixture: heading corpus for real-toolchain slug-agreement cases
 │   └── node/             # Thin Node.js wrapper (shells out to bin/md2x via shelljs)
 ├── .claude/              # Claude Code local settings
 ├── .flow/                # Flow session-binding metadata (mostly gitignored)
@@ -55,13 +56,14 @@ md2x/
 
 ## `src/`
 
-The CLI (`src/cli/`) is the actual conversion engine: Bash source rolled up by `@liquid-labs/bash-rollup` into the single-file `bin/md2x` executable per the `Makefile`. `src/cli/md2x.sh` is the entrypoint that parses options and dispatches to the library. `src/cli/lib/` holds `generate-page.sh` (the Pandoc → Ghostscript → `pdftk` conversion pipeline), `ensure-weasyprint.sh` (bootstraps the per-user `~/.md2x/venv` WeasyPrint install used as Pandoc's `--pdf-engine`), the bundled stylesheet `github.css`, and small option/parameter definitions (`parameters.sh`, `index.sh`). `src/cli/test/` holds the CLI's test suite, all of it exercising the built `bin/md2x` binary rather than the sources, so nothing under it goes through `bash-rollup` except the manual smoke test:
+The CLI (`src/cli/`) is the actual conversion engine: Bash source rolled up by `@liquid-labs/bash-rollup` into the single-file `bin/md2x` executable per the `Makefile`. `src/cli/md2x.sh` is the entrypoint that parses options and dispatches to the library. `src/cli/lib/` holds `generate-page.sh` (the Pandoc → Ghostscript → `pdftk` conversion pipeline), `toc-preprocess.py` (the Markdown-in/Markdown-out table-of-contents preprocessing stage `generate-page()` runs ahead of Pandoc), `ensure-weasyprint.sh` (bootstraps the per-user `~/.md2x/venv` WeasyPrint install used as Pandoc's `--pdf-engine`), the bundled stylesheet `github.css`, and small option/parameter definitions (`parameters.sh`, `index.sh`). `src/cli/test/` holds the CLI's test suite, all of it exercising the built `bin/md2x` binary rather than the sources, so nothing under it goes through `bash-rollup` except the manual smoke test:
 
-- `bats/` — the automated [bats-core](https://github.com/bats-core/bats-core) cases (`*.bats`) that `make test-cli` runs.
+- `bats/` — the automated [bats-core](https://github.com/bats-core/bats-core) cases (`*.bats`) that `make test-cli` runs, including the TOC feature's `toc-preprocess.bats` (drives `toc-preprocess.py` directly, bypassing the stub harness, for fine-grained slug/heuristic coverage), `toc-flags.bats` (`--toc`/`--no-toc` CLI parsing and the both-flags conflict), and `toc-generation.bats` (integration coverage of the preprocessor wired into the built CLI).
 - `helpers/` — shared bash helpers a case pulls in with `load '../helpers/common'`: per-case temporary working directory and stubbed `PATH` setup/teardown, generic assertions, and stub-invocation-log assertions.
 - `stubs/` — stand-in `pandoc`, `gs`, and `pdftk` executables the helpers put on `PATH`. They record their argument vectors and fabricate the files the CLI expects, so the suite needs no real conversion toolchain.
 - `manual/visual-smoke-test.sh` — the interactive, macOS-only "does the output actually look right" check, rolled up into `test-out/visual-smoke-test.sh` and run by the opt-in `make smoke-test` target. It is not part of `make test`.
 - `tiny-doc.md` — a small fixture document, used by both the smoke test and the automated cases.
+- `toc-slug-corpus.md` — a fixture heading corpus, used by `real-toolchain-e2e.bats` to assert the preprocessor's generated slugs agree with the identifiers real Pandoc mints.
 
 The Node wrapper (`src/node/`) is a thin package (`index.js`, `md2x.js`) that shells out to the built `bin/md2x` CLI via `shelljs` and returns the generated file paths; it is what `@liquid-labs/md2x`'s Node library entrypoint (`dist/md2x.js`) is built from. Its Jest cases are colocated as `src/node/*.test.js`, which the `Makefile`'s build inputs deliberately exclude; `make test-node` Babel-compiles the whole directory into `test-staging/` and runs Jest there.
 
