@@ -3,148 +3,92 @@
   "entries": {
     "todo": {},
     "followup": {
-      "BfN6": {
-        "sig": "05fb967624708287d6e9a87065095291",
-        "effort_bucket": "low",
+      "egW0": {
+        "sig": "904f26ae874b10c4e45f6f2b0c4c806a",
+        "effort_bucket": "medium",
+        "utility_bucket": "low",
+        "rationale": "Needs a special dev environment (python3 not colocated with brew/gs/pandoc) to exercise live; already reasoned correct by code inspection, so this is a confirmation-only verification task, not a fix.",
+        "scored_at": "2026-07-31T00:00:00Z",
+        "metrics_generated_at": null
+      },
+      "S92a": {
+        "sig": "201b97353ef24742a89d66f32a31c974",
+        "effort_bucket": "medium",
         "utility_bucket": "high",
-        "rationale": "Maintainer decision + doc/preflight update; directly relates to the just-built WeasyPrint PDF engine work.",
-        "scored_at": "2026-07-29T19:01:37Z",
+        "rationale": "Real silent-data-loss bug (files vanish with zero exit code) needing a maintainer decision plus a scoped fix and regression test; highest-utility item in the pool.",
+        "scored_at": "2026-07-31T00:00:00Z",
         "metrics_generated_at": null
       },
-      "baU7": {
-        "sig": "0639a77f0baf21341172912992c0d496",
-        "effort_bucket": "low",
-        "utility_bucket": "medium",
-        "rationale": "One-line preflight/doc addition for jq; silent degrade-to-'working' is real but narrow-impact.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "udVi": {
-        "sig": "75ae36c173415646efcf650828cad285",
-        "effort_bucket": "low",
-        "utility_bucket": "medium",
-        "rationale": "One-line comparison fix for dead code; already has a regression test pinned to the fix.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "egcc": {
-        "sig": "d66c668c5b6f502926323bc31054f7f9",
-        "effort_bucket": "low",
-        "utility_bucket": "medium",
-        "rationale": "Reorder default-title assignment before staging path build; paired with udVi, same file.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "95ND": {
-        "sig": "3a667c1d764611e3a50b8683f7260d64",
+      "ZP4P": {
+        "sig": "7081dbbe880429b70221f8a937c1ab3b",
         "effort_bucket": "low",
         "utility_bucket": "low",
-        "rationale": "Quote a shell variable; edge-case (paths with spaces) fix.",
-        "scored_at": "2026-07-29T19:01:37Z",
+        "rationale": "Explicitly informational only, no action requested; lowest-priority item.",
+        "scored_at": "2026-07-31T00:00:00Z",
         "metrics_generated_at": null
       },
-      "AOJw": {
-        "sig": "5a876adecda9dac8accbef08d8f6cb43",
+      "GuQR": {
+        "sig": "18d30a91da0cdd9a4cee1fc148b27724",
+        "effort_bucket": "low",
+        "utility_bucket": "medium",
+        "rationale": "Small, well-scoped: pick intended sources:[] behavior and add one Jest case; found by phase-review with a clear coverage gap.",
+        "scored_at": "2026-07-31T00:00:00Z",
+        "metrics_generated_at": null
+      },
+      "zwH4": {
+        "sig": "5e293449f764ffe0baf1b2e4979e0f3b",
+        "effort_bucket": "medium",
+        "utility_bucket": "medium",
+        "rationale": "Low-confidence correctness finding; distinguishing EEXIST from other mkdir failures needs careful bash logic in a lock-critical path.",
+        "scored_at": "2026-07-31T00:00:00Z",
+        "metrics_generated_at": null
+      },
+      "flSJ": {
+        "sig": "b0d339384db5ff590dfd100954ad13cc",
+        "effort_bucket": "low",
+        "utility_bucket": "medium",
+        "rationale": "One-line cleanup fix matching the existing --keep-intermediate pattern used by every other intermediate artifact; leaves a stray file in the user's cwd today.",
+        "scored_at": "2026-07-31T00:00:00Z",
+        "metrics_generated_at": null
+      },
+      "roct": {
+        "sig": "3749578f798e23820428c30b3e7c78aa",
+        "effort_bucket": "low",
+        "utility_bucket": "low",
+        "rationale": "Simple variable rename; currently harmless, latent hazard only.",
+        "scored_at": "2026-07-31T00:00:00Z",
+        "metrics_generated_at": null
+      },
+      "CwaE": {
+        "sig": "24a1d1c5493a508fe4fde6ef69c51c9c",
         "effort_bucket": "high",
-        "utility_bucket": "medium",
-        "rationale": "Needs a lockfile/staging-dir design for the new WeasyPrint venv bootstrap to close a concurrent cold-start corruption race; ties directly to the just-completed pdf-engine-weasyprint plan.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "IxJH": {
-        "sig": "a862045a580c83b8d6323b6f31a6c0d8",
-        "effort_bucket": "low",
-        "utility_bucket": "low",
-        "rationale": "Stale package.json bin entry; cosmetic packaging cleanup.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "eCzQ": {
-        "sig": "ffe5681756b089be674f3bde3e95dc5c",
-        "effort_bucket": "low",
-        "utility_bucket": "low",
-        "rationale": "Internal test-harness usage note; already resolved in-plan.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "H7ej": {
-        "sig": "d5b7dd849c4a472dc9d83c3ccd8adaf8",
-        "effort_bucket": "medium",
-        "utility_bucket": "low",
-        "rationale": "Homebrew-only gnu-getopt dependency is a portability gap; a real fix needs cross-platform getopt handling.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "ZQ0m": {
-        "sig": "ac98907565a683c25073f8ad97a24d49",
-        "effort_bucket": "low",
-        "utility_bucket": "low",
-        "rationale": "Already owned by a specific task per the note; tracking only.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "LPg7": {
-        "sig": "213cd6a50e3ee31c6526f00df2ef3051",
-        "effort_bucket": "low",
-        "utility_bucket": "low",
-        "rationale": "Doc staleness already owned by phase-02 task 001.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "MPHT": {
-        "sig": "5fbc939af2930cb07471bbec1bda4793",
-        "effort_bucket": "low",
-        "utility_bucket": "medium",
-        "rationale": "Same one-line mkdir -p pattern already applied elsewhere; quick consistency win.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "rm3a": {
-        "sig": "89c3b5a39c77da800e471f523072a69e",
-        "effort_bucket": "low",
-        "utility_bucket": "low",
-        "rationale": "Trivial help-text wording mismatch.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "c2s9": {
-        "sig": "33c53a88910e1c91e3a802699bb89b8b",
-        "effort_bucket": "low",
-        "utility_bucket": "low",
-        "rationale": "Undocumented filename quirk; doc-only fix candidate.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "arUf": {
-        "sig": "6194fb8b9800248e7964f3b8a38dca64",
-        "effort_bucket": "medium",
         "utility_bucket": "high",
-        "rationale": "Real shell-injection vulnerability in the exported md2x() library API; fix is a contained quoting/execFile change but severity is high.",
-        "scored_at": "2026-07-29T19:01:37Z",
+        "rationale": "--title/-t is documented but has zero effect in a common conversion path, contradicting the spec's API table; a real fix needs a batch-collision design decision first, so it's the highest-effort item, but the payoff (a documented, currently-broken flag) is high.",
+        "scored_at": "2026-07-31T00:00:00Z",
         "metrics_generated_at": null
       },
-      "8ZmD": {
-        "sig": "f2fd1c2a19eb13380a7bb372c4df57d3",
+      "ntBH": {
+        "sig": "8646c4efce5c7e53f8f9e9b3c7f5d188",
         "effort_bucket": "low",
         "utility_bucket": "low",
-        "rationale": "Low-confidence, minor-severity abort-timing shift; optional comment/test only.",
-        "scored_at": "2026-07-29T19:01:37Z",
+        "rationale": "No code defect; at most a task-doc wording tighten for future readers.",
+        "scored_at": "2026-07-31T00:00:00Z",
         "metrics_generated_at": null
       },
-      "r38C": {
-        "sig": "60f49a411bfb0b28909ee160939d600d",
-        "effort_bucket": "low",
-        "utility_bucket": "low",
-        "rationale": "Suggestion-severity; explicitly no action needed unless profiling shows it matters.",
-        "scored_at": "2026-07-29T19:01:37Z",
-        "metrics_generated_at": null
-      },
-      "EWuE": {
-        "sig": "abc904244d7d6efbe045f6f2c251e70b",
+      "psgq": {
+        "sig": "de81ee0fd35bf131ca4ada942ea342c9",
         "effort_bucket": "medium",
         "utility_bucket": "low",
-        "rationale": "Deliberate pre-accepted tradeoff; an env-var skip flag is a modest but non-trivial CI-affecting change.",
-        "scored_at": "2026-07-29T19:01:37Z",
+        "rationale": "Low-confidence, explicitly non-blocking efficiency note; real documents rarely hit enough duplicate headings for O(d^2) to matter.",
+        "scored_at": "2026-07-31T00:00:00Z",
+        "metrics_generated_at": null
+      },
+      "IcMM": {
+        "sig": "ae07b01d2dc9f989d80793ea16669437",
+        "effort_bucket": "low",
+        "utility_bucket": "low",
+        "rationale": "Explicitly not requiring action; visibility-only judgment call.",
+        "scored_at": "2026-07-31T00:00:00Z",
         "metrics_generated_at": null
       }
     },
