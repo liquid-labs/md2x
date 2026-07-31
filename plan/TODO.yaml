@@ -15,7 +15,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-01-task-01-fix-title-precedence-for-batch
-            commit: []
+            commit:
+                - 86be541
             merge: null
     - number: 2
       slug: doc-updates
