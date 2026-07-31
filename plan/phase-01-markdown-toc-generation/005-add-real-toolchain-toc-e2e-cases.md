@@ -89,3 +89,42 @@ changes. Depends on task 004.
 - `src/cli/test/bats/real-toolchain-e2e.bats` — the gating helpers, local setup/teardown, and
   content-assertion helpers to extend.
 - `AGENTS.md` — the suite's stub-versus-real-toolchain division of labor.
+
+## Status
+
+**Outcome:** succeeded. Date: 2026-07-30.
+
+Added `src/cli/test/toc-slug-corpus.md` (the 29-heading corpus from
+`plan/notes/pandoc-gfm-slug-algorithm.md`, plus a leading `# Slug Corpus` title; the
+all-whitespace-heading row is written as three literal spaces after `##`, matching the
+existing unit-test corpus in `toc-preprocess.bats`) and four new cases in
+`src/cli/test/bats/real-toolchain-e2e.bats`, plus a shared `e2e_write_toc_nav_doc` local
+helper (a title + four `##` sections, one starting with a digit) reused by the DOCX, PDF,
+and HTML cases per requirement 6:
+
+- slug agreement: `toc-slug-corpus.md` converted with `--toc --output-format html`, its
+  TOC anchors checked against `pandoc --from gfm --to html5 | grep -o 'id="..."'` on the
+  same fixture. The emoji-heading example from the note's reader-comparison table is
+  deliberately excluded from the fixture (it is not part of the 29-row corpus table), with
+  the reason recorded in the case's comment.
+- DOCX navigation: asserts at least one `w:bookmarkStart`, that every `w:anchor="…"`
+  resolves to a `w:bookmarkStart w:name="…"`, and that at least one anchor is a
+  Pandoc-mangled `X<hash>` name (from the `## 1. First Section` heading).
+- PDF links: uncompresses the finished PDF (post `gs`/`pdftk multistamp`) and asserts at
+  least one `/Link` annotation and a `/Dests` named-destination dictionary.
+- HTML anchors: asserts every TOC `href="#…"` has a matching `id="…"` in the same file.
+
+**Validation performed** (real Pandoc 3.10.1, `pdftk`, Ghostscript, and the managed
+WeasyPrint venv were present on the task agent's machine):
+- `make test-cli` — all 131 cases pass; the four new cases and the file's four
+  pre-existing cases all ran (no `# skip`).
+- `make test-cli` re-run with `pandoc` removed from `PATH` (via a constructed `PATH` that
+  drops `pandoc`'s directory while preserving `npm`/`node`/`brew`/`bash` through
+  exec-wrapper scripts pointing at their real, argv0-sensitive absolute paths) — all 131
+  cases still pass (exit `0`); all eight `real-toolchain-e2e.bats` cases, including the
+  four new ones, report `# skip real 'pandoc' not found on PATH`.
+- `git status --porcelain` is clean after both runs; no stray `md2x-preprocessed.*`,
+  `md2x-e2e-test.*`, or other temp artifacts remained under `/tmp`.
+
+No production code was touched; scope stayed to the e2e bats file and the one new
+checked-in fixture, per the task's stated scope.
