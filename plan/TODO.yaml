@@ -14,7 +14,7 @@ phases:
           done: false
           tier: sonnet-high
           git:
-            branch: null
+            branch: phase-01-task-01-fix-title-precedence-for-batch
             commit: []
             merge: null
     - number: 2
