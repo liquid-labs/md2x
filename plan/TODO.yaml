@@ -76,7 +76,7 @@ phases:
             branch: phase-01-task-06-update-readme-for-toc-feature
             commit:
                 - c9cf436
-            merge: null
+            merge: 982b5a5
     - number: 2
       slug: doc-updates
       title: Documentation Updates
