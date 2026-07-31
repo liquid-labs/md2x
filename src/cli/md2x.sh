@@ -207,8 +207,16 @@ case "${OUTPUT_FORMAT}" in
 esac
 
 if [[ -n "${SINGLE_PAGE}" ]]; then
-  COMBINED_FILE="${TITLE:-input}.md"
-  ! [[ -f "${COMBINED_FILE}" ]] || rm "${COMBINED_FILE}"
+  # Prefixed 'SINGLE_PAGE_' rather than the bare 'COMBINED_FILE' its own name would
+  # suggest: 'generate-page()' (src/cli/lib/generate-page.sh) assigns its own,
+  # unrelated 'COMBINED_FILE' global -- the pdftk multistamp output path for the PDF
+  # header/footer overlay -- on every pdf-format call, with no 'local' to scope it. A
+  # bare 'COMBINED_FILE' here would get silently clobbered by that assignment the
+  # moment 'generate-page()' runs, leaving this script's own end-of-run cleanup below
+  # reading a stale, already-'mv'-away path instead of this concatenation file's real
+  # one. See followup flSJ.
+  SINGLE_PAGE_COMBINED_FILE="${TITLE:-input}.md"
+  ! [[ -f "${SINGLE_PAGE_COMBINED_FILE}" ]] || rm "${SINGLE_PAGE_COMBINED_FILE}"
 fi
 
 # '$CSS' (the embedded github.css content) is static, deterministic content that never
@@ -267,7 +275,13 @@ SEARCH_ROOT_ERROR_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-search-root-error.XXX
 # keep the trap itself safe under 'nounset' if it fires before any 'generate-page()'
 # call has run at all. 'PREPROCESSED_TMP_FILE' -- the materialized, TOC-preprocessed
 # Markdown 'generate-page()' hands to Pandoc -- follows the same per-call lifecycle and
-# is covered here for the same reason. See followups 9hZL/MwYH/QBKX.
+# is covered here for the same reason. 'SINGLE_PAGE_COMBINED_FILE' -- the '--single-page'
+# concatenation target (see its own comment above for the 'SINGLE_PAGE_' naming) -- is
+# instead set once, up front, and only read (not written) by 'generate-page()', but the
+# same errexit-can-skip-post-loop-cleanup risk applies to it, so it rides along in this
+# trap too. The ':-' default keeps it safe under 'nounset' on runs where '--single-page'
+# was never passed and 'SINGLE_PAGE_COMBINED_FILE' is never set. See followups
+# 9hZL/MwYH/QBKX/flSJ.
 #
 # 'SEARCH_ROOT_ERROR_TMP_FILE' is folded into this same trap rather than gated behind a
 # second, separately-registered one: bash keeps only one handler per signal, so a later
@@ -277,7 +291,7 @@ SEARCH_ROOT_ERROR_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-search-root-error.XXX
 # with the '--keep-intermediate' gate moved inside the trap body instead of around the
 # whole registration.
 trap '[[ -n "${KEEP_INTERMEDIATE:-}" ]] \
-        || rm -f "${CSS_TMP_FILE:-}" "${BODY_OPEN_TMP_FILE:-}" "${BODY_CLOSE_TMP_FILE:-}" "${PREPROCESSED_TMP_FILE:-}"
+        || rm -f "${CSS_TMP_FILE:-}" "${BODY_OPEN_TMP_FILE:-}" "${BODY_CLOSE_TMP_FILE:-}" "${PREPROCESSED_TMP_FILE:-}" "${SINGLE_PAGE_COMBINED_FILE:-}"
       rm -f "${SEARCH_ROOT_ERROR_TMP_FILE:-}"' EXIT
 
 # Unlike the Pandoc log and the PDF header/footer overlay -- both written into the user's own
@@ -289,6 +303,16 @@ trap '[[ -n "${KEEP_INTERMEDIATE:-}" ]] \
 [[ -z "${KEEP_INTERMEDIATE}" ]] \
   || echo "md2x: kept intermediate CSS file: '${CSS_TMP_FILE}'" >&2
 
+# 'SINGLE_PAGE_COMBINED_FILE' (the '--single-page' concatenation target, set above) is only an
+# intermediate artifact in service of the eventual 'generate-page()' call -- it doesn't
+# escape the '${TMPDIR}' vs. cwd distinction that motivates the CSS notice above (it's
+# always written into the cwd, so it's already discoverable by directory listing), but a
+# user who passed '--keep-intermediate' still benefits from the same one-time
+# announcement the other kept artifacts get, so print it here too. Guarded on
+# 'SINGLE_PAGE' since 'SINGLE_PAGE_COMBINED_FILE' is only ever set in that mode.
+[[ -z "${SINGLE_PAGE}" || -z "${KEEP_INTERMEDIATE}" ]] \
+  || echo "md2x: kept intermediate combined file: '${SINGLE_PAGE_COMBINED_FILE}'" >&2
+
 {
   if [[ -z "${INPUT}" ]]; then
     # Each record is '<md-file><tab><search-root>'; an empty root means the file was
@@ -299,7 +323,7 @@ trap '[[ -n "${KEEP_INTERMEDIATE:-}" ]] \
       #              prints and saves us the hassle of having to install pdflatex
 
       if [[ -n "${SINGLE_PAGE}" ]]; then
-        { cat "${MD_FILE}"; echo; } >> "${COMBINED_FILE}"
+        { cat "${MD_FILE}"; echo; } >> "${SINGLE_PAGE_COMBINED_FILE}"
       else
         TITLE=$(basename "${MD_FILE}" .md)
         
@@ -323,7 +347,7 @@ trap '[[ -n "${KEEP_INTERMEDIATE:-}" ]] \
     TITLE="${TITLE:-output}"
     mkdir -p "${OUTPUT_PATH}"
     BASE_OUTPUT="${OUTPUT_PATH}/${TITLE:-output}.${OUTPUT_FORMAT}"
-    [[ -z "${SINGLE_PAGE}" ]] || MD_FILE="${COMBINED_FILE}"
+    [[ -z "${SINGLE_PAGE}" ]] || MD_FILE="${SINGLE_PAGE_COMBINED_FILE}"
     generate-page
   fi
 } < <(
