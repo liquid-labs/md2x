@@ -90,6 +90,7 @@ phases:
           path: phase-02-doc-updates/001-update-architecture-docs.md
           done: false
           tier: sonnet-high
+          digest: Updated docs/architecture.md, docs/md2x-spec.md, and docs/project-structure.md to reflect the Markdown-based TOC generation delivered in Phase 01, and corrected AGENTS.md's code-organization list to include toc-preprocess.py. Architecture doc gained a new TOC preprocessor subsection, updated Mermaid diagram/walkthrough, corrected pipeline description, and two Key-decisions updates. Spec doc's UC2, features bullet, CLI flags table, exit behavior, and Node-library options rewritten to state DOCX now gets a TOC and describe flag/marker/heuristic resolution behaviorally. Project-structure.md mentions the new files. README.md/CHANGELOG.md needed no changes.
           git:
             branch: phase-02-task-01-update-architecture-and-spec-d
             commit:
