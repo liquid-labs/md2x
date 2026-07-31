@@ -59,7 +59,7 @@ phases:
           slug: add-real-toolchain-toc-e2e-cases
           title: Add Real Toolchain TOC E2E Cases
           path: phase-01-markdown-toc-generation/005-add-real-toolchain-toc-e2e-cases.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: 'Added the real-toolchain fidelity backstop: a checked-in 29-heading slug corpus fixture plus four new real-toolchain-e2e.bats cases (slug agreement, DOCX bookmark/anchor consistency including digit-heading mangling, PDF /Link+/Dests survival through the gs+pdftk multistamp overlay, HTML anchor resolution), gated on existing e2e_require_pandoc/e2e_require_pdf_engine helpers. Verified end-to-end on real Pandoc 3.10.1/WeasyPrint/pdftk: make test-cli passes with all 131 cases running, and again with pandoc stripped from PATH (clean skips). No production code touched.'
           git:
