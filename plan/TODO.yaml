@@ -47,7 +47,7 @@ phases:
           slug: wire-preprocessor-into-generate-page
           title: Wire Preprocessor Into Generate Page
           path: phase-01-markdown-toc-generation/004-wire-preprocessor-into-generate-page.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: 'Wired toc-preprocess.py into the real conversion pipeline: inlined into the rolled-up CLI, invoked via python3 -c ahead of LINK_CONVERTER, output materializes to a real temp file Pandoc reads as a plain path argument -- collapsing the two INPUT-branch Pandoc calls into one, making preprocessor failure visible under errexit/pipefail. Pandoc''s native --toc (and the docx short-circuit) is gone entirely, so DOCX gets a working TOC for the first time -- confirmed against real Pandoc/WeasyPrint/pdftk including real w:anchor bookmarks. Updated pandoc-args.bats/harness-smoke.bats for the retired flag, added 13 new integration cases in toc-generation.bats, fixed two --keep-intermediate temp-file leaks. make test fully green; manual real-toolchain e2e confirms the feature works outside the stub harness.'
           git:
