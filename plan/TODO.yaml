@@ -69,7 +69,7 @@ phases:
           slug: update-readme-and-changelog
           title: Update README And CHANGELOG
           path: phase-01-markdown-toc-generation/006-update-readme-and-changelog.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Updated README.md only, per the plan branch's amended README-only scope (CHANGELOG.md untouched). Replaced the stale --no-toc description with an accurate --toc/--no-toc pair and both-flags-fatal-error note. Added a Features bullet and a new TOC subsection covering the marker, default placement, the size/section-count heuristic, cross-format consistency (including DOCX bookmarks), and the two known slug-algorithm limitations.
           git:
