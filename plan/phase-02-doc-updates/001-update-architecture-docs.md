@@ -127,3 +127,64 @@ duplicate: `plan/notes/pandoc-gfm-slug-algorithm.md`,
   `plan/notes/pipeline-verification.md` — the verified design detail behind the decisions being
   documented.
 - `plan/overview.md` — the decision table summarizing what was chosen and why.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-07-30
+- **Validation summary:** All four target files read in full against the actual Phase 01 code
+  (`src/cli/lib/toc-preprocess.py`, `src/cli/md2x.sh`, `src/cli/lib/generate-page.sh`) rather than
+  just the task docs, then updated per the requirements; `README.md`/`CHANGELOG.md` reviewed and
+  found already consistent (Phase 01 task 006's wording matches this task's rewritten spec/
+  architecture text) — no contradiction found, so neither was touched. All Validation-section
+  checks pass: `grep -rn 'never receives an automatic table of contents' docs/` and
+  `` grep -rn 'unless `--no-toc` is given, a table of contents' docs/ `` both return nothing;
+  `grep -rn 'toc-preprocess' docs/ AGENTS.md` shows the new file recorded in
+  `docs/project-structure.md` (tree comment + `src/` narrative + new bats-file enumeration),
+  `docs/architecture.md` (new "TOC preprocessor" subsection, diagram node, walkthrough step, key
+  decision), and `AGENTS.md`'s code-organization list; `grep -n -- '--toc' docs/md2x-spec.md`
+  shows the new flag row, the rewritten `--no-toc` row, the rewritten General-features bullet,
+  and the updated exit-behavior sentence. The Mermaid diagram in `docs/architecture.md` was
+  rendered end-to-end with `mmdc` (via a scratch `.mmd` extract) to a valid SVG with no parse
+  errors, and its structure was visually confirmed to match the new node/edge set (the TOC
+  preprocessor node sits ahead of the link-rewriting node on both the direct and
+  WeasyPrint-bootstrap-gated paths, exactly as the walkthrough prose now describes). A link-
+  resolution script checked every non-`http` Markdown link touched across the four files; the
+  only flagged items were false positives from illustrative code-span examples
+  (`` `[Heading](#slug)` ``, `` `[Foo](./bar.md)` ``), not real links. No new `##` top-level
+  section was added to any document, so no document's own table of contents needed updating
+  (only `###` subsections were added under existing `## Major components`/`## API definition`
+  sections).
+- **Affected source files:**
+  - `docs/architecture.md`
+  - `docs/md2x-spec.md`
+  - `docs/project-structure.md`
+  - `AGENTS.md`
+  - `plan/phase-02-doc-updates/001-update-architecture-docs.md` (this file, Status only)
+- **Decisions:**
+  - Placed the new "TOC preprocessor" subsection in `docs/architecture.md`'s Major components
+    immediately before "Page generation / conversion pipeline," since the preprocessor runs
+    ahead of that stage and the subsection explicitly cross-references it; the existing
+    "Bundled stylesheet" subsection was left untouched (per the task doc's guidance that the new
+    subsection should reference its bash-rollup inlining technique rather than re-explain it).
+  - Added the new Key decisions bullet (Markdown-content TOC vs. Pandoc `--toc`) directly before
+    the existing "Test suite stubs the external-tool boundary" bullet, and extended that last
+    bullet with a sentence naming `real-toolchain-e2e.bats` as the slug-algorithm's correctness
+    backstop, per the task doc's explicit instruction.
+  - Did not add a new UC or a `## Constraints and assumptions` note in `docs/md2x-spec.md` for
+    the `<!-- md2x:toc -->` marker: the rewritten `## General features` bullet already states the
+    marker syntax, placement rule, and full `--toc`/`--no-toc`/default resolution in behavioral
+    terms, so a separate use case or constraint would only duplicate it.
+  - In `docs/project-structure.md`, added `toc-preprocess.py` to the `lib/` directory-tree line's
+    existing parenthetical (by component description, e.g. "TOC preprocessor," matching the
+    tree's established describe-by-function style) rather than as a new nested tree entry, since
+    no other individual `lib/` file is enumerated as its own tree node either.
+  - Confirmed no contradiction in `README.md`/`CHANGELOG.md` requiring a fix beyond Phase 01 task
+    006's existing edits; left both untouched per the task doc's constraint.
+
+## Flagged for manager
+
+- None. `README.md`/`CHANGELOG.md` needed no correction (checked per the task's constraint).
+- Judgment call, not required for manager action: no new use case or Constraints-and-assumptions
+  note was added for the `<!-- md2x:toc -->` marker in `docs/md2x-spec.md` (see Decisions above);
+  flagging for visibility in case a reviewer prefers an explicit constraint entry.
