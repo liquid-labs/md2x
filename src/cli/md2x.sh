@@ -245,6 +245,14 @@ mv "${CSS_TMP_FILE}" "${CSS_TMP_FILE}.css"
 CSS_TMP_FILE="${CSS_TMP_FILE}.css"
 printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
 
+# A '< <(...)' process substitution's own failures never reach the parent shell's
+# 'errexit'/'pipefail' (see the file-discovery pipe below), so an unreadable search
+# root has no way to make the top-level script exit non-zero on its own. This file is
+# the signal: the process substitution's inner loop writes the failing root's path here
+# the moment 'find' fails for it, and the outer script checks it right after the loop
+# completes, exiting loudly instead of silently returning 0. See followup 8ZmD.
+SEARCH_ROOT_ERROR_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-search-root-error.XXXXXX")"
+
 # 'generate-page()' can run once per input file, under this script's 'errexit'. A
 # failing Pandoc/WeasyPrint invocation aborts the whole script immediately, skipping any
 # cleanup written after the loop below -- so a plain post-loop 'rm' would still leak
@@ -260,8 +268,17 @@ printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
 # call has run at all. 'PREPROCESSED_TMP_FILE' -- the materialized, TOC-preprocessed
 # Markdown 'generate-page()' hands to Pandoc -- follows the same per-call lifecycle and
 # is covered here for the same reason. See followups 9hZL/MwYH/QBKX.
-[[ -n "${KEEP_INTERMEDIATE}" ]] \
-  || trap 'rm -f "${CSS_TMP_FILE:-}" "${BODY_OPEN_TMP_FILE:-}" "${BODY_CLOSE_TMP_FILE:-}" "${PREPROCESSED_TMP_FILE:-}"' EXIT
+#
+# 'SEARCH_ROOT_ERROR_TMP_FILE' is folded into this same trap rather than gated behind a
+# second, separately-registered one: bash keeps only one handler per signal, so a later
+# 'trap ... EXIT' would silently replace this one instead of adding to it. Unlike the
+# '--keep-intermediate'-gated files above, it is never a build artifact a user would
+# want to retain -- it is purely an internal signal -- so its removal is unconditional,
+# with the '--keep-intermediate' gate moved inside the trap body instead of around the
+# whole registration.
+trap '[[ -n "${KEEP_INTERMEDIATE:-}" ]] \
+        || rm -f "${CSS_TMP_FILE:-}" "${BODY_OPEN_TMP_FILE:-}" "${BODY_CLOSE_TMP_FILE:-}" "${PREPROCESSED_TMP_FILE:-}"
+      rm -f "${SEARCH_ROOT_ERROR_TMP_FILE:-}"' EXIT
 
 # Unlike the Pandoc log and the PDF header/footer overlay -- both written into the user's own
 # working/output tree, and therefore discoverable by normal directory listing -- 'CSS_TMP_FILE'
@@ -326,16 +343,32 @@ printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
     # this pipe's exit status is the rightmost non-zero status among {find, while} --
     # and the 'while read' loop always exits 0 (it just drains whatever 'find' emitted,
     # or nothing, then hits EOF), so a 'find' error becomes THIS pipe's exit status.
-    # That trips 'errexit' in the outer 'while read ROOT_DIR' loop above, aborting it
-    # right there: any root listed *after* the failing one in '${SEARCH_DIRS}' is never
-    # even attempted (silently dropped), while roots listed before it, and files 'find'
-    # already emitted for the SAME root before erroring deeper in its tree, are kept.
-    # None of this reaches the top-level script: '< <(...)' process-substitution
-    # failures are invisible to the parent's own 'errexit'/'pipefail', so 'md2x' still
-    # exits 0 overall and silently omits the unprocessed roots' files. See
-    # 'exit-codes.bats'' "unreadable search root" cases and followup 8ZmD.
-    find "${ROOT_DIR}" -name "*.md" | while IFS= read -r FOUND_FILE; do
-      printf '%s\t%s\n' "${FOUND_FILE}" "${ROOT_DIR}"
-    done
+    # Left unguarded, that would trip 'errexit' right here, aborting this loop before
+    # 'SEARCH_ROOT_ERROR_TMP_FILE' below could be written: any root listed *after* the
+    # failing one in '${SEARCH_DIRS}' is never even attempted (silently dropped), while
+    # roots listed before it, and files 'find' already emitted for the SAME root before
+    # erroring deeper in its tree, are kept. Wrapping the pipe as an 'if !' condition
+    # exempts it from 'errexit' just long enough to record the failure; the explicit
+    # 'exit 1' right after reproduces the same abort-the-remaining-roots behavior
+    # 'errexit' would have produced on its own. '< <(...)' process-substitution failures
+    # are still invisible to the parent's own 'errexit'/'pipefail' -- 'SEARCH_ROOT_ERROR_TMP_FILE'
+    # is what carries the failure out to the top-level script, checked right after this
+    # process substitution closes below. See 'exit-codes.bats'' "unreadable search root"
+    # cases and followup 8ZmD.
+    if ! find "${ROOT_DIR}" -name "*.md" | while IFS= read -r FOUND_FILE; do
+          printf '%s\t%s\n' "${FOUND_FILE}" "${ROOT_DIR}"
+        done
+    then
+      printf '%s\n' "${ROOT_DIR}" > "${SEARCH_ROOT_ERROR_TMP_FILE}"
+      exit 1
+    fi
   done <<< "${SEARCH_DIRS}" | sort
 )
+
+# The process substitution above can't propagate a failed search root's exit status to
+# this, the parent shell -- see the comment at the 'find' pipe inside it. Its inner loop
+# writes the failing root's path to 'SEARCH_ROOT_ERROR_TMP_FILE' instead, the moment
+# 'find' fails for it; a non-empty file here means that happened, so abort loudly rather
+# than let the run's partial results pass as a silent success. Followup 8ZmD.
+[[ ! -s "${SEARCH_ROOT_ERROR_TMP_FILE}" ]] \
+  || echoerrandexit "md2x: could not fully search '$(cat "${SEARCH_ROOT_ERROR_TMP_FILE}")' for Markdown files. Bailing out."
