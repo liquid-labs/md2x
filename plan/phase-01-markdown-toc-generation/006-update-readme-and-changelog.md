@@ -76,3 +76,17 @@ behavior must exist before it is documented as existing). May run concurrently w
   limitations note.
 - `README.md` lines ~62–92 — the Features list, CLI reference table, and the overlay subsection
   whose style the new subsection should match.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-07-30
+- **Summary:** Updated `README.md` only (per the amended, README-only scope recorded on the plan
+  branch): added a `--toc` row and rewrote the `--no-toc` row in the CLI reference table (with
+  the both-flags-fatal note folded into the `--no-toc` row), added a Features bullet about md2x
+  generating its own TOC content, and added a new `### The table of contents` subsection under
+  `## CLI reference`, styled after the existing `### The PDF header/footer overlay` subsection.
+  `CHANGELOG.md` and `.meta/changelog.yaml` were not touched.
+- **Validation:** all six checks in `## Validation` passed — see the structured report for exact
+  commands/output.
+- **Affected files:** `README.md`, `plan/phase-01-markdown-toc-generation/006-update-readme-and-changelog.md`.
