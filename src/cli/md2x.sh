@@ -64,7 +64,12 @@ Options:
                               Output format: 'pdf' (default), 'html', or
                               'docx'.
   -t, --title <title>        Document title; used for the output filename
-                              and the PDF header text.
+                              and the PDF header text. Only honored when
+                              exactly one file will be converted outside
+                              --single-page (a lone directly-named file,
+                              or a directory search resolving to exactly
+                              one file); passing --title with more than
+                              one file in that path is a fatal error.
       --single-page          Concatenate all input Markdown files into a
                               single document before conversion.
       --quiet                Suppress the "Created <file>" status message.
@@ -128,6 +133,66 @@ TOC_MODE='auto'
 [[ -z "${TOC}" ]] || TOC_MODE='on'
 [[ -z "${NO_TOC}" ]] || TOC_MODE='off'
 
+# Input-path processing (which of SEARCH_DIRS/MD_FILES/INPUT the invocation resolves
+# to) is done here, ahead of 'ensure-weasyprint' below, rather than in its previous
+# position further down: the '--title' conflict gate that follows needs to know how
+# many files this invocation will convert, and 'ensure-weasyprint' can trigger a
+# minute-long network install on a cold machine that a doomed (conflicting) invocation
+# should never pay for. Neither this block nor the gate reads 'OUTPUT_PATH' or anything
+# 'ensure-weasyprint' sets, and 'OUTPUT_PATH's own default assignment and
+# 'ensure-weasyprint' do not read 'SEARCH_DIRS'/'MD_FILES'/'INPUT', so this reordering
+# is safe in both directions.
+SEARCH_DIRS=''
+MD_FILES=''
+# process args
+INPUT=''
+if (( $# == 1 )) && [[ ${1} == '-' ]]; then
+  while read LINE; do
+    INPUT="${INPUT}${LINE}"$'\n'
+  done < /dev/stdin
+else
+  while (( $# > 0 )); do
+    TEST_PATH="${1}"; shift
+    if [[ -d "${TEST_PATH}" ]]; then
+      list-add-item SEARCH_DIRS "${TEST_PATH}"
+    elif [[ -f "${TEST_PATH}" ]]; then
+      list-add-item MD_FILES "${TEST_PATH}"
+    else
+      echoerrandexit "'${TEST_PATH}' is neither a file nor a directory. Bailing out."
+    fi
+  done
+fi
+
+# '--title'/'-t' only applies to a single-file conversion: the main per-file loop
+# derives each output's filename (and, via 'generate-page()', the '--infer-title'
+# metadata) from 'TITLE', so an explicit '--title' with more than one file in play
+# would silently apply to only the loop's last iteration. This is checked only for the
+# non-'--single-page'/non-stdin path -- the other two input modes always produce
+# exactly one output file and already honor '--title' correctly. The file count below
+# does not replicate the real processing pipe's unreadable-search-root abort/continue
+# subtlety (see followup S92a, out of scope); a plain 'find ... | wc -l' per root is
+# sufficient here. Under 'pipefail', an unreadable root still makes the 'find | wc -l'
+# pipeline's own exit status non-zero even though 'wc -l' itself always succeeds --
+# empirically confirmed live, since it isn't obvious from reading alone -- so the
+# trailing '|| true' is required to keep this count-only pass from tripping the
+# top-level 'errexit' on a root the real pipe further below would otherwise just skip
+# with a stderr notice (see 'exit-codes.bats'' "unreadable search root" cases).
+if [[ -z "${SINGLE_PAGE}" ]] && [[ -z "${INPUT}" ]]; then
+  TITLE_PRECEDENCE_FILE_COUNT=$(list-count MD_FILES)
+  while IFS= read -r SEARCH_ROOT; do
+    [[ -n "${SEARCH_ROOT}" ]] || continue
+    TITLE_PRECEDENCE_FILE_COUNT=$(( TITLE_PRECEDENCE_FILE_COUNT \
+      + $(find "${SEARCH_ROOT}" -name "*.md" | wc -l || true) ))
+  done <<< "${SEARCH_DIRS}"
+
+  if [[ -n "${TITLE_SET:-}" ]] && (( TITLE_PRECEDENCE_FILE_COUNT > 1 )); then
+    echoerrandexit "Cannot use '--title'/'-t' with more than one input file" \
+      "(${TITLE_PRECEDENCE_FILE_COUNT} files would be converted); '--title' only" \
+      "applies to a single-file conversion. Use '--single-page' to combine multiple" \
+      "files under one title, or omit '--title' to use each file's own basename."
+  fi
+fi
+
 [[ -n "${OUTPUT_PATH}" ]] || OUTPUT_PATH='.'
 
 [[ "${OUTPUT_FORMAT}" == 'pdf' ]] && ensure-weasyprint
@@ -174,27 +239,6 @@ relative-output-dir() {
 }
 
 [[ -z "${TO_STDOUT}" ]] || QUIET=true
-
-SEARCH_DIRS=''
-MD_FILES=''
-# process args
-INPUT=''
-if (( $# == 1 )) && [[ ${1} == '-' ]]; then
-  while read LINE; do
-    INPUT="${INPUT}${LINE}"$'\n'
-  done < /dev/stdin
-else
-  while (( $# > 0 )); do
-    TEST_PATH="${1}"; shift
-    if [[ -d "${TEST_PATH}" ]]; then
-      list-add-item SEARCH_DIRS "${TEST_PATH}"
-    elif [[ -f "${TEST_PATH}" ]]; then
-      list-add-item MD_FILES "${TEST_PATH}"
-    else
-      echoerrandexit "'${TEST_PATH}' is neither a file nor a directory. Bailing out."
-    fi
-  done
-fi
 
 # used in the 'generate-page' call later
 VERSION=$(OUTPUT=$(git status --porcelain) && [ -z "${OUTPUT}" ] && cat package.json | jq '.version' || echo 'working')
@@ -325,8 +369,13 @@ trap '[[ -n "${KEEP_INTERMEDIATE:-}" ]] \
       if [[ -n "${SINGLE_PAGE}" ]]; then
         { cat "${MD_FILE}"; echo; } >> "${SINGLE_PAGE_COMBINED_FILE}"
       else
-        TITLE=$(basename "${MD_FILE}" .md)
-        
+        # An explicit '--title' is honored as-is; the upfront gate above (requirement
+        # 3) already guarantees this loop processes at most one file whenever
+        # 'TITLE_SET' is non-empty, so 'TITLE' stays pinned to the explicit value for
+        # the loop's single iteration. Absent '--title', fall back to each file's own
+        # basename, as before.
+        [[ -n "${TITLE_SET:-}" ]] || TITLE=$(basename "${MD_FILE}" .md)
+
         BASE_OUTPUT="${OUTPUT_PATH}"
         [[ -n "${FLATTEN_DIRS}" ]] || {
           REL_DIR="$(relative-output-dir "${MD_FILE}" "${SEARCH_ROOT}")"

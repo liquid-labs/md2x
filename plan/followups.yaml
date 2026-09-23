@@ -80,6 +80,15 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Judgment call surfaced for visibility (not requiring action): decided not to add a new use case or Constraints/assumptions entry in docs/md2x-spec.md for the marker, since the rewritten General-features bullet already documents it behaviorally. A reviewer could reasonably prefer an explicit constraints entry instead.'
+    - title: The task doc's requirement 2 contained an inc
+      id: c4rh
+      date: "2026-07-31"
+      tags:
+        - type:ambiguity
+        - plan/phase:title-precedence
+        - priority:unspecified
+        - effort:unspecified
+      text: The task doc's requirement 2 contained an incorrect technical claim about pipefail/wc -l interaction (a plain find | wc -l pipeline can still trip errexit under pipefail via a failing find, contrary to the doc's claim) — worth a note for future task-doc authors relying on similar reasoning about errexit/pipefail with wc -l-terminated pipelines.
     - title: README --title/-t row has stale wording
       id: Qa0V
       date: "2026-07-31"
