@@ -50,7 +50,7 @@ items:
       tags:
         - type:ambiguity
         - plan/phase:markdown-toc-generation
-        - priority:unspecified
+        - priority:low
         - effort:unspecified
       text: 'Task doc''s ''Mode overrides'' bullet (''--mode on emits a TOC for a one-heading, one-line document'') is in tension with the toc-defaults note''s unconditional document-title-exclusion rule: a genuine one-heading document can never produce a non-empty TOC under any mode, since its sole heading is always the excluded title. Resolved by testing the real intent (mode overriding the size-based auto-suppress heuristic) against the smallest document with a non-title heading; documented in the bats test''s inline comment and the task doc''s Status/Decisions entry. Flagging in case the task doc bullet wording should be tightened for future readers -- implemented behavior is spec-correct, no code defect.'
     - title: toc-preprocess slug collision probe O(d²)
