@@ -77,7 +77,7 @@ items:
       tags:
         - type:ambiguity
         - plan/phase:title-precedence
-        - priority:unspecified
+        - priority:low
         - effort:unspecified
       text: The task doc's requirement 2 contained an incorrect technical claim about pipefail/wc -l interaction (a plain find | wc -l pipeline can still trip errexit under pipefail via a failing find, contrary to the doc's claim) — worth a note for future task-doc authors relying on similar reasoning about errexit/pipefail with wc -l-terminated pipelines.
     - title: README --title/-t row has stale wording
