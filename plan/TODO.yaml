@@ -32,5 +32,6 @@ phases:
           tier: sonnet-high
           git:
             branch: plan/title-precedence-02-001
-            commit: []
+            commit:
+                - 3ae2a3f
             merge: null
