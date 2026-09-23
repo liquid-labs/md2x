@@ -81,7 +81,7 @@ md2x accepts one or more file paths, one or more directory paths (searched recur
 | `--keep-intermediate` | Keep intermediate build artifacts (the Pandoc log and the PDF header/footer overlay) instead of deleting them after conversion. The CSS temp file is also retained, and its path is printed to stderr (not suppressed by `--quiet`), since it lives outside the working/output tree in `TMPDIR`. |
 | `-p`, `--output-path <path>` | Directory to write output files into. Default: `.`. |
 | `-F`, `--output-format <format>` | Output format: `pdf` (default), `html`, or `docx`. |
-| `-t`, `--title <title>` | Document title; used for the output filename and the PDF header text. |
+| `-t`, `--title <title>` | Document title; used for the output filename and the PDF header text. Only applies when exactly one file is converted outside `--single-page`; combining with multiple source files is a fatal error. |
 | `--single-page` | Concatenate all input Markdown files into a single document before conversion. |
 | `--quiet` | Suppress the "Created `<file>`" status message. |
 | `--list-files` | Print only the generated file path(s), instead of "Created `<file>`". |
