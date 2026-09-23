@@ -16,5 +16,6 @@ CLAUDE.md
 !.flow/plans
 !.flow/project-analysis.json
 !.flow/what-next-cache.json
+/worktrees
 
 /.mcp.json
