@@ -9,15 +9,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Validation check 6 (python3 preflight failure) was not exercised live: brew''s self-location depends on /opt/homebrew/bin staying on PATH, which also hosts python3/gs/pandoc on this dev machine, so a live PATH-exclusion test could not be safely constructed. Verified by code inspection (identical preflight-loop idiom as gs/pandoc/pdftk) instead. Recommend re-verifying live in an environment where python3 is not colocated with brew/gs/pandoc.'
-    - title: 'Genuine latent bug: a healthy, readable searc'
-      id: S92a
-      date: "2026-07-30"
-      tags:
-        - type:ambiguity
-        - plan/phase:resolve-followups
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Genuine latent bug: a healthy, readable search root''s files silently vanish (zero exit code, no error beyond find''s own stderr line) merely because it''s listed after an unreadable root. Not fixed per this task''s explicit no-behavior-change assumption. Needs a maintainer decision: abort loudly, or process every root independently regardless of one root''s failure.'
     - title: 'Informational only: WEASYPRINT_LOCK_TIMEOUT_S'
       id: ZP4P
       date: "2026-07-30"
@@ -45,14 +36,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Phase-01 (resolve-followups) phase-review correctness lens found (low confidence): in src/cli/lib/ensure-weasyprint.sh''s cold-bootstrap lock loop (lines ~85-95), every `mkdir "${WEASYPRINT_LOCK_DIR}"` failure is treated identically as "another process holds the lock" and polled for up to the full 180s timeout before reporting a stale-lock message. If mkdir instead fails for an unrelated, persistent reason (e.g. unwritable $HOME), the process still busy-waits the full 180s and then reports a misleading diagnosis pointing at the wrong remediation (rm -rf ~/.md2x-venv.lock, which wouldn''t fix a permissions issue). Worth a maintainer fix: distinguish EEXIST-style contention (confirm via `[[ -d "${WEASYPRINT_LOCK_DIR}" ]]` after a failed mkdir) from other mkdir failure modes, and fail fast with an accurate message on the latter.'
-    - title: --single-page temp file not cleaned up
-      id: flSJ
-      date: "2026-07-30"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-      text: 'Discovered during toc-generation planning (2026-07-30). The `--single-page` concatenation target (`<title>.md` or `input.md`, built in src/cli/md2x.sh) is written into the user''s current working directory and is never removed after conversion, even when `--keep-intermediate` is NOT specified. Every other intermediate artifact (Pandoc log, PDF header/footer overlay) is cleaned up by default and only kept with --keep-intermediate; this one is not. Worth a maintainer decision: clean it up by default (respecting --keep-intermediate like the other intermediates), or document the exception if it''s intentional.'
     - title: generate-page() shadows COMBINED_FILE
       id: roct
       date: "2026-07-30"
@@ -106,3 +89,20 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: The task doc's requirement 2 contained an incorrect technical claim about pipefail/wc -l interaction (a plain find | wc -l pipeline can still trip errexit under pipefail via a failing find, contrary to the doc's claim) — worth a note for future task-doc authors relying on similar reasoning about errexit/pipefail with wc -l-terminated pipelines.
+    - title: README --title/-t row has stale wording
+      id: Qa0V
+      date: "2026-07-31"
+      tags:
+        - type:ambiguity
+        - plan/phase:title-precedence
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Surfaced during title-precedence planning (2026-07-31): README.md''s CLI reference table carries the same stale "-t/--title ... used for the output filename and the PDF header text" wording that docs/md2x-spec.md''s API table had (now being corrected there by plan/title-precedence to document the single-file-only precedence and the multi-file fatal-error case). README.md was deliberately left out of that plan''s scope. Worth a small followup to bring README.md''s row in line once the spec wording lands.'
+    - title: generate-page.sh COMBINED_FILE not local
+      id: XFOb
+      date: "2026-07-31"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Surfaced while fixing followup flSJ (2026-07-31): src/cli/lib/generate-page.sh assigns its own COMBINED_FILE global (the pdftk multistamp overlay-output path, ~line 162) on every PDF-format call, without `local` scoping. This previously collided with md2x.sh''s own COMBINED_FILE variable (the --single-page concatenation-target path) -- fixed for now by renaming md2x.sh''s variable to SINGLE_PAGE_COMBINED_FILE, but generate-page.sh''s COMBINED_FILE remains globally-scoped and is a latent collision risk for any future global also named COMBINED_FILE. Worth a small followup to `local`-scope it in generate-page.sh.'

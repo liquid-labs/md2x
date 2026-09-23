@@ -100,3 +100,28 @@ teardown() {
   assert_file_exists './output.pdf'
   assert_equal "$(md2x_pandoc_capture_count)" '1' 'pandoc invocation count'
 }
+
+# --- '--single-page' concatenation temp file (followup flSJ) ---------------------------
+
+@test "--single-page removes the concatenation file from the cwd by default" {
+  md2x_write_doc 'chapter1.md' 'Chapter One'
+  md2x_write_doc 'chapter2.md' 'Chapter Two'
+
+  md2x_run --single-page --title CombinedReport --output-path . chapter1.md chapter2.md
+
+  assert_success
+  assert_file_exists './CombinedReport.pdf'
+  assert_file_not_exists './CombinedReport.md'
+}
+
+@test "--single-page --keep-intermediate retains the concatenation file and announces it on stderr" {
+  md2x_write_doc 'chapter1.md' 'Chapter One'
+  md2x_write_doc 'chapter2.md' 'Chapter Two'
+
+  md2x_run --single-page --keep-intermediate --title CombinedReport --output-path . chapter1.md chapter2.md
+
+  assert_success
+  assert_file_exists './CombinedReport.pdf'
+  assert_file_exists './CombinedReport.md'
+  assert_stderr_contains "kept intermediate combined file: 'CombinedReport.md'"
+}
