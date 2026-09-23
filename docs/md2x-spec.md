@@ -83,7 +83,7 @@ md2x has two external surfaces: the CLI (`md2x`) and the Node library function (
 | `--keep-intermediate` | Retain the Pandoc log and PDF overlay file instead of deleting them after conversion. Also retains the CSS temp file, printing its path to stderr (not suppressed by `--quiet`) since — unlike the log and overlay — it lives outside the working/output tree, in `TMPDIR`. |
 | `-p`, `--output-path <path>` | Directory to write output files into. Defaults to `.`. |
 | `-F`, `--output-format <format>` | Output format: `pdf` (default), `html`, or `docx`. Any other value is a fatal error. |
-| `-t`, `--title <title>` | Document title, used for the output filename and the PDF header text. |
+| `-t`, `--title <title>` | Document title, used for the output filename and the PDF header text. Only applies when exactly one file is converted outside `--single-page` (a lone directly-named file, or a directory search resolving to exactly one file); combining `--title` with more than one file on that path is a fatal error. |
 | `--single-page` | Concatenate all input Markdown files into a single document before conversion. |
 | `--quiet` | Suppress the "Created `<file>`" status message. |
 | `--list-files` | Print only the generated file path(s) instead of "Created `<file>`". |
@@ -92,7 +92,7 @@ md2x has two external surfaces: the CLI (`md2x`) and the Node library function (
 | `--no-toc` | Force the automatically generated table of contents off, overriding both the default size heuristic and a `<!-- md2x:toc -->` marker in the source. |
 | `-h`, `--help` | Print usage text and exit `0`, without performing the binary preflight check or any conversion. |
 
-**Exit behavior.** Exits `0` on success. Exits `2` and names the missing binary when a required external binary is absent, or names the failing step when the automatic WeasyPrint bootstrap fails (see [General features](#general-features)). Exits non-zero with a descriptive message for any input path that is neither a file nor a directory, for an unrecognized `--output-format`, or for passing both `--toc` and `--no-toc` together (checked, and rejected, before any conversion work begins).
+**Exit behavior.** Exits `0` on success. Exits `2` and names the missing binary when a required external binary is absent, or names the failing step when the automatic WeasyPrint bootstrap fails (see [General features](#general-features)). Exits non-zero with a descriptive message for any input path that is neither a file nor a directory, for an unrecognized `--output-format`, for passing both `--toc` and `--no-toc` together, or for combining `--title` with more than one file outside `--single-page` (checked, and rejected, before any conversion work begins).
 
 ### Node library
 

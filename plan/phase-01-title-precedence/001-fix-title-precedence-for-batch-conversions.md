@@ -236,3 +236,76 @@ runs in parallel with anything else in this phase.
 - After the per-file loop's `TITLE_SET` guard and the `--help` text update (requirements 4–5).
 - After the `docs/md2x-spec.md` updates (requirement 6).
 - After `title-precedence.bats` is written and passing (requirement 7).
+
+## Status
+
+**Outcome: succeeded** (2026-07-31).
+
+All seven requirements implemented and verified:
+
+1. Confirmed live (via a temporary `echo "TITLE_SET=${TITLE_SET:-}" >&2` immediately after the
+   `setSimpleOptions` call, removed before finalizing) that `TITLE:t=`'s trailing `=` already
+   produces a `TITLE_SET` companion variable: `true` when `--title`/`-t` is given, empty
+   otherwise. No option-spec change was needed.
+2. Added a file-count computation (`TITLE_PRECEDENCE_FILE_COUNT`) for the non-`--single-page`,
+   non-stdin path: `list-count MD_FILES` plus, per `SEARCH_DIRS` entry, `find "${SEARCH_ROOT}"
+   -name "*.md" | wc -l`, the same `find` invocation the real processing pipe uses further down.
+3. Moved the input-path processing block (the stdin branch and the `while (( $# > 0 ))` args
+   loop, previously after `ensure-weasyprint`) up to directly after the `--toc`/`--no-toc`
+   conflict resolution, and added the `--title` conflict gate there: `echoerrandexit` when
+   `TITLE_SET` is non-empty and the computed count exceeds 1, before `OUTPUT_PATH`'s default
+   assignment and `ensure-weasyprint`. Confirmed neither reads the moved block's variables and
+   the moved block reads neither of them, so the reorder is safe in both directions.
+
+   **Deviation from the task doc's stated rationale, not from its required behavior (documented,
+   not silent).** Requirement 2 asserted that a plain `find ... | wc -l` per root "cannot itself
+   trip `errexit` under `pipefail`... because `wc -l` always exits 0." Empirically this is false:
+   under `pipefail`, a failing `find` (e.g. permission-denied on an unreadable search root) makes
+   the whole `find | wc -l` pipeline's own exit status non-zero even though `wc -l` itself
+   succeeds, and that non-zero status trips the script's top-level `errexit` the moment it's
+   consumed on the right-hand side of an arithmetic assignment — confirmed both with a minimal
+   reproduction script and by the fact that implementing requirement 2 literally (without a
+   guard) broke `exit-codes.bats`'s two pre-existing "unreadable search root" cases (they expect
+   `assert_success`, since the real processing pipe further below is designed to skip an
+   unreadable root with a stderr notice rather than abort). Fixed in scope by appending `|| true`
+   to the `find | wc -l` pipeline inside the count computation only — the real processing pipe's
+   own `find` invocation and its documented abort/continue semantics (followup 8ZmD) are
+   untouched. All five `exit-codes.bats` cases, including both unreadable-root cases, pass
+   against the final build.
+4. Changed the per-file loop's `TITLE=$(basename "${MD_FILE}" .md)` to `[[ -n "${TITLE_SET:-}"
+   ]] || TITLE=$(basename "${MD_FILE}" .md)`. Requirement 3's upfront gate guarantees at most one
+   file reaches this loop whenever `TITLE_SET` is set, so `TITLE` stays pinned to the explicit
+   value for the loop's single iteration; `generate-page()` derives both the output filename and
+   the `--infer-title` metadata from this same `TITLE`, so no `generate-page.sh` change was
+   needed.
+5. Rewrote the `--help` heredoc's `-t, --title <title>` entry to state the new precedence:
+   honored only when exactly one file will be converted outside `--single-page`, fatal with more
+   than one file on that path. Matched the existing two-column layout and wrap width.
+6. Updated `docs/md2x-spec.md`: the `-t`/`--title` API table row now states the single-file
+   precedence and the multi-file fatal case; the CLI exit-behavior sentence now names the new
+   fatal case, matching its existing "checked, and rejected, before any conversion work begins"
+   framing. Skimmed UC3/UC4 and confirmed neither implies uniform `--title` behavior across a
+   batch outside `--single-page`, so neither needed a change. `README.md`'s CLI reference table
+   was left untouched, per the task doc's Assumptions and this scope's exclusion — flagged below
+   as a candidate follow-up, not folded into this task.
+7. Added `src/cli/test/bats/title-precedence.bats` (new file) with 8 cases: a single
+   directly-named file honoring `--title` (plus an `--infer-title` variant asserting the captured
+   pandoc metadata), a directory search resolving to exactly one file honoring `--title`, multiple
+   directly-named files with `--title` failing fatally, a multi-file directory search with
+   `--title` failing fatally, two no-`--title` regression controls (multiple directly-named files;
+   multi-file directory search) confirming the existing basename-per-file behavior is unchanged,
+   and a mixed-source case (one directly-named file plus a directory search, combined count > 1)
+   directly exercising requirement 2's summing across both sources.
+
+Affected source files: `src/cli/md2x.sh`, `docs/md2x-spec.md`,
+`src/cli/test/bats/title-precedence.bats`.
+
+Validation: `make test` (`test-cli` 141/141 including the new `title-precedence.bats`'s 8 cases,
+`test-node` 23/23) and `make lint` both pass. All manual smoke checks from the `## Validation`
+section were run against a local build and match the specified outcomes: `--title Foo report.md`
+produces `Foo.pdf`; `--title Foo report.md notes.md` exits non-zero, names `--title`/`-t` on
+stderr, and creates neither `Foo.pdf` nor `report.pdf`/`notes.pdf`; `report.md notes.md` with no
+`--title` still produces `report.pdf` and `notes.pdf`; `--help | grep -A2 -- '-t, --title'`
+reflects the new precedence wording. Both `grep -n` checks (`TITLE_SET` in `src/cli/md2x.sh`;
+`--title` in `docs/md2x-spec.md`) show the expected lines. The existing `--infer-title` cases in
+`pandoc-args.bats` and the `--title` cases in `single-page-and-stdin.bats` pass unmodified.
