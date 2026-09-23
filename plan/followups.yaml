@@ -68,7 +68,7 @@ items:
       tags:
         - type:ambiguity
         - plan/phase:doc-updates
-        - priority:unspecified
+        - priority:low
         - effort:unspecified
       text: 'Judgment call surfaced for visibility (not requiring action): decided not to add a new use case or Constraints/assumptions entry in docs/md2x-spec.md for the marker, since the rewritten General-features bullet already documents it behaviorally. A reviewer could reasonably prefer an explicit constraints entry instead.'
     - title: The task doc's requirement 2 contained an inc
