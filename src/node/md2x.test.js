@@ -88,6 +88,19 @@ describe('md2x', () => {
       expect(command).toBe("npx md2x --list-files --output-format 'pdf' 'a.md' 'b.md' 'c dir/d.md'")
     })
 
+    // followup GuQR: '[]' is truthy, so 'sources: []' still takes the truthy branch of
+    // 'sources ? sources.map(shellQuote).join(' ') : ''', but '[].map(shellQuote).join(' ')' itself evaluates to
+    // '', the same empty sourceSpec the falsy branch would produce. So no positional source argument is emitted at
+    // all -- not a single empty-quoted "''" argument. Confirms the command ends with a bare trailing space and
+    // carries zero positional source args.
+    test('emits zero positional source args for an empty sources array (followup GuQR, locked in)', () => {
+      md2x({ sources : [] })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command).toBe("npx md2x --list-files --output-format 'pdf' ")
+      expect(command.endsWith("''")).toBe(false)
+    })
+
     // 'sourceSpec' is built by escaping and single-quoting each source individually and space-joining the result,
     // so a lone '-' source becomes the quoted string "'-'". The default-title check compares against that quoted
     // form, so the 'Report' default applies for a lone '-' (stdin) source.
