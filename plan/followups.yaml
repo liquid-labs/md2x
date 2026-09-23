@@ -86,7 +86,7 @@ items:
       tags:
         - type:ambiguity
         - plan/phase:title-precedence
-        - priority:unspecified
+        - priority:medium
         - effort:unspecified
       text: 'Surfaced during title-precedence planning (2026-07-31): README.md''s CLI reference table carries the same stale "-t/--title ... used for the output filename and the PDF header text" wording that docs/md2x-spec.md''s API table had (now being corrected there by plan/title-precedence to document the single-file-only precedence and the multi-file fatal-error case). README.md was deliberately left out of that plan''s scope. Worth a small followup to bring README.md''s row in line once the spec wording lands.'
     - title: generate-page.sh COMBINED_FILE not local
