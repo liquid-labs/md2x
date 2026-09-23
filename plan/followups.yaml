@@ -9,15 +9,6 @@ items:
         - priority:low
         - effort:unspecified
       text: 'Validation check 6 (python3 preflight failure) was not exercised live: brew''s self-location depends on /opt/homebrew/bin staying on PATH, which also hosts python3/gs/pandoc on this dev machine, so a live PATH-exclusion test could not be safely constructed. Verified by code inspection (identical preflight-loop idiom as gs/pandoc/pdftk) instead. Recommend re-verifying live in an environment where python3 is not colocated with brew/gs/pandoc.'
-    - title: 'Informational only: WEASYPRINT_LOCK_TIMEOUT_S'
-      id: ZP4P
-      date: "2026-07-30"
-      tags:
-        - type:ambiguity
-        - plan/phase:resolve-followups
-        - priority:low
-        - effort:unspecified
-      text: 'Informational only: WEASYPRINT_LOCK_TIMEOUT_SECS=180 and WEASYPRINT_LOCK_POLL_SECS=1 are fixed constants, not exposed via env-var override, matching the file''s existing style. Worth a maintainer note if future needs (e.g. CI wanting a shorter timeout) arise, but out of this task''s scope.'
     - title: WeasyPrint lock failure misdiagnosis
       id: zwH4
       date: "2026-07-30"
