@@ -18,15 +18,6 @@ items:
         - priority:low
         - effort:unspecified
       text: 'Phase-01 (resolve-followups) phase-review correctness lens found (low confidence): in src/cli/lib/ensure-weasyprint.sh''s cold-bootstrap lock loop (lines ~85-95), every `mkdir "${WEASYPRINT_LOCK_DIR}"` failure is treated identically as "another process holds the lock" and polled for up to the full 180s timeout before reporting a stale-lock message. If mkdir instead fails for an unrelated, persistent reason (e.g. unwritable $HOME), the process still busy-waits the full 180s and then reports a misleading diagnosis pointing at the wrong remediation (rm -rf ~/.md2x-venv.lock, which wouldn''t fix a permissions issue). Worth a maintainer fix: distinguish EEXIST-style contention (confirm via `[[ -d "${WEASYPRINT_LOCK_DIR}" ]]` after a failed mkdir) from other mkdir failure modes, and fail fast with an accurate message on the latter.'
-    - title: Task doc's 'Mode overrides' bullet ('--mode o
-      id: ntBH
-      date: "2026-07-30"
-      tags:
-        - type:ambiguity
-        - plan/phase:markdown-toc-generation
-        - priority:low
-        - effort:unspecified
-      text: 'Task doc''s ''Mode overrides'' bullet (''--mode on emits a TOC for a one-heading, one-line document'') is in tension with the toc-defaults note''s unconditional document-title-exclusion rule: a genuine one-heading document can never produce a non-empty TOC under any mode, since its sole heading is always the excluded title. Resolved by testing the real intent (mode overriding the size-based auto-suppress heuristic) against the smallest document with a non-title heading; documented in the bats test''s inline comment and the task doc''s Status/Decisions entry. Flagging in case the task doc bullet wording should be tightened for future readers -- implemented behavior is spec-correct, no code defect.'
     - title: toc-preprocess slug collision probe O(d²)
       id: psgq
       date: "2026-07-30"
