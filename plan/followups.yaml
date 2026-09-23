@@ -80,15 +80,6 @@ items:
         - priority:low
         - effort:unspecified
       text: The task doc's requirement 2 contained an incorrect technical claim about pipefail/wc -l interaction (a plain find | wc -l pipeline can still trip errexit under pipefail via a failing find, contrary to the doc's claim) — worth a note for future task-doc authors relying on similar reasoning about errexit/pipefail with wc -l-terminated pipelines.
-    - title: README --title/-t row has stale wording
-      id: Qa0V
-      date: "2026-07-31"
-      tags:
-        - type:ambiguity
-        - plan/phase:title-precedence
-        - priority:medium
-        - effort:unspecified
-      text: 'Surfaced during title-precedence planning (2026-07-31): README.md''s CLI reference table carries the same stale "-t/--title ... used for the output filename and the PDF header text" wording that docs/md2x-spec.md''s API table had (now being corrected there by plan/title-precedence to document the single-file-only precedence and the multi-file fatal-error case). README.md was deliberately left out of that plan''s scope. Worth a small followup to bring README.md''s row in line once the spec wording lands.'
     - title: generate-page.sh COMBINED_FILE not local
       id: XFOb
       date: "2026-07-31"
