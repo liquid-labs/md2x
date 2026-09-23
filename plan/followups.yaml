@@ -94,6 +94,6 @@ items:
       date: "2026-07-31"
       tags:
         - type:bug
-        - priority:unspecified
+        - priority:medium
         - effort:unspecified
       text: 'Surfaced while fixing followup flSJ (2026-07-31): src/cli/lib/generate-page.sh assigns its own COMBINED_FILE global (the pdftk multistamp overlay-output path, ~line 162) on every PDF-format call, without `local` scoping. This previously collided with md2x.sh''s own COMBINED_FILE variable (the --single-page concatenation-target path) -- fixed for now by renaming md2x.sh''s variable to SINGLE_PAGE_COMBINED_FILE, but generate-page.sh''s COMBINED_FILE remains globally-scoped and is a latent collision risk for any future global also named COMBINED_FILE. Worth a small followup to `local`-scope it in generate-page.sh.'
