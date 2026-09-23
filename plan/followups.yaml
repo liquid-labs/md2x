@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Validation check 6 (python3 preflight failure
-      id: egW0
-      date: "2026-07-29"
-      tags:
-        - type:ambiguity
-        - plan/phase:weasyprint-pdf-engine
-        - priority:low
-        - effort:unspecified
-      text: 'Validation check 6 (python3 preflight failure) was not exercised live: brew''s self-location depends on /opt/homebrew/bin staying on PATH, which also hosts python3/gs/pandoc on this dev machine, so a live PATH-exclusion test could not be safely constructed. Verified by code inspection (identical preflight-loop idiom as gs/pandoc/pdftk) instead. Recommend re-verifying live in an environment where python3 is not colocated with brew/gs/pandoc.'
     - title: WeasyPrint lock failure misdiagnosis
       id: zwH4
       date: "2026-07-30"
