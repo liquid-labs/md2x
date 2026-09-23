@@ -15,7 +15,7 @@ items:
       tags:
         - type:ambiguity
         - plan/phase:resolve-followups
-        - priority:unspecified
+        - priority:low
         - effort:unspecified
       text: 'Informational only: WEASYPRINT_LOCK_TIMEOUT_SECS=180 and WEASYPRINT_LOCK_POLL_SECS=1 are fixed constants, not exposed via env-var override, matching the file''s existing style. Worth a maintainer note if future needs (e.g. CI wanting a shorter timeout) arise, but out of this task''s scope.'
     - title: md2x.js sources:[] edge case behavior change
