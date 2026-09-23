@@ -18,7 +18,7 @@ phases:
             branch: phase-01-task-01-fix-title-precedence-for-batch
             commit:
                 - 86be541
-            merge: null
+            merge: be9c70d81837d0fe258fb7bdfde6d59a3d7d7bdf
     - number: 2
       slug: doc-updates
       title: Documentation Updates
