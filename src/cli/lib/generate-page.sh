@@ -159,7 +159,7 @@ generate-page() {
       -c "${FOOTER_STRING}"         \
       -q > /dev/null
 
-    COMBINED_FILE="${TITLE}-combined.${OUTPUT_FORMAT}"
+    local COMBINED_FILE="${TITLE}-combined.${OUTPUT_FORMAT}"
 
     pdftk "${BASE_OUTPUT}" multistamp "${OVERLAY_OUTPUT}" output "${COMBINED_FILE}"
     # mv "${COMBINED_FILE}" "${OUTPUT_PATH}/${TITLE}.${OUTPUT_FORMAT}"
