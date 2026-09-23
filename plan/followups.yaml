@@ -59,7 +59,7 @@ items:
       tags:
         - plan/phase:phase-01-markdown-toc-generation
         - type:optimization
-        - priority:unspecified
+        - priority:low
         - effort:unspecified
       text: Surfaced by the phase-1 boundary review's efficiency lens (low confidence, not blocking). allocate_slug() in src/cli/lib/toc-preprocess.py restarts its collision probe from n=1 on every call for a given base slug, so a document with many headings that flatten to the same slug text (e.g. many identically-worded or empty-text headings) makes each successive duplicate probe linearly through all prior duplicates before finding a free base-N -- O(d^2) in the number of duplicates d for that base, rather than O(d). This mirrors Pandoc's own documented collision-probing behavior (plan/notes/pandoc-gfm-slug-algorithm.md), so it's likely intentional parity rather than an accidental regression, and real documents rarely carry enough same-text headings for this to matter. If this ever needs to scale to documents with large numbers of duplicate heading texts, track a per-base "next probe index" in a dict alongside `used` so each call starts its probe where the previous duplicate for that base left off, preserving O(1) amortized per call instead of O(d) per call.
     - title: 'TOC marker: no spec use case added'
