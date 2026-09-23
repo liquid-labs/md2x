@@ -24,7 +24,7 @@ items:
       tags:
         - type:bug
         - plan/phase:resolve-followups
-        - priority:unspecified
+        - priority:medium
         - effort:unspecified
       text: 'Phase-01 (resolve-followups) phase-review correctness lens found: in src/node/md2x.js, the pre-diff sourceSpec construction (`sources ? \`''${sources.join("'' ''")}''\` : ''''`) took the truthy branch for `sources: []` and produced a literal empty-quoted shell argument (`''''`), which the CLI received as one empty positional argument. Task 003''s shellQuote refactor (`sources ? sources.map(shellQuote).join('' '') : ''''`) instead produces a genuinely empty string for `sources: []`, so no source argument is emitted at all — a materially different CLI code path (zero positional args vs one empty one). Neither the pre- nor post-diff test suite exercises this exact edge case, so it wasn''t caught by coverage. Worth a maintainer decision: pick the intended behavior for `sources: []` deliberately (preserve the old empty-arg behavior, or keep the new no-arg behavior) and add a Jest case covering it.'
     - title: WeasyPrint lock failure misdiagnosis
