@@ -305,6 +305,46 @@ weasyprint_lock_assert_no_overlap() {
   assert_file_not_exists "${WPL_HOME}/.md2x-venv.lock"
 }
 
+@test "weasyprint-bootstrap-locking: a persistent mkdir failure (not contention) fails fast without recommending 'rm -rf'" {
+  # Simulate 'mkdir "${WEASYPRINT_LOCK_DIR}"' failing for a persistent, non-contention
+  # reason: a plain file (not a directory a live or dead process created) already
+  # occupies the lock path. 'mkdir' fails EEXIST, and immediately afterward
+  # '[[ -d "${WEASYPRINT_LOCK_DIR}" ]]' is false (it's a file, not a directory) -- the
+  # exact signal 'ensure-weasyprint()' uses to distinguish this from real contention.
+  # Deliberately does NOT chmod HOME read-only to force the failure: other tooling the
+  # CLI's preflight legitimately writes under HOME (e.g. Homebrew's cache), so that
+  # would fail the run for an unrelated reason before ever reaching the lock 'mkdir'.
+  # Proves the fix: this must fail fast (well under 'WEASYPRINT_LOCK_TIMEOUT_SECS', not
+  # busy-wait the full timeout) and must not suggest 'rm -rf' on the lock path as
+  # remediation -- there is no stale lock directory to clear here.
+  : > "${WPL_HOME}/.md2x-venv.lock"
+
+  md2x_write_doc 'report.md'
+
+  local start end elapsed status_val=0
+  start="$(date +%s)"
+  HOME="${WPL_HOME}" MD2X_TEST_WPL_LOG="${WPL_LOG}" MD2X_TEST_WPL_ID='mkdir-fail' \
+    "${MD2X_BIN}" --flatten-dirs --output-path "${WPL_TMPDIR}/out-mkdir-fail" report.md \
+    > "${WPL_TMPDIR}/stdout-mkdir-fail" 2> "${WPL_TMPDIR}/stderr-mkdir-fail" || status_val=$?
+  end="$(date +%s)"
+  elapsed=$(( end - start ))
+
+  local stderr_content
+  stderr_content="$(cat "${WPL_TMPDIR}/stderr-mkdir-fail")"
+
+  [[ "${status_val}" -eq 2 ]] \
+    || md2x_fail "expected exit status 2, got ${status_val}" "stderr: ${stderr_content}"
+
+  (( elapsed < 30 )) \
+    || md2x_fail "expected a fast fail-fast exit, but took ${elapsed}s (close to the 180s lock timeout -- looks like it busy-waited instead of failing fast)"
+
+  [[ "${stderr_content}" == *"failed to create the weasyprint bootstrap lock directory"* ]] \
+    || md2x_fail "expected stderr to describe the mkdir failure" "stderr: ${stderr_content}"
+
+  [[ "${stderr_content}" != *'rm -rf'* ]] \
+    || md2x_fail "expected stderr NOT to recommend 'rm -rf' as remediation for a persistent mkdir failure" "stderr: ${stderr_content}"
+}
+
 @test "weasyprint-bootstrap-locking: warm path (pre-existing weasyprint) never touches the lock" {
   mkdir -p "${WPL_HOME}/.md2x/venv/bin"
   cat > "${WPL_HOME}/.md2x/venv/bin/weasyprint" <<'EOF'
