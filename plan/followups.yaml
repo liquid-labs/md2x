@@ -41,7 +41,7 @@ items:
       date: "2026-07-30"
       tags:
         - type:bug
-        - priority:unspecified
+        - priority:medium
         - effort:unspecified
       text: 'Discovered during toc-generation planning (2026-07-30). src/cli/lib/generate-page.sh (~line 152) reassigns the caller''s global COMBINED_FILE variable for its own PDF-overlay merge target, reusing the same name md2x.sh''s --single-page path uses for the concatenated-input file. Harmless today because the two uses don''t currently overlap in a way that causes observable breakage, but it''s a live shadowing hazard: a future change to either the --single-page flow or generate-page()''s overlay merge could silently clobber the other''s value. Worth renaming one of the two variables to remove the collision.'
     - title: Task doc's 'Mode overrides' bullet ('--mode o
