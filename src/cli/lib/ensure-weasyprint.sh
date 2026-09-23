@@ -69,6 +69,23 @@ ensure-weasyprint-lock-timeout-fail() {
   exit 2
 }
 
+# Reports that 'mkdir "${WEASYPRINT_LOCK_DIR}"' failed for a reason other than lock
+# contention -- the directory does not exist immediately after the failed 'mkdir', so this
+# is not another process holding the lock (that case is handled by the poll/wait loop
+# instead; see the '[[ -d ... ]]' check at the call site). A persistent failure like an
+# unwritable '${HOME}', a full disk, or a permissions problem would never be resolved by
+# polling, so this fails fast rather than busy-waiting the full
+# 'WEASYPRINT_LOCK_TIMEOUT_SECS'. Deliberately does NOT suggest removing
+# '${WEASYPRINT_LOCK_DIR}' as a remediation, unlike 'ensure-weasyprint-lock-timeout-fail()'
+# above -- there is no stale lock to clear here, and 'rm -rf' would not fix a permissions or
+# disk-space problem.
+ensure-weasyprint-lock-mkdir-fail() {
+  echo "md2x: failed to create the weasyprint bootstrap lock directory '${WEASYPRINT_LOCK_DIR}'." >&2
+  echo "md2x: likely cause: an unwritable '\${HOME}' (${HOME}), a full disk, or a permissions problem -- not lock contention." >&2
+  echo "md2x: check that '${HOME}' is writable and has free space, then retry." >&2
+  exit 2
+}
+
 # Ensures '${WEASYPRINT_BIN}' exists and is executable, installing it into '${VENV_DIR}' on first use. Callers must
 # gate calling this on PDF output only -- HTML/DOCX conversions never need WeasyPrint. Every byte any of the
 # subprocesses below write goes to stderr, never stdout: stdout is a parsed data channel ('--list-files' and
@@ -84,6 +101,13 @@ ensure-weasyprint() {
   # (bounded by WEASYPRINT_LOCK_TIMEOUT_SECS) for the winner to finish.
   local waited=0
   while ! mkdir "${WEASYPRINT_LOCK_DIR}" 2>/dev/null; do
+    # A failed 'mkdir' means either another process holds the lock (the directory exists
+    # now -- true contention, handled by the poll/wait below) or 'mkdir' failed for some
+    # unrelated, persistent reason (e.g. an unwritable '${HOME}', a full disk, permissions)
+    # that polling would never resolve. Distinguish the two so a persistent failure fails
+    # fast instead of busy-waiting the full timeout.
+    [[ -d "${WEASYPRINT_LOCK_DIR}" ]] || ensure-weasyprint-lock-mkdir-fail
+
     # The winner (or another waiter's winner, if we're the Nth loser) may have finished
     # while we were polling -- recheck before deciding whether to keep waiting.
     [[ -x "${WEASYPRINT_BIN}" ]] && return 0
