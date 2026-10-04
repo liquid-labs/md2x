@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Bun blocked one postinstall script during 'bu
-      id: Iud2
-      date: "2026-10-04"
-      tags:
-        - type:ambiguity
-        - plan/phase:bun-migration
-        - priority:unspecified
-        - effort:unspecified
-      text: Bun blocked one postinstall script during 'bun add' (see 'bun pm untrusted'); which package was not investigated. Lint and qa work without it, but it may merit a look.
     - title: Task 003's grep check references eslint.confi
       id: 5VxP
       date: "2026-10-04"
@@ -45,4 +36,9 @@ items:
         - plan/phase:bun-migration
         - effort:unspecified
       text: 'The Makefile runs bash-rollup, bats and eslint through BUNX:=bunx (test-cli, lint, lint-fix targets), all devDependencies. If node_modules is absent or incomplete (fresh checkout that skipped `bun install`), bunx fetches the latest unpinned version from the registry and executes it, bypassing bun.lock (eslint could pull a major above ^9). The release path is exposed the same way: scripts/release.sh runs `bun pm version`, whose preversion hook runs `make all && make qa`. npm exec had the same fallback, so this is not a regression. Hardening options: add `bun install --frozen-lockfile` to the release.sh pre-flight, and/or use `bunx --no-install` or node_modules/.bin/<tool> so a missing install fails instead of fetching.'
-closed: []
+closed:
+    - id: Iud2
+      title: Bun blocked one postinstall script during 'bu
+      disposition: dismissed
+      reason: 'Not actionable: blocked postinstall is most likely unrs-resolver via eslint-plugin-import-x; native bindings arrive via optionalDependencies, lint/qa/frozen install pass without it, and leaving it blocked is the safe default (do not add trustedDependencies).'
+      date: "2026-10-04"
