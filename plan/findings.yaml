@@ -1,14 +1,5 @@
 version: 2
-items:
-    - title: release.sh --dry-run wipes node_modules
-      id: L6HU
-      date: "2026-10-04"
-      tags:
-        - type:bug
-        - priority:low
-        - plan/phase:remediation-02
-        - effort:unspecified
-      text: 'scripts/release.sh (lines ~68-72) runs `rm -rf node_modules` and the frozen `bun install` unconditionally, before the DRY_RUN branches and the resume section, so `--dry-run` now deletes and reinstalls node_modules (needs network; if the install fails the user is left with no node_modules, though the Makefile guard then fails closed with a hint). The install already ran under dry-run before the change, so this only widens a side effect in a mode users expect to be non-mutating (flagged by both the correctness and security lenses; neither is a vulnerability). Options: skip the rm (and possibly the install) under DRY_RUN via the script''s `act` helper, or state in RELEASING.md that a dry run also reinstalls.'
+items: []
 closed:
     - id: Iud2
       title: Bun blocked one postinstall script during 'bu
@@ -49,4 +40,9 @@ closed:
       title: Missing node_modules error lacks bun install
       disposition: fixed
       ref: phase-03-remediation-02/001-install-state-guards.md
+      date: "2026-10-04"
+    - id: L6HU
+      title: release.sh --dry-run wipes node_modules
+      disposition: dismissed
+      reason: 'By design: dry-run reaches bun pm version, whose preversion hook (make all && make qa) needs the dev tools, so it needs the same fresh frozen install as a real release; skipping it would test a different tree. Failed install fails closed via the Makefile guard.'
       date: "2026-10-04"
