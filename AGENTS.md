@@ -78,5 +78,5 @@ md2x({ sources: ['report.md'] })
 - [docs/md2x-spec.md](./docs/md2x-spec.md) — full specification: use cases, behavioral requirements, and CLI/Node API surface.
 - [docs/project-structure.md](./docs/project-structure.md) — file and directory layout.
 - [docs/architecture.md](./docs/architecture.md) — design-level material, including the PDF header/footer overlay mechanism.
-- [RELEASING.md](./RELEASING.md) — release procedure: version bump, changelog, build, tag, and npm publish.
+- [RELEASING.md](./RELEASING.md) — release procedure: version bump, build, tag, and npm publish.
 - [plan/](./plan/) — current development plan and followups, when active.

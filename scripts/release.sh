@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Release @liquid-labs/md2x: bump, changelog, commit, tag, push, npm publish, GitHub release.
+# Release @liquid-labs/md2x: bump, commit, tag, push, npm publish, GitHub release.
 #
 # Usage: scripts/release.sh [--dry-run] <patch|minor|major|prerelease|X.Y.Z[-pre.N]>
 #
@@ -11,7 +11,7 @@ set -euo pipefail
 
 DRY_RUN=0
 BUMP=''
-RELEASE_BRANCH="${RELEASE_BRANCH:-master}"
+RELEASE_BRANCH="${RELEASE_BRANCH:-main}"
 REMOTE=origin
 
 for arg in "$@"; do
@@ -53,7 +53,7 @@ if [[ "$NEW" == "$CURRENT" ]] && git rev-parse -q --verify "refs/tags/v$NEW" >/d
   say "Resuming release of v$NEW (commit and tag already exist)"
 fi
 
-# --- bump, build, QA, changelog, commit, tag ---------------------------------
+# --- bump, build, QA, commit, tag ---------------------------------
 if (( ! RESUME )); then
   say "Bumping version (runs 'make all && make qa' via npm's preversion)"
   npm version "${NEW:-$BUMP}" --no-git-tag-version >/dev/null
@@ -61,19 +61,11 @@ if (( ! RESUME )); then
   TAG="v$NEW"
   git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && { echo "Tag $TAG already exists." >&2; git checkout -- package.json package-lock.json; exit 1; }
 
-  say "Updating CHANGELOG.md for $NEW"
-  LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
-  RANGE=${LAST_TAG:+$LAST_TAG..HEAD}
-  {
-    printf '\n## Release %s\n' "$NEW"
-    git log --no-merges --pretty='* %s' ${RANGE:-HEAD}
-  } >> CHANGELOG.md
-
   if (( DRY_RUN )); then
     say "Dry run: build and QA passed for $NEW; reverting local edits"
-    git checkout -- package.json package-lock.json CHANGELOG.md
+    git checkout -- package.json package-lock.json
   else
-    git add package.json package-lock.json CHANGELOG.md
+    git add package.json package-lock.json
     git commit -m "release: $NEW"
     git tag -a "$TAG" -m "$TAG"
   fi
@@ -111,13 +103,13 @@ fi
 
 # --- GitHub release -----------------------------------------------------------
 say "Creating GitHub release $TAG"
-NOTES=$(awk -v h="## Release $NEW" '$0==h{f=1;next} /^## /{f=0} f' CHANGELOG.md)
+NOTES=$(awk -v h="## Release $NEW" '$0==h{f=1;next} /^## /{f=0} f')
 if (( DRY_RUN )); then
-  echo "[dry-run] would run: gh release create $TAG --title $TAG --verify-tag ${PRERELEASE_FLAG[*]:-}"
+  echo "[dry-run] would run: gh release create $TAG --title $TAG ${NOTES_FLAGS[*]} --verify-tag ${PRERELEASE_FLAG[*]:-}"
 elif gh release view "$TAG" >/dev/null 2>&1; then
   echo "Release exists; skipping."
 else
-  gh release create "$TAG" --title "$TAG" --notes "${NOTES:-Release $NEW}" --verify-tag ${PRERELEASE_FLAG[@]+"${PRERELEASE_FLAG[@]}"}
+  gh release create "$TAG" --title "$TAG" "${NOTES_FLAGS[@]}" --verify-tag ${PRERELEASE_FLAG[@]+"${PRERELEASE_FLAG[@]}"}
 fi
 
 say "Done$( (( DRY_RUN )) && echo " (dry run)"): $TAG"
