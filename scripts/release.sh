@@ -14,6 +14,19 @@ BUMP=''
 RELEASE_BRANCH="${RELEASE_BRANCH:-main}"
 REMOTE=origin
 
+# Release-note skip list: first-parent commits whose subject matches any of these shell
+# globs are bookkeeping noise and are left out of the generated GitHub release notes.
+# Add a pattern here to filter more. (The "release: <version>" commit is always skipped.)
+NOTES_SKIP_PATTERNS=(
+  'release: *'
+  'plan:*' 'plan(*' 'plan/*'             # plan bookkeeping, incl. "plan: remove followup [x]"
+  'wave(*'                                # wave back-pointers
+  'what-next*' 'refresh what-next*'       # what-next cache refreshes
+  '*(pre-merge sync)*'
+  "Merge branch 'plan/*"  "Merge branch 'plan-*"  'Merge plan branch*'
+  'merging auto-generated release branch*'  # legacy liq release merges
+)
+
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
@@ -112,7 +125,9 @@ trap 'rm -f "$NOTES_FILE"' EXIT
 {
   while read -r sha; do
     subj=$(git log -1 --format=%s "$sha")
-    case "$subj" in "release: "*|*"(pre-merge sync)"*) continue ;; esac
+    skip=0
+    for pat in "${NOTES_SKIP_PATTERNS[@]}"; do [[ "$subj" == $pat ]] && { skip=1; break; }; done
+    (( skip )) && continue
     if [[ $(git rev-list --parents -n1 "$sha" | wc -w) -gt 2 && "$subj" =~ ^Merge\ branch\ \'([^\']+)\' ]]; then
       name=${BASH_REMATCH[1]##*/}; name=${name//[-_]/ }
       body=$(git log -1 --format=%b "$sha" | sed -n '/./{p;q;}')
