@@ -6,3 +6,7 @@ phases:
       slug: correctness-and-regression-tests
       title: Correctness and Regression Tests
       tasks: []
+    - number: 2
+      slug: interface-contract
+      title: Interface Contract
+      tasks: []
