@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, jest, mock, test } from 'bun:test'
+import fs from 'node:fs'
 import fsPath from 'node:path'
 
 // Manual factory mock: shelljs is CommonJS, imported as a default import, and mutated at module load
@@ -19,6 +20,10 @@ mock.module('shelljs', () => ({
 const { default : shell } = await import('shelljs')
 const { md2x } = await import('./md2x')
 
+// The repo bin/md2x is a gitignored build output, so 'fs.existsSync' is stubbed to report only this path as present.
+const BIN_PATH = fsPath.join(import.meta.dir, '..', '..', 'bin', 'md2x')
+const BIN = `'${BIN_PATH}'` // shellQuote(BIN_PATH); the path contains no single quotes
+
 // Builds a fake shelljs 'exec' result: 'code'/'stderr' as plain properties (md2x.js reads them directly) and
 // 'toString()' standing in for shelljs' ShellString-like stdout accessor.
 const mockExecResult = (code, stdout = '', stderr = '') => ({
@@ -29,9 +34,11 @@ const mockExecResult = (code, stdout = '', stderr = '') => ({
 
 describe('md2x', () => {
   let shellStringTo
+  let existsSpy
 
   beforeEach(() => {
     jest.clearAllMocks()
+    existsSpy = jest.spyOn(fs, 'existsSync').mockImplementation((path) => path === BIN_PATH)
     shell.exec.mockReturnValue(mockExecResult(0))
     shell.tempdir.mockReturnValue('/tmp')
     shellStringTo = jest.fn()
@@ -42,19 +49,40 @@ describe('md2x', () => {
     expect(typeof md2x).toBe('function')
   })
 
+  afterEach(() => {
+    existsSpy.mockRestore()
+  })
+
+  describe('bin resolution', () => {
+    test('invokes the resolved bin path directly, never via npx/bunx', () => {
+      md2x({ sources : ['a.md'] })
+
+      const [command] = shell.exec.mock.calls[0]
+      expect(command.startsWith(`${BIN} `)).toBe(true)
+      expect(command).not.toMatch(/\b(npx|bunx)\b/)
+    })
+
+    test('throws a clear error, without executing anything, when no bin can be found', () => {
+      existsSpy.mockImplementation(() => false)
+
+      expect(() => md2x({ sources : ['a.md'] })).toThrow(/Could not locate the md2x CLI executable/)
+      expect(shell.exec).not.toHaveBeenCalled()
+    })
+  })
+
   describe('argument marshaling', () => {
     test('applies only the always-on flags and the default output format when no options are set', () => {
       md2x({ sources : ['a.md'] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format 'pdf' 'a.md'")
+      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' 'a.md'`)
     })
 
     test('honors a non-default output format', () => {
       md2x({ sources : ['a.md'], format : 'html' })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format 'html' 'a.md'")
+      expect(command).toBe(`${BIN} --list-files --output-format 'html' 'a.md'`)
     })
 
     test.each([
@@ -68,7 +96,7 @@ describe('md2x', () => {
       md2x({ sources : ['a.md'], [option] : true })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(`npx md2x --list-files --output-format 'pdf' ${flag} 'a.md'`)
+      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' ${flag} 'a.md'`)
     })
 
     test('single-quotes title and output path and places them in source order', () => {
@@ -76,7 +104,7 @@ describe('md2x', () => {
 
       const [command] = shell.exec.mock.calls[0]
       expect(command).toBe(
-        "npx md2x --list-files --output-format 'pdf' --title 'My Report' --output-path './out dir' 'a.md'"
+        `${BIN} --list-files --output-format 'pdf' --title 'My Report' --output-path './out dir' 'a.md'`
       )
     })
 
@@ -84,7 +112,7 @@ describe('md2x', () => {
       md2x({ sources : ['a.md', 'b.md', 'c dir/d.md'] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format 'pdf' 'a.md' 'b.md' 'c dir/d.md'")
+      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' 'a.md' 'b.md' 'c dir/d.md'`)
     })
 
     // followup GuQR: '[]' is truthy, so 'sources: []' still takes the truthy branch of
@@ -96,7 +124,7 @@ describe('md2x', () => {
       md2x({ sources : [] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format 'pdf' ")
+      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' `)
       expect(command.endsWith("''")).toBe(false)
     })
 
@@ -107,7 +135,7 @@ describe('md2x', () => {
       md2x({ sources : ['-'] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format 'pdf' --title 'Report' '-'")
+      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' --title 'Report' '-'`)
     })
 
     // followup arUf: title/outputPath/sources are caller-supplied and were previously interpolated into raw
@@ -120,7 +148,7 @@ describe('md2x', () => {
 
       const [command] = shell.exec.mock.calls[0]
       expect(command).toBe(
-        "npx md2x --list-files --output-format 'pdf' --title 'O'\\''Brien'\\''s Report' 'a.md'"
+        `${BIN} --list-files --output-format 'pdf' --title 'O'\\''Brien'\\''s Report' 'a.md'`
       )
     })
 
@@ -129,7 +157,7 @@ describe('md2x', () => {
 
       const [command] = shell.exec.mock.calls[0]
       expect(command).toBe(
-        "npx md2x --list-files --output-format 'pdf'\\''; touch /tmp/pwned; '\\''' 'a.md'"
+        `${BIN} --list-files --output-format 'pdf'\\''; touch /tmp/pwned; '\\''' 'a.md'`
       )
     })
 
@@ -138,7 +166,7 @@ describe('md2x', () => {
 
       const [command] = shell.exec.mock.calls[0]
       expect(command).toBe(
-        "npx md2x --list-files --output-format 'pdf' --output-path './out'\\''; touch /tmp/pwned; '\\''' 'a.md'"
+        `${BIN} --list-files --output-format 'pdf' --output-path './out'\\''; touch /tmp/pwned; '\\''' 'a.md'`
       )
     })
 
@@ -146,7 +174,7 @@ describe('md2x', () => {
       md2x({ sources : ["a'.md", 'b.md'] })
 
       const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe("npx md2x --list-files --output-format 'pdf' 'a'\\''.md' 'b.md'")
+      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' 'a'\\''.md' 'b.md'`)
     })
   })
 
@@ -210,7 +238,7 @@ describe('md2x', () => {
       // The command template always inserts a space before the (here empty, since 'sources' is not given)
       // 'sourceSpec', and the staging-file append adds a second space, so two spaces separate the last flag from
       // the (now single-quoted, per followup arUf) staging file path.
-      expect(command).toBe(`npx md2x --list-files --output-format 'pdf' --title 'Title'  '${stagingFile}'`)
+      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' --title 'Title'  '${stagingFile}'`)
 
       expect(shell.rm).toHaveBeenCalledTimes(1)
       expect(shell.rm).toHaveBeenCalledWith('-r', stagingDir)
@@ -232,7 +260,7 @@ describe('md2x', () => {
       const [command] = shell.exec.mock.calls[0]
       const escapedStagingFile = `'${stagingFile.replace(/'/g, "'\\''")}'`
       expect(command).toBe(
-        `npx md2x --list-files --output-format 'pdf' --title 'O'\\''Brien'  ${escapedStagingFile}`
+        `${BIN} --list-files --output-format 'pdf' --title 'O'\\''Brien'  ${escapedStagingFile}`
       )
 
       expect(files).toEqual(["/out/O'Brien.pdf"])

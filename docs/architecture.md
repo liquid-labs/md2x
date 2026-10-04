@@ -27,7 +27,7 @@ flowchart TD
 
     CLIUser -->|"md2x &lt;files/dirs/-&gt; [flags]"| CLI
     NodeApp -->|"import { md2x }"| NodeWrapper["Node wrapper<br/>(src/node)"]
-    NodeWrapper -->|"shells out via shelljs<br/>(npx md2x ...)"| CLI
+    NodeWrapper -->|"shells out via shelljs<br/>(bin/md2x, by resolved path)"| CLI
 
     CLI["md2x CLI<br/>(bin/md2x, built from src/cli/*)"] --> Preflight{"pandoc, gs, pdftk, python3<br/>on PATH?"}
     Preflight -- missing --> Fail["exit 2,<br/>name missing binary"]
@@ -94,7 +94,7 @@ The cold path is guarded by a `mkdir`-based lock directory (`~/.md2x-venv.lock`,
 
 ### Node library wrapper
 
-`src/node/index.js` and `src/node/md2x.js` translate the JS options object into CLI flags and shell out to the built CLI (`npx md2x ...`) via `shelljs`, returning the generated file paths (equivalent to `--list-files` output) or throwing an `Error` carrying the exit code and stderr on failure. It is a pass-through, not a parallel implementation: the CLI is the single source of truth for conversion behavior, and the wrapper cannot expose functionality the CLI doesn't already provide as a flag.
+`src/node/index.js` and `src/node/md2x.js` translate the JS options object into CLI flags and shell out to the built CLI (`bin/md2x`, invoked by its resolved path relative to the package, never via npx/bunx; a missing bin is a clear error) via `shelljs`, returning the generated file paths (equivalent to `--list-files` output) or throwing an `Error` carrying the exit code and stderr on failure. It is a pass-through, not a parallel implementation: the CLI is the single source of truth for conversion behavior, and the wrapper cannot expose functionality the CLI doesn't already provide as a flag.
 
 ### Build pipeline
 
