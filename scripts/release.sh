@@ -69,7 +69,8 @@ fi
 # --- bump, build, QA, commit, tag ---------------------------------
 if (( ! RESUME )); then
   say "Bumping version (runs 'make all && make qa' via npm's preversion)"
-  npm version "${NEW:-$BUMP}" --no-git-tag-version >/dev/null
+  say "Building, then running the test suite and lint; this may take some time (output streams below)..."
+  npm version "${NEW:-$BUMP}" --no-git-tag-version   # stdout left visible so build/test progress streams
   NEW=$(node -p "require('./package.json').version")
   TAG="v$NEW"
   git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && { echo "Tag $TAG already exists." >&2; git checkout -- package.json package-lock.json; exit 1; }
