@@ -109,6 +109,7 @@ phases:
     - number: 3
       slug: remediation-02
       title: Remediation Round 2
+      diff_base: bcfa899fb1e42422be3271fc4b5cec7b1a319f10
       kind: remediation
       security_review: required
       tasks:
@@ -116,12 +117,14 @@ phases:
           slug: install-state-guards
           title: Force Clean Release Install And Add Missing node_modules Guard
           path: phase-03-remediation-02/001-install-state-guards.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: Release pre-flight now removes node_modules before bun install --frozen-lockfile (before bun pm version). Makefile adds a $(BIN_DIR)/% pattern rule as an order-only prerequisite so targets fail closed with a 'run bun install' hint when a dev tool is missing. src/node/md2x.js untouched.
           findings:
             - tnIj
             - VtSc
           git:
-            branch: null
-            commit: []
+            branch: plan/bun-migration-03-001
+            commit:
+                - ca6a28c
             merge: null
