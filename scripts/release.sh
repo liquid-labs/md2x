@@ -65,6 +65,9 @@ gh auth status >/dev/null 2>&1 || { echo "Not logged in to GitHub. Run 'gh auth 
 if (( ! DRY_RUN )) && [[ ! -t 0 ]]; then
   echo "npm publish may need a one-time code; run this script from an interactive terminal." >&2; exit 1
 fi
+# The preversion hook runs the dev tools from node_modules; install exactly what bun.lock pins
+# (aborts on a lockfile/package.json mismatch) before any version bump.
+bun install --frozen-lockfile || { echo "bun install --frozen-lockfile failed; fix bun.lock/package.json and re-run." >&2; exit 1; }
 
 # --- resolve version / resume -------------------------------------------------
 RESUME=0
