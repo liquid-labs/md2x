@@ -54,7 +54,7 @@ phases:
             branch: plan/bun-migration-01-004
             commit:
                 - 11fe130
-            merge: null
+            merge: a75c5c25cd87e842a2078c1d64d434fce344e46c
         - number: 5
           slug: end-to-end-verification
           title: End-to-End Verification of the Bun Migration
