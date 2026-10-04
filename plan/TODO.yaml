@@ -46,3 +46,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 5
+          slug: end-to-end-verification
+          title: End-to-End Verification of the Bun Migration
+          path: phase-01-bun-migration/005-end-to-end-verification.md
+          done: false
+          tier: sonnet-low
+          git:
+            branch: null
+            commit: []
+            merge: null
