@@ -18,15 +18,6 @@ items:
         - plan/phase:bun-migration
         - effort:unspecified
       text: package.json declares devDependency @stylistic/eslint-plugin ^5.10.0, but eslint.config.mjs never imports it; the @stylistic/* rules resolve to the copy bundled with neostandard 0.13 (2.11.0 in bun.lock). The declared version is not the one in use, so rule names or options valid in 5.x could silently differ. Drop the devDependency and regenerate bun.lock, or register the plugin explicitly in eslint.config.mjs so the declared version is the one that runs.
-    - title: bunx may fetch unpinned tools if no install
-      id: 65wX
-      date: "2026-10-04"
-      tags:
-        - type:security
-        - priority:low
-        - plan/phase:bun-migration
-        - effort:unspecified
-      text: 'The Makefile runs bash-rollup, bats and eslint through BUNX:=bunx (test-cli, lint, lint-fix targets), all devDependencies. If node_modules is absent or incomplete (fresh checkout that skipped `bun install`), bunx fetches the latest unpinned version from the registry and executes it, bypassing bun.lock (eslint could pull a major above ^9). The release path is exposed the same way: scripts/release.sh runs `bun pm version`, whose preversion hook runs `make all && make qa`. npm exec had the same fallback, so this is not a regression. Hardening options: add `bun install --frozen-lockfile` to the release.sh pre-flight, and/or use `bunx --no-install` or node_modules/.bin/<tool> so a missing install fails instead of fetching.'
     - title: src/node/md2x.js shells out via unpinned npx
       id: ya0J
       date: "2026-10-04"
@@ -64,4 +55,9 @@ closed:
       title: Task 003's grep check references eslint.confi
       disposition: dismissed
       reason: 'Stale: task 003 is complete and its outcome already records the eslint.config.mjs naming; the grep line is a one-time validation in a finished task and task 005''s stale-term grep passed.'
+      date: "2026-10-04"
+    - id: 65wX
+      title: bunx may fetch unpinned tools if no install
+      disposition: fixed
+      ref: phase-02-remediation-01/001-harden-bunx-tool-resolution.md
       date: "2026-10-04"
