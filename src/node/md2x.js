@@ -3,6 +3,7 @@
 * the asyncronous workers are updated to support "respond directly if complete within time X". But since it's actually
 * pretty fast, even for substantial batch conversions, we just do it synchronously for now.
 */
+import fs from 'node:fs'
 import fsPath from 'node:path'
 
 import shell from 'shelljs'
@@ -13,6 +14,22 @@ const execOptions = { shell : '/bin/bash' }
 // Escapes a value for safe interpolation inside a single-quoted bash argument: close the quote, emit an escaped
 // literal quote, reopen the quote. This is the standard POSIX single-quote escape idiom.
 const shellQuote = (value) => `'${String(value).replace(/'/g, "'\\''")}'`
+
+// Resolves md2x's own CLI executable by path, so the wrapper never goes through npx/bunx/PATH (which could fetch and
+// run an unpinned package). From the built bundle (dist/md2x.js) the bin is at '../bin/md2x'; from source
+// (src/node/md2x.js) it is at '../../bin/md2x'. Uses CJS '__dirname' (bun supports it in ESM source; the cjs bundle
+// keeps it).
+const resolveBin = () => {
+  const candidates = [
+    fsPath.join(__dirname, '..', 'bin', 'md2x'),
+    fsPath.join(__dirname, '..', '..', 'bin', 'md2x')
+  ]
+  const found = candidates.find((candidate) => fs.existsSync(candidate))
+  if (found === undefined) {
+    throw new Error(`Could not locate the md2x CLI executable; looked in: ${candidates.join(', ')}. Run 'make all' to build it.`)
+  }
+  return found
+}
 
 const md2x = ({
   markdown,
@@ -60,7 +77,7 @@ const md2x = ({
     options.push(`--output-path ${shellQuote(outputPath)}`)
   }
 
-  const command = `npx md2x ${options.join(' ')} ${sourceSpec}`
+  const command = `${shellQuote(resolveBin())} ${options.join(' ')} ${sourceSpec}`
 
   let result
   if (markdown === undefined) { // we're working with a file
