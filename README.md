@@ -26,6 +26,8 @@ npm install @liquid-labs/md2x
 npm install -g @liquid-labs/md2x
 ```
 
+With bun: `bun add @liquid-labs/md2x`, or `bun add -g @liquid-labs/md2x` for the standalone command.
+
 ## Usage
 
 ### As a CLI
