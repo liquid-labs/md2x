@@ -16,3 +16,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: port-tests-to-bun-test
+          title: Port src/node Tests to bun:test
+          path: phase-01-bun-migration/002-port-tests-to-bun-test.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
