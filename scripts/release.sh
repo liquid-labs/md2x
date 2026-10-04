@@ -130,7 +130,9 @@ trap 'rm -f "$NOTES_FILE"' EXIT
     (( skip )) && continue
     if [[ $(git rev-list --parents -n1 "$sha" | wc -w) -gt 2 && "$subj" =~ ^Merge\ branch\ \'([^\']+)\' ]]; then
       name=${BASH_REMATCH[1]##*/}; name=${name//[-_]/ }
-      body=$(git log -1 --format=%b "$sha" | sed -n '/./{p;q;}')
+      # First non-blank body line that is not a '#' comment (e.g. '# Conflicts:'), cut to ~100 chars.
+      body=$(git log -1 --format=%b "$sha" | sed -E 's/^[[:space:]]+//' | grep -v -m1 -E '^(#|$)' || true)
+      (( ${#body} <= 100 )) || body="${body:0:100}..."
       subj="Merged $name"
     else
       body=''
