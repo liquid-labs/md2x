@@ -10,6 +10,11 @@ BASH_ROLLUP:=$(BIN_DIR)/bash-rollup
 BATS:=$(BIN_DIR)/bats
 ESLINT:=$(BIN_DIR)/eslint
 
+# Missing-tool guard: an order-only prerequisite on each dev tool a recipe runs. When the tool
+# is absent this fails closed (non-zero, no registry fetch) with a message naming the fix.
+$(BIN_DIR)/%:
+	@echo "error: $@ not found; run 'bun install' to install the dev tools" >&2; exit 1
+
 NODE_SRC=src/node
 NODE_FILES:=$(shell find $(NODE_SRC) -name "*.js" -not -path "*/test/*" -not -name "*.test.js")
 NODE_DIST:=dist/md2x.js
@@ -36,7 +41,7 @@ $(NODE_DIST): package.json $(NODE_FILES)
 	mkdir -p $(dir $@)
 	bun build $(NODE_SRC)/index.js --target=node --format=cjs --packages=external --sourcemap=inline --outfile=$@
 
-$(CLI_BIN): $(CLI_SRC)
+$(CLI_BIN): $(CLI_SRC) | $(BASH_ROLLUP)
 	mkdir -p $(dir $@)
 	$(BASH_ROLLUP) $< $@
 
@@ -48,14 +53,14 @@ $(CLI_BIN): $(CLI_SRC)
 test: test-cli test-node
 
 # The bats cases exercise the built CLI, so they depend on the build.
-test-cli: all $(CLI_TEST_FILES)
+test-cli: all $(CLI_TEST_FILES) | $(BATS)
 	$(BATS) --print-output-on-failure $(CLI_BATS_DIR)
 
 test-node:
 	bun test ./$(NODE_SRC) --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=coverage
 
 # smoke test recipes (interactive; opt in)
-$(SMOKE_TEST_OUT): $(SMOKE_TEST_SRC) $(CLI_SRC)
+$(SMOKE_TEST_OUT): $(SMOKE_TEST_SRC) $(CLI_SRC) | $(BASH_ROLLUP)
 	mkdir -p $(dir $@)
 	$(BASH_ROLLUP) $< $@
 
@@ -64,10 +69,10 @@ smoke-test: all $(SMOKE_TEST_OUT)
 	$(SMOKE_TEST_OUT)
 
 # lint rules
-lint:
+lint: | $(ESLINT)
 	$(ESLINT) $(NODE_SRC)
 
-lint-fix:
+lint-fix: | $(ESLINT)
 	$(ESLINT) --fix $(NODE_SRC)
 
 qa: test lint
