@@ -21,3 +21,7 @@ Remediates findings DyR1 and dhr8. DyR1: package.json declares `@stylistic/eslin
 
 - Finding DyR1 in this plan's `plan/findings.yaml`.
 - Finding dhr8 in this plan's `plan/findings.yaml`.
+
+## Status
+
+succeeded, 2026-10-04. Removed unused `@stylistic/eslint-plugin` devDependency (package.json, bun.lock); added `--coverage-reporter=lcov` to the Makefile test-node recipe. Validation: frozen install ok, make lint/lint-fix clean, scratch file flagged by @stylistic/object-curly-spacing and brace-style, coverage/lcov.info produced and gitignored. AGENTS.md unchanged.
