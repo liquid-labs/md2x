@@ -9,4 +9,13 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: Bun blocked one postinstall script during 'bun add' (see 'bun pm untrusted'); which package was not investigated. Lint and qa work without it, but it may merit a look.
+    - title: Task 003's grep check references eslint.confi
+      id: 5VxP
+      date: "2026-10-04"
+      tags:
+        - type:ambiguity
+        - plan/phase:bun-migration
+        - priority:unspecified
+        - effort:unspecified
+      text: Task 003's grep check references eslint.config.js but the config was created as eslint.config.mjs; the task doc could be updated to match.
 closed: []
