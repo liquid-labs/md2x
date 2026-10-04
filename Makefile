@@ -52,7 +52,7 @@ test-cli: all $(CLI_TEST_FILES)
 	$(BATS) --print-output-on-failure $(CLI_BATS_DIR)
 
 test-node:
-	bun test ./$(NODE_SRC) --coverage --coverage-reporter=text --coverage-dir=coverage
+	bun test ./$(NODE_SRC) --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=coverage
 
 # smoke test recipes (interactive; opt in)
 $(SMOKE_TEST_OUT): $(SMOKE_TEST_SRC) $(CLI_SRC)
