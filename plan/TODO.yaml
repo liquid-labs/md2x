@@ -90,7 +90,7 @@ phases:
             branch: plan/bun-migration-02-001
             commit:
                 - b839864
-            merge: null
+            merge: 7e38d059851a0df0b6bf4eb83fa6cc1216c22936
         - number: 2
           slug: tooling-declared-deps-and-coverage-output
           title: Drop Unused Stylistic DevDependency And Make Coverage Output Match Docs
