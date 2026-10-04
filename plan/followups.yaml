@@ -26,3 +26,11 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: md2x supports only pdf, html, and docx (OUTPUT_FORMATS in src/cli/lib/parameters.sh, which carries a commented-out 'opendocument'). Pandoc could also produce EPUB, ODT, RTF, LaTeX/.tex, plain text, and slides. Each new format would need a decision on CSS/header-footer applicability, TOC behavior, and the intermediate format chosen in src/cli/md2x.sh, plus docs and tests. Deliberately excluded from the 1.0 hardening scope, where docs and help were limited to pdf/html/docx.
+    - title: Custom CSS and styling options
+      id: shhS
+      date: "2026-10-04"
+      tags:
+        - type:enhancement
+        - priority:unspecified
+        - effort:unspecified
+      text: Styling is fixed to the bundled src/cli/lib/github.css, with no per-invocation configuration (docs/md2x-spec.md, 'Consistent styling'). Users of Markdown converters commonly expect a --css option, a no-style mode, paper size, margins, orientation, a syntax-highlighting style, and author/date/language metadata. Any of these would extend the CLI flag table, the Node option set, and the spec's non-goals section. Excluded from the 1.0 hardening scope.
