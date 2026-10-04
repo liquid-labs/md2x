@@ -13,6 +13,7 @@ phases:
           path: phase-01-bun-migration/001-bun-install-and-build.md
           done: false
           tier: sonnet-med
+          digest: Removed catalyst-scripts and package-lock.json, generated text bun.lock, moved Makefile to bunx plus bun build (cjs, node target, external packages, inline sourcemap). Export surface matches baseline, test-cli 144/144, bun audit clean. test-node/lint/lint-fix still reference removed CATALYST_SCRIPTS until tasks 002/003.
           git:
             branch: null
             commit: []
