@@ -30,7 +30,7 @@ phases:
             branch: plan/bun-migration-01-002
             commit:
                 - 686ee6f
-            merge: null
+            merge: 54ab57c103012fdbbe8162884b20374ae477468d
         - number: 3
           slug: direct-eslint
           title: Replace catalyst-scripts Lint with Direct ESLint
