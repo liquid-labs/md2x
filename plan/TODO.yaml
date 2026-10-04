@@ -26,3 +26,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 3
+          slug: direct-eslint
+          title: Replace catalyst-scripts Lint with Direct ESLint
+          path: phase-01-bun-migration/003-direct-eslint.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
