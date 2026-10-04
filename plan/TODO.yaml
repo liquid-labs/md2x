@@ -12,6 +12,7 @@ phases:
           path: phase-09-flow-ignore-migrate/001-migrate-gitignore.md
           done: false
           tier: sonnet-low
+          digest: Replaced four flow ignore lines with single .flow/ entry and untracked .flow/what-next-cache.json.
           git:
             branch: null
             commit: []
