@@ -6,7 +6,7 @@ Working notes for developers and AI agents contributing to md2x. md2x is a CLI (
 
 The CLI (`bin/md2x`) and Node library entry point (`dist/md2x.js`) are both build outputs — do not edit them directly; edit the sources under `src/`.
 
-Both [bun](https://bun.sh/) and `node` must be on `PATH`: bun is the package manager, bundler, and Node-suite test runner, while the built `dist/md2x.js` targets node and `scripts/release.sh` uses npm (which needs node) for registry operations. The `make` targets are the primary interface; the bun commands are thin equivalents.
+Both [bun](https://bun.sh/) and `node` must be on `PATH`: bun is the package manager, bundler, and Node-suite test runner, while the built `dist/md2x.js` targets node. The `make` targets are the primary interface; the bun commands are thin equivalents.
 
 ```bash
 bun install
@@ -80,5 +80,5 @@ md2x({ sources: ['report.md'] })
 - [docs/md2x-spec.md](./docs/md2x-spec.md) — full specification: use cases, behavioral requirements, and CLI/Node API surface.
 - [docs/project-structure.md](./docs/project-structure.md) — file and directory layout.
 - [docs/architecture.md](./docs/architecture.md) — design-level material, including the PDF header/footer overlay mechanism.
-- [RELEASING.md](./RELEASING.md) — release procedure: version bump (bun), build, tag, and npm publish (npm remains the registry client).
+- [RELEASING.md](./RELEASING.md) — release procedure: version bump (bun), build, tag, and publish (bun, including `bun publish`).
 - [plan/](./plan/) — current development plan and followups, when active.
