@@ -1,17 +1,5 @@
 version: 2
 items:
-    - title: src/node/md2x.js shells out via unpinned npx
-      id: ya0J
-      date: "2026-10-04"
-      tags:
-        - type:security
-        - priority:high
-        - effort:small
-        - plan/phase:remediation-01
-      text: |-
-        src/node/md2x.js (line ~63) shells out via `npx md2x ...`. If md2x is not resolvable locally (global-only install, or a consumer with no local bin), npx fetches the unpinned latest `md2x` from the registry and executes it; same class as the Makefile bunx issue but at runtime and unchanged by the bun migration (tests assert the `npx md2x` command string, and docs/architecture.md describes it). User-controlled arguments are shell-quoted. Reachability depends on how consumers install the package. Options: invoke the package's own bin by resolved path (path.join(__dirname, '../bin/md2x') or require.resolve) or use `npx --no-install`; either changes tested runtime behavior, so it needs a deliberate decision.
-
-        Evaluator note (quoted data): not fixed in the bun-migration plan because that plan's hard constraint forbids editing src/node/md2x.js or its tested `npx md2x` command string. Open question for a later plan: should the wrapper invoke the package's own bin by resolved path, or use `npx --no-install`? Either changes the tested command string. Promoted at priority:high as an unremediated security finding.
     - title: Release may use stale node_modules
       id: tnIj
       date: "2026-10-04"
@@ -55,4 +43,9 @@ closed:
       title: Docs claim coverage/ dir bun test lacks
       disposition: fixed
       ref: phase-02-remediation-01/002-tooling-declared-deps-and-coverage-output.md
+      date: "2026-10-04"
+    - id: ya0J
+      title: src/node/md2x.js shells out via unpinned npx
+      disposition: promoted
+      ref: ya0J
       date: "2026-10-04"
