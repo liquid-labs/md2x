@@ -5,4 +5,14 @@ phases:
     - number: 1
       slug: bun-migration
       title: Bun Migration and catalyst-scripts Removal
-      tasks: []
+      tasks:
+        - number: 1
+          slug: bun-install-and-build
+          title: Switch Install to Bun and Replace the Node Build
+          path: phase-01-bun-migration/001-bun-install-and-build.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
