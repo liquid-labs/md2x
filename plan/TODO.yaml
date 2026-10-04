@@ -1,6 +1,9 @@
 slug: bun-migration
 version: 1
 title: ""
+remediation:
+    rounds: 1
+    tasks_added: 0
 phases:
     - number: 1
       slug: bun-migration
@@ -67,3 +70,8 @@ phases:
             commit:
                 - cba7cb7
             merge: b5528c21b228df6df44abc7eaaaa32abffacd436
+    - number: 2
+      slug: remediation-01
+      title: Remediation Round 1
+      kind: remediation
+      tasks: []
