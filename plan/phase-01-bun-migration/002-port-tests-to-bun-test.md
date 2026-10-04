@@ -20,3 +20,10 @@ Migrate `src/node/md2x.test.js` (263 lines, `jest.mock('shelljs', ...)`, `jest.f
 - `make test-node` passes; `make test` (cli + node) passes.
 - `ls test-staging` fails (gone); `grep -rn "jest\|babel\|test-staging\|pretest" Makefile package.json .gitignore src` returns nothing, except the unavoidable `jest` import from `bun:test` if used.
 - Sanity check that the mock really bites: temporarily change one asserted command string in the test, confirm failure, then revert.
+
+## Status
+
+- Outcome: succeeded (2026-10-04).
+- Validation: `bun test ./src/node` 24 pass / 0 fail; `make test-node` and `make test` pass; mock sanity check (altered an asserted command string) produced 1 failure, then reverted; `test-staging` absent; only remaining `jest` references are the `bun:test` import and `jest.fn`/`jest.spyOn` usages.
+- Files: `src/node/md2x.test.js`, `Makefile`, `.gitignore`.
+- Decisions: the `__esModule : true` wrapper was dropped (not needed under bun); `afterEach` retained because the test file uses it.

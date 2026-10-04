@@ -1,16 +1,12 @@
-/* global afterEach beforeEach describe expect jest test */
+import { afterEach, beforeEach, describe, expect, jest, mock, test } from 'bun:test'
 import fsPath from 'node:path'
-import shell from 'shelljs'
-import { md2x } from './md2x'
 
 // Manual factory mock: shelljs is CommonJS, imported as a default import, and mutated at module load
-// (`shell.config.silent = true` in md2x.js). Babel's ESM interop resolves the default import to `.default`, so the
-// mock must nest its surface under `default` with `__esModule: true`. `jest.mock` calls are hoisted by
-// babel-plugin-jest-hoist above the imports above at compile time, so ordering them after the imports here (to
-// satisfy `import/first`) does not change when the mock takes effect.
-jest.mock('shelljs', () => ({
-  __esModule : true,
-  default    : {
+// (`shell.config.silent = true` in md2x.js). Bun does not hoist `mock.module` above static imports, so the mock is
+// registered first and both `shelljs` and the module under test are loaded afterward with top-level dynamic
+// `import()`. The factory nests the mock surface under `default` to satisfy the default-import interop.
+mock.module('shelljs', () => ({
+  default : {
     config      : {},
     exec        : jest.fn(),
     tempdir     : jest.fn(),
@@ -19,6 +15,9 @@ jest.mock('shelljs', () => ({
     ShellString : jest.fn()
   }
 }))
+
+const { default : shell } = await import('shelljs')
+const { md2x } = await import('./md2x')
 
 // Builds a fake shelljs 'exec' result: 'code'/'stderr' as plain properties (md2x.js reads them directly) and
 // 'toString()' standing in for shelljs' ShellString-like stdout accessor.
