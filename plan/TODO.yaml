@@ -1,0 +1,8 @@
+slug: bun-migration
+version: 1
+title: ""
+phases:
+    - number: 1
+      slug: bun-migration
+      title: Bun Migration and catalyst-scripts Removal
+      tasks: []
