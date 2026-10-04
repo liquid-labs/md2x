@@ -8,8 +8,6 @@ BATS:=$(BUNX) bats
 
 NODE_SRC=src/node
 NODE_FILES:=$(shell find $(NODE_SRC) -name "*.js" -not -path "*/test/*" -not -name "*.test.js")
-# NODE_TEST_SRC_FILES:=$(shell find $(NODE_SRC) -name "*.js")
-# NODE_TEST_BUILT_FILES=$(patsubst $(NODE_SRC)/%, test-staging/%, $(NODE_TEST_SRC_FILES))
 NODE_DIST:=dist/md2x.js
 
 CLI_LIB_SRC:=$(shell find src/cli/lib -type f)
@@ -50,8 +48,7 @@ test-cli: all $(CLI_TEST_FILES)
 	$(BATS) --print-output-on-failure $(CLI_BATS_DIR)
 
 test-node:
-	JS_SRC=$(NODE_SRC) $(CATALYST_SCRIPTS) pretest
-	JS_SRC=$(NODE_SRC) $(CATALYST_SCRIPTS) test
+	bun test ./$(NODE_SRC) --coverage --coverage-reporter=text --coverage-dir=coverage
 
 # smoke test recipes (interactive; opt in)
 $(SMOKE_TEST_OUT): $(SMOKE_TEST_SRC) $(CLI_SRC)
