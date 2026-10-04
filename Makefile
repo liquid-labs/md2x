@@ -2,16 +2,21 @@ SHELL=/bin/bash -o pipefail
 .DELETE_ON_ERROR:
 .PHONY: all clean lint lint-fix qa smoke-test test test-cli test-node
 
-NPM_BIN:=npm exec
-CATALYST_SCRIPTS:=$(NPM_BIN) catalyst-scripts
-BASH_ROLLUP:=$(NPM_BIN) bash-rollup
-# '--' so npm hands the runner's own flags through instead of parsing them itself.
-BATS:=$(NPM_BIN) -- bats
+# Dev tools resolve only to the lockfile-pinned binaries installed by 'bun install'. They are
+# deliberately NOT run through 'bunx', which would fetch an unpinned latest version from the
+# registry when node_modules is missing; with node_modules absent these fail closed instead.
+BIN_DIR:=node_modules/.bin
+BASH_ROLLUP:=$(BIN_DIR)/bash-rollup
+BATS:=$(BIN_DIR)/bats
+ESLINT:=$(BIN_DIR)/eslint
+
+# Missing-tool guard: an order-only prerequisite on each dev tool a recipe runs. When the tool
+# is absent this fails closed (non-zero, no registry fetch) with a message naming the fix.
+$(BIN_DIR)/%:
+	@echo "error: $@ not found; run 'bun install' to install the dev tools" >&2; exit 1
 
 NODE_SRC=src/node
 NODE_FILES:=$(shell find $(NODE_SRC) -name "*.js" -not -path "*/test/*" -not -name "*.test.js")
-# NODE_TEST_SRC_FILES:=$(shell find $(NODE_SRC) -name "*.js")
-# NODE_TEST_BUILT_FILES=$(patsubst $(NODE_SRC)/%, test-staging/%, $(NODE_TEST_SRC_FILES))
 NODE_DIST:=dist/md2x.js
 
 CLI_LIB_SRC:=$(shell find src/cli/lib -type f)
@@ -34,9 +39,9 @@ all: $(BUILD_TARGETS)
 # build recipes
 $(NODE_DIST): package.json $(NODE_FILES)
 	mkdir -p $(dir $@)
-	JS_SRC=$(NODE_SRC) $(CATALYST_SCRIPTS) build
+	bun build $(NODE_SRC)/index.js --target=node --format=cjs --packages=external --sourcemap=inline --outfile=$@
 
-$(CLI_BIN): $(CLI_SRC)
+$(CLI_BIN): $(CLI_SRC) | $(BASH_ROLLUP)
 	mkdir -p $(dir $@)
 	$(BASH_ROLLUP) $< $@
 
@@ -48,15 +53,14 @@ $(CLI_BIN): $(CLI_SRC)
 test: test-cli test-node
 
 # The bats cases exercise the built CLI, so they depend on the build.
-test-cli: all $(CLI_TEST_FILES)
+test-cli: all $(CLI_TEST_FILES) | $(BATS)
 	$(BATS) --print-output-on-failure $(CLI_BATS_DIR)
 
 test-node:
-	JS_SRC=$(NODE_SRC) $(CATALYST_SCRIPTS) pretest
-	JS_SRC=$(NODE_SRC) $(CATALYST_SCRIPTS) test
+	bun test ./$(NODE_SRC) --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=coverage
 
 # smoke test recipes (interactive; opt in)
-$(SMOKE_TEST_OUT): $(SMOKE_TEST_SRC) $(CLI_SRC)
+$(SMOKE_TEST_OUT): $(SMOKE_TEST_SRC) $(CLI_SRC) | $(BASH_ROLLUP)
 	mkdir -p $(dir $@)
 	$(BASH_ROLLUP) $< $@
 
@@ -65,11 +69,11 @@ smoke-test: all $(SMOKE_TEST_OUT)
 	$(SMOKE_TEST_OUT)
 
 # lint rules
-lint:
-	JS_LINT_TARGET=$(NODE_SRC) $(CATALYST_SCRIPTS) lint
+lint: | $(ESLINT)
+	$(ESLINT) $(NODE_SRC)
 
-lint-fix:
-	JS_LINT_TARGET=$(NODE_SRC) $(CATALYST_SCRIPTS) lint-fix
+lint-fix: | $(ESLINT)
+	$(ESLINT) --fix $(NODE_SRC)
 
 qa: test lint
 	

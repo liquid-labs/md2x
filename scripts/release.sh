@@ -7,6 +7,11 @@
 # whose result already exists (tag, remote tag, npm version, GitHub release) is skipped.
 # Secrets are never read or accepted by this script; npm prompts for any one-time code
 # itself on the terminal.
+#
+# Tooling split: bun drives the version bump (bun pm version, which runs package.json's
+# preversion hook: make all && make qa) and the pack check (bun pm pack). npm is kept ON
+# PURPOSE for the registry operations (npm whoami, npm view, npm publish): it prompts for
+# the 2FA one-time code interactively, and this script does not rely on bun publish.
 set -euo pipefail
 
 DRY_RUN=0
@@ -39,10 +44,15 @@ done
 
 cd "$(git rev-parse --show-toplevel)"
 say() { echo "==> $*"; }
+# Undo the local version bump. bun.lock is only restored if it is tracked and was modified.
+revert_bump() {
+  git checkout -- package.json
+  [[ -z "$(git status --porcelain --untracked-files=no -- bun.lock)" ]] || git checkout -- bun.lock
+}
 act() { if (( DRY_RUN )); then echo "[dry-run] would run: $*"; else "$@"; fi; }
 
-PKG_NAME=$(node -p "require('./package.json').name")
-CURRENT=$(node -p "require('./package.json').version")
+PKG_NAME=$(bun -p "require('./package.json').name")
+CURRENT=$(bun -p "require('./package.json').version")
 
 # --- pre-flight ---------------------------------------------------------------
 say "Pre-flight"
@@ -55,6 +65,11 @@ gh auth status >/dev/null 2>&1 || { echo "Not logged in to GitHub. Run 'gh auth 
 if (( ! DRY_RUN )) && [[ ! -t 0 ]]; then
   echo "npm publish may need a one-time code; run this script from an interactive terminal." >&2; exit 1
 fi
+# The preversion hook runs the dev tools from node_modules; install exactly what bun.lock pins
+# (aborts on a lockfile/package.json mismatch) before any version bump. Remove any existing
+# node_modules first so a stale or tampered tree is never reused: the hook gets a fresh install.
+rm -rf node_modules
+bun install --frozen-lockfile || { echo "bun install --frozen-lockfile failed; fix bun.lock/package.json and re-run." >&2; exit 1; }
 
 # --- resolve version / resume -------------------------------------------------
 RESUME=0
@@ -68,18 +83,20 @@ fi
 
 # --- bump, build, QA, commit, tag ---------------------------------
 if (( ! RESUME )); then
-  say "Bumping version (runs 'make all && make qa' via npm's preversion)"
+  say "Bumping version (runs 'make all && make qa' via preversion)"
   say "Building, then running the test suite and lint; this may take some time (output streams below)..."
-  npm version "${NEW:-$BUMP}" --no-git-tag-version   # stdout left visible so build/test progress streams
-  NEW=$(node -p "require('./package.json').version")
+  bun pm version "${NEW:-$BUMP}" --no-git-tag-version   # stdout left visible so build/test progress streams
+  NEW=$(bun -p "require('./package.json').version")
   TAG="v$NEW"
-  git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && { echo "Tag $TAG already exists." >&2; git checkout -- package.json package-lock.json; exit 1; }
+  git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && { echo "Tag $TAG already exists." >&2; revert_bump; exit 1; }
 
   if (( DRY_RUN )); then
     say "Dry run: build and QA passed for $NEW; reverting local edits"
-    git checkout -- package.json package-lock.json
+    revert_bump
   else
-    git add package.json package-lock.json
+    git add package.json
+    # A version bump normally leaves bun.lock untouched; only stage it if it changed.
+    [[ -z "$(git status --porcelain -- bun.lock)" ]] || git add bun.lock
     git commit -m "release: $NEW"
     git tag -a "$TAG" -m "$TAG"
   fi
@@ -108,7 +125,7 @@ fi
 say "Publishing $PKG_NAME@$NEW to npm (dist-tag: $DIST_TAG)"
 if (( DRY_RUN )); then
   echo "[dry-run] would run: npm publish --access public --tag $DIST_TAG; checking package contents"
-  npm pack --dry-run >/dev/null
+  bun pm pack --dry-run >/dev/null
 elif [[ -n "$(npm view "$PKG_NAME@$NEW" version 2>/dev/null)" ]]; then
   echo "Already published; skipping."
 else
