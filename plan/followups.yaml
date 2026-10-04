@@ -34,3 +34,11 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: Styling is fixed to the bundled src/cli/lib/github.css, with no per-invocation configuration (docs/md2x-spec.md, 'Consistent styling'). Users of Markdown converters commonly expect a --css option, a no-style mode, paper size, margins, orientation, a syntax-highlighting style, and author/date/language metadata. Any of these would extend the CLI flag table, the Node option set, and the spec's non-goals section. Excluded from the 1.0 hardening scope.
+    - title: Config file / MD2X_* env namespace
+      id: gs2k
+      date: "2026-10-04"
+      tags:
+        - type:enhancement
+        - priority:unspecified
+        - effort:unspecified
+      text: md2x has no configuration surface beyond flags. No .md2xrc, no --config, and no MD2X_* environment variables exist. HOME (for ~/.md2x/venv and ~/.md2x-venv.lock in src/cli/lib/ensure-weasyprint.sh) and TMPDIR are the only environment inputs, and there is no override for the WeasyPrint venv location. Users converting many files in one repo must repeat flags. Decide whether to reserve the .md2xrc / MD2X_* namespaces, then design precedence (flags over env over config file). Excluded from the 1.0 hardening scope.
