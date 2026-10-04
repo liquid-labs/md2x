@@ -61,6 +61,7 @@ phases:
           path: phase-01-bun-migration/005-end-to-end-verification.md
           done: false
           tier: sonnet-low
+          digest: 'Verification only: all 8 acceptance checks passed (frozen bun install, make clean/all/test/lint/qa, export keys match baseline, bun audit clean vs 34 baseline findings, bun pm pack file list matches baseline, no stale-term hits).'
           git:
             branch: null
             commit: []
