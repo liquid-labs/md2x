@@ -103,7 +103,9 @@ fi
 
 # --- GitHub release -----------------------------------------------------------
 say "Creating GitHub release $TAG"
-NOTES=$(awk -v h="## Release $NEW" '$0==h{f=1;next} /^## /{f=0} f')
+PREV_TAG=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || git describe --tags --abbrev=0 HEAD 2>/dev/null || true)
+NOTES_FLAGS=(--generate-notes)
+[[ -z "$PREV_TAG" ]] || NOTES_FLAGS+=(--notes-start-tag "$PREV_TAG")
 if (( DRY_RUN )); then
   echo "[dry-run] would run: gh release create $TAG --title $TAG ${NOTES_FLAGS[*]} --verify-tag ${PRERELEASE_FLAG[*]:-}"
 elif gh release view "$TAG" >/dev/null 2>&1; then
