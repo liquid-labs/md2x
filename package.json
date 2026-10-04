@@ -9,15 +9,15 @@
   "scripts": {
     "build": "make all",
     "test": "make test",
-    "preversion": "make all && make qa",
-    "postversion": "git push upstream v${npm_package_version}"
+    "preversion": "make all && make qa"
   },
   "files": [
-    "bin/*"
+    "bin/*",
+    "dist/*"
   ],
   "keywords": [],
   "author": "Zane Rockenbaugh <zane@liquid-labs.com>",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/Liquid-Labs/md2x.git"

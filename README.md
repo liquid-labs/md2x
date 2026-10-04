@@ -113,4 +113,4 @@ Two limitations carry over from the underlying heading-identifier algorithm: a h
 
 ## License
 
-This package is marked `"license": "UNLICENSED"` in `package.json`. It is Liquid-Labs internal tooling and is not published for external or open-source use.
+md2x is licensed under the Apache License 2.0; see [LICENSE.txt](./LICENSE.txt).

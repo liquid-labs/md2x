@@ -127,7 +127,7 @@ const outputFiles = md2x({
 - PDF output is rendered through an HTML5 intermediate rather than a LaTeX engine, so no `pdflatex` installation is required.
 - `--infer-version` requires the invocation to run inside a git working tree with a readable `package.json`; it uses `git status --porcelain` to decide whether to report the `package.json` version or the literal string `working`.
 - The Node library wrapper requires the CLI to already be built (`bin/md2x`, produced by `make build` / `npm run build`) — it is not usable straight from source without a build step.
-- md2x is distributed as an internal, `UNLICENSED` npm package (`@liquid-labs/md2x`) and is not intended for external or public distribution.
+- md2x is distributed as an Apache-2.0 licensed npm package (`@liquid-labs/md2x`).
 
 ## Non-goals
 

@@ -81,7 +81,7 @@ Flow's planning directory. Currently holds only `followups.yaml`, which tracks s
 
 ## Tooling and metadata directories
 
-`.claude/` holds local Claude Code settings. `.flow/` holds Flow's session-binding manifest, regenerated per session by the `project-flow-check` skill. `.meta/changelog.yaml` is liq release tooling's structured changelog source data, feeding `CHANGELOG.md`. None of these are hand-edited during normal development.
+`.claude/` holds local Claude Code settings. `.flow/` holds Flow's session-binding manifest, regenerated per session by the `project-flow-check` skill. None of these are hand-edited during normal development.
 
 ## Key root-level files
 
@@ -92,7 +92,9 @@ Flow's planning directory. Currently holds only `followups.yaml`, which tracks s
 | `package-lock.json` | npm dependency lockfile. |
 | `.gitignore` | Excludes build outputs (`bin/`, `dist/`, `test-out/`, ...), `node_modules/`, and most of `.flow/` from version control. |
 | `.mcp.json` | Registers the `flow-mcp` MCP server used in Flow-driven agent sessions. |
-| `CHANGELOG.md` | Conventional changelog, sourced from `.meta/changelog.yaml` via liq release tooling. |
+| `CHANGELOG.md` | Release history; `scripts/release.sh` appends a `## Release <version>` entry per release. |
+| `LICENSE.txt` | Apache License 2.0 text. |
+| `scripts/release.sh` | Automated release script; see [`RELEASING.md`](../RELEASING.md). |
 
 ## Related documents
 
