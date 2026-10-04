@@ -43,10 +43,11 @@ md2x/
 │   └── node/             # Thin Node.js wrapper (shells out to bin/md2x via shelljs)
 ├── .claude/              # Claude Code local settings
 ├── .flow/                # Flow session-binding metadata (mostly gitignored)
-├── node_modules/         # npm dependencies (omitted — generated)
+├── node_modules/         # dependencies installed by bun (omitted — generated)
 ├── Makefile
+├── eslint.config.mjs
 ├── package.json
-├── package-lock.json
+├── bun.lock
 ├── README.md
 ├── .gitignore
 └── .mcp.json
@@ -63,7 +64,7 @@ The CLI (`src/cli/`) is the actual conversion engine: Bash source rolled up by `
 - `tiny-doc.md` — a small fixture document, used by both the smoke test and the automated cases.
 - `toc-slug-corpus.md` — a fixture heading corpus, used by `real-toolchain-e2e.bats` to assert the preprocessor's generated slugs agree with the identifiers real Pandoc mints.
 
-The Node wrapper (`src/node/`) is a thin package (`index.js`, `md2x.js`) that shells out to the built `bin/md2x` CLI via `shelljs` and returns the generated file paths; it is what `@liquid-labs/md2x`'s Node library entrypoint (`dist/md2x.js`) is built from. Its Jest cases are colocated as `src/node/*.test.js`, which the `Makefile`'s build inputs deliberately exclude; `make test-node` Babel-compiles the whole directory into `test-staging/` and runs Jest there.
+The Node wrapper (`src/node/`) is a thin package (`index.js`, `md2x.js`) that shells out to the built `bin/md2x` CLI via `shelljs` and returns the generated file paths; it is what `@liquid-labs/md2x`'s Node library entrypoint (`dist/md2x.js`) is built from. Its `bun:test` cases are colocated as `src/node/*.test.js`, which the `Makefile`'s build inputs deliberately exclude; `make test-node` runs `bun test` against that directory directly. The bundle is produced by `bun build` and the sources are linted with eslint (`eslint.config.mjs`).
 
 ## `docs/`
 
@@ -85,9 +86,10 @@ Flow's planning directory. Currently holds only `followups.yaml`, which tracks s
 
 | File | Purpose |
 | --- | --- |
-| `Makefile` | Build/test/lint driver invoked by the npm scripts (`make all`, `make test` — which runs `make test-cli` and `make test-node` — `make qa`, `make clean`); also exposes the opt-in, interactive `make smoke-test` check. |
-| `package.json` | npm package manifest; declares the `md2x` CLI bin entrypoint and delegates `build`/`test` scripts to `make`. |
-| `package-lock.json` | npm dependency lockfile. |
+| `Makefile` | Build/test/lint driver invoked by the `package.json` scripts and run directly via `make` (`make all`, `make test` — which runs `make test-cli` and `make test-node` — `make qa`, `make clean`); also exposes the opt-in, interactive `make smoke-test` check. |
+| `package.json` | npm package manifest (published to the npm registry; bun is the dev package manager); declares the `md2x` CLI bin entrypoint and delegates `build`/`test` scripts to `make`. |
+| `eslint.config.mjs` | ESLint 9 flat config used by `make lint`. |
+| `bun.lock` | bun dependency lockfile. |
 | `.gitignore` | Excludes build outputs (`bin/`, `dist/`, `test-out/`, ...), `node_modules/`, and most of `.flow/` from version control. |
 | `.mcp.json` | Registers the `flow-mcp` MCP server used in Flow-driven agent sessions. |
 | `LICENSE.txt` | Apache License 2.0 text. |

@@ -126,7 +126,7 @@ const outputFiles = md2x({
 - md2x requires `pandoc`, Ghostscript (`gs`), `pdftk`, and `python3` to be installed and present on `PATH` at runtime, for both the CLI and the Node library; these four remain the operator's responsibility to install. The one exception is WeasyPrint, the PDF rendering engine Pandoc uses: md2x installs and manages it itself, in a per-user virtual environment at `~/.md2x/venv` (not project-relative, not an XDG directory), on the first PDF conversion. A first PDF conversion therefore requires network access to fetch WeasyPrint from PyPI; subsequent conversions reuse the installed environment.
 - PDF output is rendered through an HTML5 intermediate rather than a LaTeX engine, so no `pdflatex` installation is required.
 - `--infer-version` requires the invocation to run inside a git working tree with a readable `package.json`; it uses `git status --porcelain` to decide whether to report the `package.json` version or the literal string `working`.
-- The Node library wrapper requires the CLI to already be built (`bin/md2x`, produced by `make build` / `npm run build`) — it is not usable straight from source without a build step.
+- The Node library wrapper requires the CLI to already be built (`bin/md2x`, produced by `make all` / `bun run build`) — it is not usable straight from source without a build step.
 - md2x is distributed as an Apache-2.0 licensed npm package (`@liquid-labs/md2x`).
 
 ## Non-goals

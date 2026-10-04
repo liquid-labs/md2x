@@ -26,3 +26,7 @@ Make the release script and all docs reflect bun as the standard dev runtime and
 - `grep -rIn "catalyst-scripts\|test-staging" --exclude-dir=plan --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=worktrees .` returns nothing (the untracked `.flow/` assessment file is outside the tree searched).
 - `grep -rIn "npm " AGENTS.md RELEASING.md README.md docs scripts` shows only intentional uses (consumer install, npm whoami/view/publish, published-package statements); each remaining use is justified in the report.
 - The commands documented in AGENTS.md (`bun install`, `bun run build`, `bun test ./src/node`, `make test`, `make lint`) are each run once and succeed.
+
+## Status
+
+Outcome: succeeded (2026-10-04). Validation: `bash -n scripts/release.sh` ok; no `package-lock`/`catalyst-scripts`/`test-staging` hits; remaining `npm ` uses are consumer install, npm whoami/view/publish, and published-package statements; `bun install`, `bun run build`, `bun test ./src/node`, `make test`, `make lint` all succeed (log `.flow/validation-logs/04-docs-commands.log`). Empirically (scratch copy): `bun pm version` runs `preversion` and accepts prerelease/patch/X.Y.Z-pre.N, leaving `bun.lock` untouched, so release.sh uses it; `bun pm pack --dry-run` works. Full `release.sh --dry-run` not run (needs main branch, npm/gh login). Files: `scripts/release.sh`, `RELEASING.md`, `AGENTS.md`, `README.md`, `docs/architecture.md`, `docs/project-structure.md`, `docs/md2x-spec.md`.
