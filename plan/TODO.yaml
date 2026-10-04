@@ -95,7 +95,7 @@ phases:
           slug: tooling-declared-deps-and-coverage-output
           title: Drop Unused Stylistic DevDependency And Make Coverage Output Match Docs
           path: phase-02-remediation-01/002-tooling-declared-deps-and-coverage-output.md
-          done: false
+          done: true
           tier: sonnet-low
           digest: Dropped the unused @stylistic/eslint-plugin devDependency (bun.lock keeps only neostandard's nested copy) and added --coverage-reporter=lcov to make test-node so coverage/ is produced as AGENTS.md describes. Lint behavior unchanged.
           findings:
