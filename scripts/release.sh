@@ -22,7 +22,7 @@ NOTES_SKIP_PATTERNS=(
   'plan:*' 'plan(*' 'plan/*'             # plan bookkeeping, incl. "plan: remove followup [x]"
   'wave(*'                                # wave back-pointers
   'what-next*' 'refresh what-next*'       # what-next cache refreshes
-  '*(pre-merge sync)*'
+  '*pre-merge sync*'
   "Merge branch 'plan/*"  "Merge branch 'plan-*"  'Merge plan branch*'
   'merging auto-generated release branch*'  # legacy liq release merges
 )
