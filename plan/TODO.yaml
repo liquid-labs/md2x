@@ -97,6 +97,7 @@ phases:
           path: phase-02-remediation-01/002-tooling-declared-deps-and-coverage-output.md
           done: false
           tier: sonnet-low
+          digest: Dropped the unused @stylistic/eslint-plugin devDependency (bun.lock keeps only neostandard's nested copy) and added --coverage-reporter=lcov to make test-node so coverage/ is produced as AGENTS.md describes. Lint behavior unchanged.
           findings:
             - DyR1
             - dhr8
