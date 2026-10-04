@@ -5,13 +5,14 @@
 #
 # Safe to re-run: pass the explicit version of a partly finished release and every step
 # whose result already exists (tag, remote tag, npm version, GitHub release) is skipped.
-# Secrets are never read or accepted by this script; npm prompts for any one-time code
+# Secrets are never read or accepted by this script; bun prompts for any one-time code
 # itself on the terminal.
 #
 # Tooling split: bun drives the version bump (bun pm version, which runs package.json's
-# preversion hook: make all && make qa) and the pack check (bun pm pack). npm is kept ON
-# PURPOSE for the registry operations (npm whoami, npm view, npm publish): it prompts for
-# the 2FA one-time code interactively, and this script does not rely on bun publish.
+# preversion hook: make all && make qa), the pack check (bun pm pack), and the registry
+# operations (bun pm whoami, bun info, bun publish). bun publish prompts for the 2FA
+# one-time code interactively. (Earlier versions used npm for these; bun publish is
+# unverified by a live publish until the next real release.)
 set -euo pipefail
 
 DRY_RUN=0
@@ -60,10 +61,10 @@ say "Pre-flight"
   || { echo "Must be on branch '$RELEASE_BRANCH'." >&2; exit 1; }
 [[ -z "$(git status --porcelain)" ]] || { echo "Working tree is not clean." >&2; exit 1; }
 git remote get-url "$REMOTE" >/dev/null || { echo "Remote '$REMOTE' not configured." >&2; exit 1; }
-npm whoami >/dev/null 2>&1 || { echo "Not logged in to npm. Run 'npm login' in your own terminal, then re-run." >&2; exit 1; }
+bun pm whoami >/dev/null 2>&1 || { echo "Not logged in to npm. Run 'bunx npm login' in your own terminal, then re-run." >&2; exit 1; }
 gh auth status >/dev/null 2>&1 || { echo "Not logged in to GitHub. Run 'gh auth login' in your own terminal, then re-run." >&2; exit 1; }
 if (( ! DRY_RUN )) && [[ ! -t 0 ]]; then
-  echo "npm publish may need a one-time code; run this script from an interactive terminal." >&2; exit 1
+  echo "bun publish may need a one-time code; run this script from an interactive terminal." >&2; exit 1
 fi
 # The preversion hook runs the dev tools from node_modules; install exactly what bun.lock pins
 # (aborts on a lockfile/package.json mismatch) before any version bump. Remove any existing
@@ -124,12 +125,12 @@ fi
 # --- publish ------------------------------------------------------------------
 say "Publishing $PKG_NAME@$NEW to npm (dist-tag: $DIST_TAG)"
 if (( DRY_RUN )); then
-  echo "[dry-run] would run: npm publish --access public --tag $DIST_TAG; checking package contents"
+  echo "[dry-run] would run: bun publish --access public --tag $DIST_TAG; checking package contents"
   bun pm pack --dry-run >/dev/null
-elif [[ -n "$(npm view "$PKG_NAME@$NEW" version 2>/dev/null)" ]]; then
+elif [[ -n "$(bun info "$PKG_NAME@$NEW" version 2>/dev/null)" ]]; then
   echo "Already published; skipping."
 else
-  npm publish --access public --tag "$DIST_TAG"   # npm prompts for the OTP itself
+  bun publish --access public --tag "$DIST_TAG"   # bun prompts for the OTP itself
 fi
 
 # --- GitHub release -----------------------------------------------------------
