@@ -23,11 +23,13 @@ phases:
           slug: port-tests-to-bun-test
           title: Port src/node Tests to bun:test
           path: phase-01-bun-migration/002-port-tests-to-bun-test.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: Ported md2x.test.js to bun:test with a pre-import mock.module and dynamic imports; test-node now runs bun test with coverage; test-staging remnants removed. 24 tests and bats suite pass; mock sanity check confirmed.
           git:
-            branch: null
-            commit: []
+            branch: plan/bun-migration-01-002
+            commit:
+                - 686ee6f
             merge: null
         - number: 3
           slug: direct-eslint
