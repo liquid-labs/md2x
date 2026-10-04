@@ -20,3 +20,11 @@ Remediates finding 65wX: the Makefile runs bash-rollup, bats and eslint through 
 ## References
 
 - Finding 65wX in this plan's `plan/findings.yaml`.
+
+## Status
+
+- Outcome: succeeded (2026-10-04).
+- Makefile: BASH_ROLLUP, BATS and a new ESLINT variable now resolve to `node_modules/.bin/<tool>` (BUNX removed); lint and lint-fix use `$(ESLINT)`. With node_modules absent, `make lint` and `make test-cli` exit 2 (No such file), with no fetch.
+- scripts/release.sh: `bun install --frozen-lockfile` added in pre-flight, before `bun pm version`.
+- Docs updated: AGENTS.md (eslint invocation), RELEASING.md (pre-flight description).
+- Validation: all three checks passed; logs under `.flow/validation-logs/`.

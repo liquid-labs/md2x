@@ -2,9 +2,13 @@ SHELL=/bin/bash -o pipefail
 .DELETE_ON_ERROR:
 .PHONY: all clean lint lint-fix qa smoke-test test test-cli test-node
 
-BUNX:=bunx
-BASH_ROLLUP:=$(BUNX) bash-rollup
-BATS:=$(BUNX) bats
+# Dev tools resolve only to the lockfile-pinned binaries installed by 'bun install'. They are
+# deliberately NOT run through 'bunx', which would fetch an unpinned latest version from the
+# registry when node_modules is missing; with node_modules absent these fail closed instead.
+BIN_DIR:=node_modules/.bin
+BASH_ROLLUP:=$(BIN_DIR)/bash-rollup
+BATS:=$(BIN_DIR)/bats
+ESLINT:=$(BIN_DIR)/eslint
 
 NODE_SRC=src/node
 NODE_FILES:=$(shell find $(NODE_SRC) -name "*.js" -not -path "*/test/*" -not -name "*.test.js")
@@ -61,10 +65,10 @@ smoke-test: all $(SMOKE_TEST_OUT)
 
 # lint rules
 lint:
-	$(BUNX) eslint $(NODE_SRC)
+	$(ESLINT) $(NODE_SRC)
 
 lint-fix:
-	$(BUNX) eslint --fix $(NODE_SRC)
+	$(ESLINT) --fix $(NODE_SRC)
 
 qa: test lint
 	
