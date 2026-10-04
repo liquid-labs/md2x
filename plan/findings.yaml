@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Task 003's grep check references eslint.confi
-      id: 5VxP
-      date: "2026-10-04"
-      tags:
-        - type:ambiguity
-        - plan/phase:bun-migration
-        - priority:unspecified
-        - effort:unspecified
-      text: Task 003's grep check references eslint.config.js but the config was created as eslint.config.mjs; the task doc could be updated to match.
     - title: Docs claim coverage/ dir bun test lacks
       id: dhr8
       date: "2026-10-04"
@@ -41,4 +32,9 @@ closed:
       title: Bun blocked one postinstall script during 'bu
       disposition: dismissed
       reason: 'Not actionable: blocked postinstall is most likely unrs-resolver via eslint-plugin-import-x; native bindings arrive via optionalDependencies, lint/qa/frozen install pass without it, and leaving it blocked is the safe default (do not add trustedDependencies).'
+      date: "2026-10-04"
+    - id: 5VxP
+      title: Task 003's grep check references eslint.confi
+      disposition: dismissed
+      reason: 'Stale: task 003 is complete and its outcome already records the eslint.config.mjs naming; the grep line is a one-time validation in a finished task and task 005''s stale-term grep passed.'
       date: "2026-10-04"
