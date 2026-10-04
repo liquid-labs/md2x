@@ -18,3 +18,11 @@ items:
         - priority:low
         - effort:unspecified
       text: Surfaced by the phase-1 boundary review's efficiency lens (low confidence, not blocking). allocate_slug() in src/cli/lib/toc-preprocess.py restarts its collision probe from n=1 on every call for a given base slug, so a document with many headings that flatten to the same slug text (e.g. many identically-worded or empty-text headings) makes each successive duplicate probe linearly through all prior duplicates before finding a free base-N -- O(d^2) in the number of duplicates d for that base, rather than O(d). This mirrors Pandoc's own documented collision-probing behavior (plan/notes/pandoc-gfm-slug-algorithm.md), so it's likely intentional parity rather than an accidental regression, and real documents rarely carry enough same-text headings for this to matter. If this ever needs to scale to documents with large numbers of duplicate heading texts, track a per-base "next probe index" in a dict alongside `used` so each call starts its probe where the previous duplicate for that base left off, preserving O(1) amortized per call instead of O(d) per call.
+    - title: Additional output formats (epub/odt/latex)
+      id: icGJ
+      date: "2026-10-04"
+      tags:
+        - type:enhancement
+        - priority:unspecified
+        - effort:unspecified
+      text: md2x supports only pdf, html, and docx (OUTPUT_FORMATS in src/cli/lib/parameters.sh, which carries a commented-out 'opendocument'). Pandoc could also produce EPUB, ODT, RTF, LaTeX/.tex, plain text, and slides. Each new format would need a decision on CSS/header-footer applicability, TOC behavior, and the intermediate format chosen in src/cli/md2x.sh, plus docs and tests. Deliberately excluded from the 1.0 hardening scope, where docs and help were limited to pdf/html/docx.
