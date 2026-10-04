@@ -22,3 +22,10 @@ Remove `@liquid-labs/catalyst-scripts`, move dependency management from npm to b
 - `make clean && make all` succeeds; `node -e "console.log(Object.keys(require('./dist/md2x.js')))"` prints `[ 'md2x' ]` (matching the baseline).
 - `make test-cli` passes (bats cases against the rebuilt `bin/md2x`), confirming `bunx bats` and `bunx bash-rollup` work.
 - `bun audit` output recorded; note whether catalyst-subtree findings are gone (final comparison is task 005).
+
+## Status
+
+- Outcome: succeeded (2026-10-04).
+- Validation: bun 1.3.14; `rm -rf node_modules && bun install` ok (bun.lock text lockfile, package-lock.json removed, no bun.lockb); no `catalyst-scripts` in package.json/bun.lock/Makefile; `make clean && make all` ok, exports `[ 'md2x' ]`, `md2x` is a function, `shelljs` and `node:path` required (not bundled); `make test-cli` 144/144 ok; `bun audit`: No vulnerabilities found (baseline `npm audit`: 34 vulnerabilities, all catalyst-subtree).
+- Changed: `package.json`, `bun.lock`, `package-lock.json` (deleted), `Makefile`. Inline sourcemap kept (`--sourcemap=inline`), export surface unchanged.
+- Baselines for task 005: `/Users/zane/playground/liquid-labs/md2x/.flow/bun-migration-baselines.md`.
