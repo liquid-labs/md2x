@@ -2,11 +2,9 @@ SHELL=/bin/bash -o pipefail
 .DELETE_ON_ERROR:
 .PHONY: all clean lint lint-fix qa smoke-test test test-cli test-node
 
-NPM_BIN:=npm exec
-CATALYST_SCRIPTS:=$(NPM_BIN) catalyst-scripts
-BASH_ROLLUP:=$(NPM_BIN) bash-rollup
-# '--' so npm hands the runner's own flags through instead of parsing them itself.
-BATS:=$(NPM_BIN) -- bats
+BUNX:=bunx
+BASH_ROLLUP:=$(BUNX) bash-rollup
+BATS:=$(BUNX) bats
 
 NODE_SRC=src/node
 NODE_FILES:=$(shell find $(NODE_SRC) -name "*.js" -not -path "*/test/*" -not -name "*.test.js")
@@ -34,7 +32,7 @@ all: $(BUILD_TARGETS)
 # build recipes
 $(NODE_DIST): package.json $(NODE_FILES)
 	mkdir -p $(dir $@)
-	JS_SRC=$(NODE_SRC) $(CATALYST_SCRIPTS) build
+	bun build $(NODE_SRC)/index.js --target=node --format=cjs --packages=external --sourcemap=inline --outfile=$@
 
 $(CLI_BIN): $(CLI_SRC)
 	mkdir -p $(dir $@)
