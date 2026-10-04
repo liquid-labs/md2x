@@ -27,6 +27,15 @@ items:
         - plan/phase:bun-migration
         - effort:unspecified
       text: 'The Makefile runs bash-rollup, bats and eslint through BUNX:=bunx (test-cli, lint, lint-fix targets), all devDependencies. If node_modules is absent or incomplete (fresh checkout that skipped `bun install`), bunx fetches the latest unpinned version from the registry and executes it, bypassing bun.lock (eslint could pull a major above ^9). The release path is exposed the same way: scripts/release.sh runs `bun pm version`, whose preversion hook runs `make all && make qa`. npm exec had the same fallback, so this is not a regression. Hardening options: add `bun install --frozen-lockfile` to the release.sh pre-flight, and/or use `bunx --no-install` or node_modules/.bin/<tool> so a missing install fails instead of fetching.'
+    - title: src/node/md2x.js shells out via unpinned npx
+      id: ya0J
+      date: "2026-10-04"
+      tags:
+        - type:security
+        - priority:low
+        - plan/phase:remediation-01
+        - effort:unspecified
+      text: 'src/node/md2x.js (line ~63) shells out via `npx md2x ...`. If md2x is not resolvable locally (global-only install, or a consumer with no local bin), npx fetches the unpinned latest `md2x` from the registry and executes it; same class as the Makefile bunx issue but at runtime and unchanged by the bun migration (tests assert the `npx md2x` command string, and docs/architecture.md describes it). User-controlled arguments are shell-quoted. Reachability depends on how consumers install the package. Options: invoke the package''s own bin by resolved path (path.join(__dirname, ''../bin/md2x'') or require.resolve) or use `npx --no-install`; either changes tested runtime behavior, so it needs a deliberate decision.'
 closed:
     - id: Iud2
       title: Bun blocked one postinstall script during 'bu
