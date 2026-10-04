@@ -40,7 +40,8 @@ phases:
           digest: Replaced catalyst-scripts lint with direct ESLint 9 using neostandard, import-x, and catalyst custom rules ported to @stylistic (eslint.config.mjs; .mjs because package.json has no type field). Makefile lint/lint-fix use bunx eslint. make qa passes with no source edits.
           git:
             branch: plan/bun-migration-01-003
-            commit: []
+            commit:
+                - 24cc238
             merge: null
         - number: 4
           slug: release-and-docs
