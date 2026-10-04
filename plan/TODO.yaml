@@ -103,5 +103,6 @@ phases:
             - dhr8
           git:
             branch: plan/bun-migration-02-002
-            commit: []
+            commit:
+                - d17e97e
             merge: null
