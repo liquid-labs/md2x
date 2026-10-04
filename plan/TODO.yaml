@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 1
-    tasks_added: 1
+    tasks_added: 2
 phases:
     - number: 1
       slug: bun-migration
@@ -84,6 +84,19 @@ phases:
           tier: sonnet-med
           findings:
             - 65wX
+          git:
+            branch: null
+            commit: []
+            merge: null
+        - number: 2
+          slug: tooling-declared-deps-and-coverage-output
+          title: Drop Unused Stylistic DevDependency And Make Coverage Output Match Docs
+          path: phase-02-remediation-01/002-tooling-declared-deps-and-coverage-output.md
+          done: false
+          tier: sonnet-low
+          findings:
+            - DyR1
+            - dhr8
           git:
             branch: null
             commit: []
