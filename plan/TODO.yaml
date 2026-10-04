@@ -10,3 +10,7 @@ phases:
       slug: interface-contract
       title: Interface Contract
       tasks: []
+    - number: 3
+      slug: docs-ci-and-release-readiness
+      title: Docs, CI, and Release Readiness
+      tasks: []
