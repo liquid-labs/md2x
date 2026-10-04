@@ -42,7 +42,7 @@ phases:
             branch: plan/bun-migration-01-003
             commit:
                 - 24cc238
-            merge: null
+            merge: 17935b3d810ba2ab998756953faa7ec02f7c366c
         - number: 4
           slug: release-and-docs
           title: Update release.sh, RELEASING.md, and Project Docs for Bun
