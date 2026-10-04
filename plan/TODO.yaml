@@ -18,7 +18,7 @@ phases:
             branch: plan/bun-migration-01-001
             commit:
                 - 144ad26
-            merge: null
+            merge: 6112f49f7dba654ead0d53969ac9d53539be8223
         - number: 2
           slug: port-tests-to-bun-test
           title: Port src/node Tests to bun:test
