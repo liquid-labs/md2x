@@ -61,10 +61,10 @@ smoke-test: all $(SMOKE_TEST_OUT)
 
 # lint rules
 lint:
-	JS_LINT_TARGET=$(NODE_SRC) $(CATALYST_SCRIPTS) lint
+	$(BUNX) eslint $(NODE_SRC)
 
 lint-fix:
-	JS_LINT_TARGET=$(NODE_SRC) $(CATALYST_SCRIPTS) lint-fix
+	$(BUNX) eslint --fix $(NODE_SRC)
 
 qa: test lint
 	
