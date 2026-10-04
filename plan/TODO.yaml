@@ -125,5 +125,6 @@ phases:
             - VtSc
           git:
             branch: plan/bun-migration-03-001
-            commit: []
+            commit:
+                - ca6a28c
             merge: null
