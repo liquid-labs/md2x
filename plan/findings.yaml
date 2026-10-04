@@ -18,4 +18,13 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: Task 003's grep check references eslint.config.js but the config was created as eslint.config.mjs; the task doc could be updated to match.
+    - title: Docs claim coverage/ dir bun test lacks
+      id: dhr8
+      date: "2026-10-04"
+      tags:
+        - type:documentation
+        - priority:low
+        - plan/phase:bun-migration
+        - effort:unspecified
+      text: Makefile test-node runs `bun test ./src/node --coverage --coverage-reporter=text --coverage-dir=coverage`, and AGENTS.md (lines ~21-22) and docs/project-structure.md say it writes a gitignored coverage/ directory. Bun's --coverage-dir applies only to the lcov reporter, so with only the text reporter no coverage/ directory is likely produced (unverified by running). Either add --coverage-reporter=lcov in the Makefile test-node recipe so coverage/ exists, or reword AGENTS.md and docs/project-structure.md to say coverage prints to the console.
 closed: []
