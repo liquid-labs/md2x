@@ -88,7 +88,8 @@ phases:
             - 65wX
           git:
             branch: plan/bun-migration-02-001
-            commit: []
+            commit:
+                - b839864
             merge: null
         - number: 2
           slug: tooling-declared-deps-and-coverage-output
