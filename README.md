@@ -109,8 +109,8 @@ Two limitations carry over from the underlying heading-identifier algorithm: a h
 - Full specification: [docs/md2x-spec.md](./docs/md2x-spec.md)
 - Architecture and conversion pipeline: [docs/architecture.md](./docs/architecture.md)
 - Project structure and file layout: [docs/project-structure.md](./docs/project-structure.md)
-- Release history: [CHANGELOG.md](./CHANGELOG.md)
+- Release history: [GitHub releases](https://github.com/liquid-labs/md2x/releases)
 
 ## License
 
-This package is marked `"license": "UNLICENSED"` in `package.json`. It is Liquid-Labs internal tooling and is not published for external or open-source use.
+md2x is licensed under the Apache License 2.0; see [LICENSE.txt](./LICENSE.txt).
