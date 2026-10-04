@@ -73,6 +73,7 @@ phases:
     - number: 2
       slug: remediation-01
       title: Remediation Round 1
+      diff_base: 342d33aa39e38999bf691e8715bb4f780670b195
       kind: remediation
       security_review: required
       tasks:
@@ -80,13 +81,15 @@ phases:
           slug: harden-bunx-tool-resolution
           title: Fail Closed When Dev Tools Are Not Installed
           path: phase-02-remediation-01/001-harden-bunx-tool-resolution.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: Dev tools (bash-rollup, bats, eslint) now resolve only to lockfile-pinned node_modules/.bin binaries, so a missing node_modules fails closed instead of fetching from the registry; release.sh runs bun install --frozen-lockfile in pre-flight before the version bump. Docs updated.
           findings:
             - 65wX
           git:
-            branch: null
-            commit: []
+            branch: plan/bun-migration-02-001
+            commit:
+                - b839864
             merge: null
         - number: 2
           slug: tooling-declared-deps-and-coverage-output
