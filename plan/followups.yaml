@@ -42,3 +42,11 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: md2x has no configuration surface beyond flags. No .md2xrc, no --config, and no MD2X_* environment variables exist. HOME (for ~/.md2x/venv and ~/.md2x-venv.lock in src/cli/lib/ensure-weasyprint.sh) and TMPDIR are the only environment inputs, and there is no override for the WeasyPrint venv location. Users converting many files in one repo must repeat flags. Decide whether to reserve the .md2xrc / MD2X_* namespaces, then design precedence (flags over env over config file). Excluded from the 1.0 hardening scope.
+    - title: Self-contained HTML output option
+      id: kgpR
+      date: "2026-10-04"
+      tags:
+        - type:enhancement
+        - priority:unspecified
+        - effort:unspecified
+      text: HTML output from src/cli/lib/generate-page.sh is not self-contained. The 1.0 hardening inlines only the bundled CSS; relative images stay external, resolved relative to the output file. An opt-in mode (for example a flag mapped to pandoc --embed-resources, pandoc 2.19 or newer) would inline images and other local assets as data URIs, so a single .html file can be moved or emailed. This needs a decision on the pandoc version floor and on remote-resource fetching, which is SSRF-relevant per the WeasyPrint caveat in docs/md2x-spec.md. Excluded from the 1.0 hardening scope.
