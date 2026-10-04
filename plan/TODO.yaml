@@ -5,6 +5,7 @@ phases:
     - number: 1
       slug: bun-migration
       title: Bun Migration and catalyst-scripts Removal
+      diff_base: f32f277bd0cbb1ddfbd85efb5855f0bb0c68ad3e
       tasks:
         - number: 1
           slug: bun-install-and-build
