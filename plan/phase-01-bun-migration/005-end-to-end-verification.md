@@ -20,3 +20,7 @@ Run each check from a clean state and record exact output summaries:
 ## Validation
 
 The report lists every numbered check with pass/fail and evidence. Any failure sets status to partial with the failing item and suspected owning task (001-004).
+
+## Status
+
+Outcome: succeeded (2026-10-04). All 8 checks passed: bun 1.3.14; frozen-lockfile install ok, no package-lock.json/bun.lockb, bun.lock tracked; make clean/all/test/lint and make qa exit 0 (bats 53 ok, bun test 24 pass); exports [ 'md2x' ] under node and bun; bun audit reports no vulnerabilities (baseline was 34); bun pm pack lists the same 5 files as the npm baseline; stale-term grep empty; git status clean and bash -n scripts/release.sh ok. No source changes.
