@@ -103,15 +103,35 @@ fi
 
 # --- GitHub release -----------------------------------------------------------
 say "Creating GitHub release $TAG"
-PREV_TAG=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || git describe --tags --abbrev=0 HEAD 2>/dev/null || true)
-NOTES_FLAGS=(--generate-notes)
-[[ -z "$PREV_TAG" ]] || NOTES_FLAGS+=(--notes-start-tag "$PREV_TAG")
+# Notes come from first-parent git history (this project merges branches with --no-ff).
+if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then BASE="$TAG^"; else BASE=HEAD; fi
+PREV_TAG=$(git describe --tags --abbrev=0 --match 'v*' "$BASE" 2>/dev/null || true)
+RANGE=${PREV_TAG:+$PREV_TAG..HEAD}
+NOTES_FILE=$(mktemp)
+trap 'rm -f "$NOTES_FILE"' EXIT
+{
+  while read -r sha; do
+    subj=$(git log -1 --format=%s "$sha")
+    case "$subj" in "release: "*|*"(pre-merge sync)"*) continue ;; esac
+    if [[ $(git rev-list --parents -n1 "$sha" | wc -w) -gt 2 && "$subj" =~ ^Merge\ branch\ \'([^\']+)\' ]]; then
+      name=${BASH_REMATCH[1]##*/}; name=${name//[-_]/ }
+      body=$(git log -1 --format=%b "$sha" | sed -n '/./{p;q;}')
+      subj="Merged $name"
+    else
+      body=''
+    fi
+    echo "* ${subj}${body:+ - $body}"
+  done < <(git rev-list --first-parent ${RANGE:-HEAD})
+  SLUG=$(git remote get-url "$REMOTE" | sed -E 's#^.*[:/]([^/:]+/[^/]+)$#\1#; s#\.git$##')
+  [[ -z "$PREV_TAG" ]] || printf '\n**Full changelog**: https://github.com/%s/compare/%s...%s\n' "$SLUG" "$PREV_TAG" "$TAG"
+} > "$NOTES_FILE"
 if (( DRY_RUN )); then
-  echo "[dry-run] would run: gh release create $TAG --title $TAG ${NOTES_FLAGS[*]} --verify-tag ${PRERELEASE_FLAG[*]:-}"
+  echo "[dry-run] would run: gh release create $TAG --title $TAG --notes-file <file> --verify-tag ${PRERELEASE_FLAG[*]:-}"
+  echo "[dry-run] release notes:"; cat "$NOTES_FILE"
 elif gh release view "$TAG" >/dev/null 2>&1; then
   echo "Release exists; skipping."
 else
-  gh release create "$TAG" --title "$TAG" "${NOTES_FLAGS[@]}" --verify-tag ${PRERELEASE_FLAG[@]+"${PRERELEASE_FLAG[@]}"}
+  gh release create "$TAG" --title "$TAG" --notes-file "$NOTES_FILE" --verify-tag ${PRERELEASE_FLAG[@]+"${PRERELEASE_FLAG[@]}"}
 fi
 
 say "Done$( (( DRY_RUN )) && echo " (dry run)"): $TAG"
