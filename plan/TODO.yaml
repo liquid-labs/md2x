@@ -36,3 +36,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 4
+          slug: release-and-docs
+          title: Update release.sh, RELEASING.md, and Project Docs for Bun
+          path: phase-01-bun-migration/004-release-and-docs.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
