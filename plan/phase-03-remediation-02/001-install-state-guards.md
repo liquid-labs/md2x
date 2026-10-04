@@ -21,3 +21,7 @@ Remediates findings tnIj and VtSc. tnIj: `scripts/release.sh` runs `bun install 
 
 - Finding tnIj in this plan's `plan/findings.yaml`.
 - Finding VtSc in this plan's `plan/findings.yaml`.
+
+## Status
+
+Succeeded, 2026-10-04. Release pre-flight now runs `rm -rf node_modules` before `bun install --frozen-lockfile` (scripts/release.sh); RELEASING.md updated; Makefile gains a `$(BIN_DIR)/%` guard rule used as an order-only prerequisite of the bash-rollup, bats and eslint consumers (fails closed with a `bun install` hint). Validation: `bash -n` ok; with node_modules absent `make lint`/`test-cli`/`smoke-test`/`lint-fix` exit 2 with the hint and no download; after a frozen install `make clean all test lint qa` exits 0 and `make lint-fix` left src unchanged. Files: Makefile, scripts/release.sh, RELEASING.md.
