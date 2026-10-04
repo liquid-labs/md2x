@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Release may use stale node_modules
-      id: tnIj
-      date: "2026-10-04"
-      tags:
-        - type:security
-        - priority:low
-        - plan/phase:remediation-01
-        - effort:unspecified
-      text: scripts/release.sh (lines ~68-70) runs `bun install --frozen-lockfile` before `bun pm version`, but bun does not re-verify the contents of an already-installed package against the lockfile integrity hash when versions match, so a stale or tampered node_modules is still used by the preversion `make all && make qa`. Defense-in-depth only; optional hardening is `rm -rf node_modules` before the frozen install in release.sh, or documenting it in RELEASING.md.
     - title: Missing node_modules error lacks bun install
       id: VtSc
       date: "2026-10-04"
@@ -48,4 +39,9 @@ closed:
       title: src/node/md2x.js shells out via unpinned npx
       disposition: promoted
       ref: ya0J
+      date: "2026-10-04"
+    - id: tnIj
+      title: Release may use stale node_modules
+      disposition: fixed
+      ref: phase-03-remediation-02/001-install-state-guards.md
       date: "2026-10-04"
