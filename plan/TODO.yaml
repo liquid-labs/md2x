@@ -15,5 +15,6 @@ phases:
           digest: Replaced four flow ignore lines with single .flow/ entry and untracked .flow/what-next-cache.json.
           git:
             branch: plan/migrate-liquid-labs-09-001
-            commit: []
+            commit:
+                - 8d70a98
             merge: null
