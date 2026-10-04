@@ -27,7 +27,7 @@ phases:
           tier: sonnet-med
           digest: Ported md2x.test.js to bun:test with a pre-import mock.module and dynamic imports; test-node now runs bun test with coverage; test-staging remnants removed. 24 tests and bats suite pass; mock sanity check confirmed.
           git:
-            branch: null
+            branch: plan/bun-migration-01-002
             commit: []
             merge: null
         - number: 3
