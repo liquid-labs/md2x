@@ -36,6 +36,15 @@ items:
         - plan/phase:remediation-01
         - effort:unspecified
       text: 'src/node/md2x.js (line ~63) shells out via `npx md2x ...`. If md2x is not resolvable locally (global-only install, or a consumer with no local bin), npx fetches the unpinned latest `md2x` from the registry and executes it; same class as the Makefile bunx issue but at runtime and unchanged by the bun migration (tests assert the `npx md2x` command string, and docs/architecture.md describes it). User-controlled arguments are shell-quoted. Reachability depends on how consumers install the package. Options: invoke the package''s own bin by resolved path (path.join(__dirname, ''../bin/md2x'') or require.resolve) or use `npx --no-install`; either changes tested runtime behavior, so it needs a deliberate decision.'
+    - title: Release may use stale node_modules
+      id: tnIj
+      date: "2026-10-04"
+      tags:
+        - type:security
+        - priority:low
+        - plan/phase:remediation-01
+        - effort:unspecified
+      text: scripts/release.sh (lines ~68-70) runs `bun install --frozen-lockfile` before `bun pm version`, but bun does not re-verify the contents of an already-installed package against the lockfile integrity hash when versions match, so a stale or tampered node_modules is still used by the preversion `make all && make qa`. Defense-in-depth only; optional hardening is `rm -rf node_modules` before the frozen install in release.sh, or documenting it in RELEASING.md.
 closed:
     - id: Iud2
       title: Bun blocked one postinstall script during 'bu
