@@ -52,7 +52,8 @@ phases:
           digest: Release script and project docs moved to bun. release.sh uses bun pm version (runs preversion; tested in scratch copy) and bun pm pack; handles unchanged bun.lock via revert_bump helper. npm retained for whoami/view/publish (OTP prompt) as documented in RELEASING.md - needs user confirmation. Full release.sh --dry-run not run (needs main branch + npm/gh login).
           git:
             branch: plan/bun-migration-01-004
-            commit: []
+            commit:
+                - 11fe130
             merge: null
         - number: 5
           slug: end-to-end-verification
