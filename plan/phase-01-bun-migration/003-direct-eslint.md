@@ -20,3 +20,7 @@ Replace `catalyst-scripts lint` / `lint-fix` with a direct `eslint` invocation d
 - Rule-preservation check: temporarily introduce violations (a space before function paren, `if (x)\n{`, an unaligned `key:value` in a multi-line object, a leading-operator violation) in a scratch copy of the source and confirm `eslint` flags each; revert.
 - `grep -rn "catalyst\|JS_LINT_TARGET" Makefile package.json eslint.config.js .eslintrc.cjs 2>/dev/null` returns nothing.
 - `make qa` passes end to end.
+
+## Status
+
+Outcome: succeeded (2026-10-04). Direct ESLint 9 flat config in `eslint.config.mjs` (neostandard + eslint-plugin-import-x + the catalyst custom rules via `@stylistic`); `Makefile` lint/lint-fix use `$(BUNX) eslint`. Validation: `make lint` 0, `make lint-fix` leaves src unchanged, rule-preservation scratch check flagged all four violations, grep clean, `make qa` passes. No source files changed. ESLint pinned to ^9 because neostandard 0.13's bundled @stylistic crashes under ESLint 10. Config named `.mjs` to avoid the typeless-package ESM warning.

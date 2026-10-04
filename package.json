@@ -33,7 +33,11 @@
   "devDependencies": {
     "@liquid-labs/bash-rollup": "^1.0.0-alpha.6",
     "@liquid-labs/bash-toolkit": "^1.0.0-alpha.57",
-    "bats": "^1.13.0"
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "bats": "^1.13.0",
+    "eslint": "^9",
+    "eslint-plugin-import-x": "^4.17.1",
+    "neostandard": "^0.13.0"
   },
   "dependencies": {
     "shelljs": "^0.8.5"
