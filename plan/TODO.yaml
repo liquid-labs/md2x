@@ -35,7 +35,7 @@ phases:
           slug: direct-eslint
           title: Replace catalyst-scripts Lint with Direct ESLint
           path: phase-01-bun-migration/003-direct-eslint.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Replaced catalyst-scripts lint with direct ESLint 9 using neostandard, import-x, and catalyst custom rules ported to @stylistic (eslint.config.mjs; .mjs because package.json has no type field). Makefile lint/lint-fix use bunx eslint. make qa passes with no source edits.
           git:
