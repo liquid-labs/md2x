@@ -72,21 +72,90 @@ md2x-require-infer-version-tools() {
 }
 
 # md2x-infer-git <git args...>
-# Runs 'git' with the repository-local configuration neutralized: the directory comes from
-# the inputs, and a '.git/config' there (core.fsmonitor, core.hooksPath) can otherwise make
-# git execute commands.
+# Runs 'git' with the repository-local configuration partly neutralized: the directory comes
+# from the inputs, and a '.git/config' there (core.fsmonitor, core.hooksPath) can otherwise
+# make git execute commands. The two '-c' overrides cover only those two keys; other keys
+# (a 'filter.<name>.clean', a 'diff.<name>.textconv', an 'include.path', ...) still run
+# commands or pull in more config. 'md2x-infer-version' therefore refuses, via
+# 'md2x-infer-config-refusal', any repository whose local config carries a command-bearing
+# key before it runs 'git status' through this wrapper.
 md2x-infer-git() {
   GIT_CONFIG_NOSYSTEM=1 git --no-optional-locks -c core.fsmonitor= -c core.hooksPath=/dev/null "$@"
+}
+
+# md2x-infer-key-refusal <lowercased config key>
+# Returns 0 when the key could run a command or pull in other configuration (the key's last
+# dotted component is the variable name; any earlier part is the section and subsection).
+md2x-infer-key-refusal() {
+  case "${1}" in
+    filter.*|include.*|includeif.*|credential.*|core.fsmonitor|core.worktree) return 0;;
+    *.command|*.program|*.driver|*.textconv|*.external|*.pager|*.editor|*.askpass) return 0;;
+    *.sshcommand|*.gitproxy|*.process|*.clean|*.smudge) return 0;;
+  esac
+  return 1
+}
+
+# md2x-infer-config-keys <toplevel> <git config scope option>
+# Prints the names (never the values) of the keys in one local config file, one per line,
+# through 'md2x-infer-git', without '--includes' so nothing is followed. Needs git >= 2.22
+# ('--name-only'); an older git fails here, which the caller treats as fail closed.
+md2x-infer-config-keys() {
+  md2x-infer-git -C "${1}" config "${2}" --list --name-only 2>/dev/null
+}
+
+# md2x-infer-config-refusal <toplevel>
+# Reads the repository's own config (and the per-worktree config when
+# 'extensions.worktreeConfig' is set) without running anything. Returns 0 after printing a
+# one-line reason on stdout when the config holds a command-bearing key or cannot be read or
+# parsed (fail closed); returns 1 when every key is ordinary.
+md2x-infer-config-refusal() {
+  local TOP="${1}" KEYS WKEYS='' KEY LKEY WFILE
+  KEYS="$(md2x-infer-config-keys "${TOP}" --local)" || KEYS=''
+  if [[ -z "${KEYS}" ]]; then
+    printf 'its local git config could not be read (git >= 2.22 is needed)'
+    return 0
+  fi
+  if printf '%s\n' "${KEYS}" | grep -qixF 'extensions.worktreeconfig'; then
+    WFILE="$(md2x-infer-git -C "${TOP}" rev-parse --git-path config.worktree 2>/dev/null)" || WFILE=''
+    if [[ -z "${WFILE}" ]]; then
+      printf 'its per-worktree git config could not be located'
+      return 0
+    fi
+    [[ "${WFILE}" == /* ]] || WFILE="${TOP}/${WFILE}"
+    # No per-worktree file is the ordinary case, and holds no keys.
+    if [[ -e "${WFILE}" ]]; then
+      WKEYS="$(md2x-infer-config-keys "${TOP}" --worktree)" || WKEYS=''
+      if [[ -z "${WKEYS}" ]]; then
+        printf 'its per-worktree git config could not be read'
+        return 0
+      fi
+    fi
+  fi
+  while IFS= read -r KEY; do
+    [[ -n "${KEY}" ]] || continue
+    LKEY="$(printf '%s' "${KEY}" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+    case "${LKEY}" in
+      *.*) ;;
+      *) printf 'its local git config could not be parsed'; return 0;;
+    esac
+    if md2x-infer-key-refusal "${LKEY}"; then
+      printf "its local git config has the command-bearing key '%s'" "$(md2x-title-display "${KEY}")"
+      return 0
+    fi
+  done <<< "${KEYS}"$'\n'"${WKEYS}"
+  return 1
 }
 
 # md2x-infer-version <dir>
 # Prints the version string for the footer, resolved against the git repository containing
 # <dir>: the 'version' of '<toplevel>/package.json', or 'working' when the work tree has
 # uncommitted changes. Prints nothing, after one warning on stderr, when <dir> is not in a
-# git work tree or the package.json is missing, unreadable, or has no version; the caller
-# omits the version from the footer and carries on. Needs 'git' and 'jq' (see above).
+# git work tree, the package.json is missing, unreadable, or has no version, or the
+# repository's local config holds a command-bearing key (or cannot be read; no 'git status'
+# runs then); the caller omits the version from the footer and carries on. Needs 'git' and
+# 'jq' (see above).
 md2x-infer-version() {
-  local DIR="${1}" TOP PKG STATUS VER
+  local DIR="${1}" TOP PKG STATUS VER REASON
   TOP="$(md2x-infer-git -C "${DIR}" rev-parse --show-toplevel 2>/dev/null)" || TOP=''
   if [[ -z "${TOP}" ]]; then
     md2x-warn "--infer-version: '$(md2x-title-display "${DIR}")' is not inside a git work tree; no version in the footer."
@@ -95,6 +164,10 @@ md2x-infer-version() {
   PKG="${TOP}/package.json"
   if [[ ! -f "${PKG}" ]]; then
     md2x-warn "--infer-version: no package.json at the top of the git work tree '$(md2x-title-display "${TOP}")'; no version in the footer."
+    return 0
+  fi
+  if REASON="$(md2x-infer-config-refusal "${TOP}")"; then
+    md2x-warn "--infer-version: not running git in '$(md2x-title-display "${TOP}")': ${REASON}; no version in the footer."
     return 0
   fi
   STATUS="$(md2x-infer-git -C "${TOP}" status --porcelain 2>/dev/null)" || STATUS='?'

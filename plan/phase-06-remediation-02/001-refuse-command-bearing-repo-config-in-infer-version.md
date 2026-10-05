@@ -35,3 +35,8 @@ Fixes finding r4Pu from the Remediation Round 1 review. The work targets the pla
 
 - Finding r4Pu, in this plan's `plan/findings.yaml`.
 - Files: `src/cli/lib/preflight.sh`, `src/cli/test/bats/version-inference.bats`, `docs/md2x-spec.md`.
+
+## Status
+
+Outcome: succeeded (2026-10-05). `md2x-infer-version` now calls `md2x-infer-config-refusal` (in `src/cli/lib/preflight.sh`) before `git status`: it reads key names with `config --local --list --name-only` (plus `--worktree` when `extensions.worktreeConfig` is set and a `config.worktree` file exists), refuses command-bearing keys case-insensitively, and fails closed when the read or parse fails (this includes git older than 2.22, where `--name-only` is unsupported: warn and omit the version). Tests are in `src/cli/test/bats/version-inference.bats`; the trust assumption is documented in `docs/md2x-spec.md` and above `md2x-infer-git`. Validation: `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` green (345 cases). The new filter-sentinel case was confirmed to fail against a build of the pre-change `HEAD` (sentinel created).
+Decision: the existing fsmonitor sentinel case now expects a warning and no version, because `core.fsmonitor` is itself a refused key.
