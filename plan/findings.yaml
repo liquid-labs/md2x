@@ -5,9 +5,9 @@ items:
       date: "2026-10-04"
       tags:
         - type:security
-        - priority:low
+        - priority:high
+        - effort:medium
         - plan/phase:correctness-and-regression-tests
-        - effort:unspecified
       text: A file name found by recursive directory search can contain ESC or other control characters and flows unescaped into stderr/stdout messages (pandoc failed for '${INPUT_LABEL}', Created ${BASE_OUTPUT}, --list-files output) in src/cli/lib/generate-page.sh and src/cli/md2x.sh, allowing terminal-escape injection; embedded newlines also break the line-oriented md2x-list-inputs records. md2x-title-display in src/cli/lib/title-safe.sh exists but is not applied to these sinks. Pass INPUT_LABEL and derived names through md2x-title-display, and optionally reject control characters in discovered file names.
     - title: Harden getopt eval and cap title length
       id: ttPU
