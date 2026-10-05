@@ -88,7 +88,8 @@ phases:
           digest: 'Added src/cli/lib/title-safe.sh and routed --title through three sinks: validated as a filename (exit 2), passed as one -M title= argument, and PostScript-escaped for the gs overlay. Updated pandoc stub and existing tests; added bats file and real-toolchain e2e cases. qa and bash 3.2 runs pass.'
           git:
             branch: plan/golden-release-hardening-01-007
-            commit: []
+            commit:
+                - 22ba07d
             merge: null
         - number: 8
           slug: node-staging-path
