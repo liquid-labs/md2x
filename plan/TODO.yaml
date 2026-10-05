@@ -143,7 +143,7 @@ phases:
             branch: plan/golden-release-hardening-02-003
             commit:
                 - 3eb5b2d
-            merge: null
+            merge: 75409f9d90b3be4ff5f443035551b5c60e93d9c3
         - number: 4
           slug: resolve-links-and-images-with-lua-filter
           title: Resolve Links and Images With Lua Filter
