@@ -263,6 +263,20 @@ make_repo() {
   refute_stderr_contains 'type:'
 }
 
+# --- repository config that can run commands --------------------------------------------
+#
+# A repository's own config is untrusted input: before any 'git status', 'md2x-infer-version'
+# reads the config key names and, on a command-bearing key, warns once and omits the version.
+
+# assert_version_omitted: the last 'md2x_run' warned about the refusal, still succeeded, and
+# the footer carries no 'Version'.
+assert_version_omitted() {
+  assert_success
+  assert_stderr_contains 'md2x: warning: --infer-version: not running git in'
+  assert_stderr_contains 'no version in the footer'
+  refute_any_call_contains gs 'Version'
+}
+
 @test "--infer-version does not run a command named by the repository's core.fsmonitor" {
   require_git_and_jq
   make_repo repo '{"name":"x","version":"2.3.4"}'
@@ -272,7 +286,92 @@ make_repo() {
 
   md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
 
-  assert_success
   [[ ! -e "${sentinel}" ]] || md2x_fail "the repository's core.fsmonitor command ran"
+  assert_version_omitted
+  assert_stderr_contains "'core.fsmonitor'"
+}
+
+@test "--infer-version does not run a clean filter configured in the repository, even for a stat-dirty file" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  local sentinel="${PWD}/filter-ran"
+  rm -f "${sentinel}"
+  # The attributes file is committed; the filter command is added only after the commit so
+  # the commit itself does not run it.
+  printf '* filter=x\n' > repo/.gitattributes
+  git -C repo add .gitattributes
+  git -C repo -c user.name=t -c user.email=t@example.com -c commit.gpgsign=false commit -q -m attrs
+  git -C repo config filter.x.clean "touch '${sentinel}'; cat"
+  # Same content, different mtime: status must re-run the clean filter to find out it is clean.
+  touch -t 200001010000 repo/package.json repo/doc.md
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  [[ ! -e "${sentinel}" ]] || md2x_fail "the repository's clean filter ran"
+  assert_version_omitted
+  assert_stderr_contains "'filter.x.clean'"
+}
+
+@test "--infer-version refuses a repository whose config has an include.path key" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  git -C repo config include.path "${PWD}/other-config"
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_version_omitted
+  assert_stderr_contains "'include.path'"
+}
+
+@test "--infer-version refuses a repository whose config has an includeIf key" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  git -C repo config 'includeIf.gitdir:/nowhere/.path' "${PWD}/other-config"
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_version_omitted
+  assert_stderr_contains "'includeif.gitdir:/nowhere/.path'"
+}
+
+@test "--infer-version matches command-bearing config keys case-insensitively" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  git -C repo config 'Diff.Foo.TextConv' 'cat'
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_version_omitted
+}
+
+@test "--infer-version refuses a command-bearing key in the per-worktree config" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  git -C repo config extensions.worktreeConfig true
+  git -C repo config --worktree 'diff.foo.command' 'true'
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_version_omitted
+  assert_stderr_contains "'diff.foo.command'"
+}
+
+@test "--infer-version keeps working when the repository config has only ordinary keys" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  git -C repo remote add origin https://example.com/x.git
+  git -C repo config branch.main.remote origin
+  git -C repo config user.name someone
+  git -C repo config extensions.worktreeConfig true
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_success
+  [[ -z "${stderr}" ]] || md2x_fail "unexpected stderr: ${stderr}"
   assert_any_call_contains gs 'Version: 2.3.4'
+
+  printf 'edit\n' >> repo/doc.md
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out2 repo/doc.md
+  assert_success
+  assert_any_call_contains gs 'Version: working'
 }
