@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: infer-version git status runs clean filters
-      id: r4Pu
-      date: "2026-10-05"
-      tags:
-        - type:security
-        - priority:high
-        - plan/phase:remediation-01
-        - effort:unspecified
-      text: 'MAJOR, reproduced. md2x-infer-git in src/cli/lib/preflight.sh (lines ~74-81, used at ~90 and ~100) neutralizes core.fsmonitor and core.hooksPath, but ''git status --porcelain'' in an untrusted input directory still executes repository-configured commands: with a tracked .gitattributes ''* filter=x'' and .git/config ''[filter "x"] clean = <cmd>'', running exactly the hardened command after touching a file executed the clean filter (marker file created). core.hooksPath is irrelevant to status/rev-parse. Only reachable with --infer-version, but an extracted archive is user-owned so safe.directory does not protect. Remediate for real, not just a comment: for example skip the dirty check (and the ''working'' version) when ''git config --local --list'' (which executes nothing) shows keys that can run commands (filter.*, core.fsmonitor, include/includeIf, diff.*.command/external, core.sshCommand, core.pager and similar), warning and omitting the version instead; also set GIT_CONFIG_GLOBAL=/dev/null if appropriate. Add a bats regression case with a hostile filter driver that must not create its sentinel file (verify it fails on the current code), and document that --infer-version only trusts repositories whose local config is free of command-bearing keys.'
     - title: infer-version status may recurse submodules
       id: JEAt
       date: "2026-10-05"
@@ -126,4 +117,9 @@ closed:
       title: Always pass nonce; harden test-pack checks
       disposition: dismissed
       reason: 'Fixed by remediation task 6.3: nonce and all md2x-* filter settings always passed via -M (pandoc -M overrides front matter, verified by implementer and reviewers); test-pack fails closed. Round 2 reviews confirmed.'
+      date: "2026-10-05"
+    - id: r4Pu
+      title: infer-version git status runs clean filters
+      disposition: dismissed
+      reason: 'Superseded: remediation task 6.1 fixed the reproduced clean-filter case, but the denylist was shown bypassable; the complete fix is tracked by U0Pj (allowlist) and Qbv2 (pipefail fail-open).'
       date: "2026-10-05"
