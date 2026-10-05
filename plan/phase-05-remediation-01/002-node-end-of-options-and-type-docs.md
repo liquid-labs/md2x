@@ -21,3 +21,8 @@ Fixes findings Xylz and YkUH from the Phase 2 review. The work targets the plan 
 - Finding Xylz, in this plan's `plan/findings.yaml`.
 - Finding YkUH, in this plan's `plan/findings.yaml`.
 - Files: `src/node/md2x.js`, `src/node/index.d.ts`, `src/node/md2x.test.js`.
+
+## Status
+
+Succeeded, 2026-10-05. `buildInvocation` now emits `--` before the sources (GNU getopt passes a lone `-` after `--` through as a positional, verified directly, so markdown-over-stdin still works). `index.d.ts` JSDoc for `inferTitle`, `inferVersion`, `singlePage` matches `md2x --help`. Tests updated and `-weird.md` sync/async tests added. `make qa` and `make test-pack` pass.
+Files: `src/node/md2x.js`, `src/node/index.d.ts`, `src/node/md2x.test.js`.

@@ -81,13 +81,13 @@ describe('md2x', () => {
     test('applies only the always-on flags and the default format when no options are set', () => {
       md2x({ sources : ['a.md'] })
 
-      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', 'a.md'])
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', '--', 'a.md'])
     })
 
     test('passes the format lowercased', () => {
       md2x({ sources : ['a.md'], format : 'HTML' })
 
-      expect(argsOf()).toEqual(['--list-files', '--output-format', 'html', 'a.md'])
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'html', '--', 'a.md'])
     })
 
     test.each([
@@ -100,22 +100,22 @@ describe('md2x', () => {
     ])('adds %s as %s, and only that flag, when true', (option, flag) => {
       md2x({ sources : ['a.md'], [option] : true })
 
-      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', flag, 'a.md'])
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', flag, '--', 'a.md'])
     })
 
     test('omits a flag set to false', () => {
       md2x({ sources : ['a.md'], toc : false, singlePage : false })
 
-      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', 'a.md'])
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', '--', 'a.md'])
     })
 
     test('maps outputPath to --output-path and output to -o', () => {
       md2x({ sources : ['a.md'], outputPath : './out dir' })
-      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', '--output-path', './out dir', 'a.md'])
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', '--output-path', './out dir', '--', 'a.md'])
 
       jest.clearAllMocks()
       md2x({ sources : ['a.md'], output : 'o/final.pdf' })
-      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', '-o', 'o/final.pdf', 'a.md'])
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', '-o', 'o/final.pdf', '--', 'a.md'])
     })
 
     test('passes title, output, and sources verbatim, with no quoting', () => {
@@ -123,8 +123,14 @@ describe('md2x', () => {
       md2x({ sources : ['c dir/d.md', "it's.md"], title, output : "o'dir/$x.pdf" })
 
       expect(argsOf()).toEqual([
-        '--list-files', '--output-format', 'pdf', '--title', title, '-o', "o'dir/$x.pdf", 'c dir/d.md', "it's.md"
+        '--list-files', '--output-format', 'pdf', '--title', title, '-o', "o'dir/$x.pdf", '--', 'c dir/d.md', "it's.md"
       ])
+    })
+
+    test('places sources after "--" so a dash-leading source is a file, not an option', () => {
+      md2x({ sources : ['-weird.md'] })
+
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', '--', '-weird.md'])
     })
 
     test('omits --title unless given (no Report default)', () => {
@@ -141,7 +147,7 @@ describe('md2x', () => {
       md2x({ markdown, format : 'html' })
 
       const [, args, opts] = spawnSync.mock.calls[0]
-      expect(args).toEqual(['--list-files', '--output-format', 'html', '-'])
+      expect(args).toEqual(['--list-files', '--output-format', 'html', '--', '-'])
       expect(opts.input).toBe(markdown)
       expect(opts.stdio[0]).toBe('pipe')
     })
@@ -315,10 +321,18 @@ describe('md2xAsync', () => {
     expect(await promise).toEqual(['out/output.html'])
     const [bin, args, opts] = spawn.mock.calls[0]
     expect(bin).toBe(BIN_PATH)
-    expect(args).toEqual(['--list-files', '--output-format', 'html', '-'])
+    expect(args).toEqual(['--list-files', '--output-format', 'html', '--', '-'])
     expect(opts.stdio).toEqual(['pipe', 'pipe', 'pipe'])
     expect(child.stdin.end).toHaveBeenCalledWith(markdown)
     expect(errorSpy).toHaveBeenCalledWith('note')
+  })
+
+  test('places a dash-leading source after "--"', async() => {
+    const promise = md2xAsync({ sources : ['-weird.md'] })
+    child.emit('close', 0, null)
+
+    await promise
+    expect(spawn.mock.calls[0][1]).toEqual(['--list-files', '--output-format', 'pdf', '--', '-weird.md'])
   })
 
   test('ignores stdin for sources and does not write to it', async() => {
