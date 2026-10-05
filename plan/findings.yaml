@@ -18,15 +18,6 @@ items:
         - plan/phase:remediation-01
         - effort:unspecified
       text: 'MAJOR, reproduced. md2x-infer-git in src/cli/lib/preflight.sh (lines ~74-81, used at ~90 and ~100) neutralizes core.fsmonitor and core.hooksPath, but ''git status --porcelain'' in an untrusted input directory still executes repository-configured commands: with a tracked .gitattributes ''* filter=x'' and .git/config ''[filter "x"] clean = <cmd>'', running exactly the hardened command after touching a file executed the clean filter (marker file created). core.hooksPath is irrelevant to status/rev-parse. Only reachable with --infer-version, but an extracted archive is user-owned so safe.directory does not protect. Remediate for real, not just a comment: for example skip the dirty check (and the ''working'' version) when ''git config --local --list'' (which executes nothing) shows keys that can run commands (filter.*, core.fsmonitor, include/includeIf, diff.*.command/external, core.sshCommand, core.pager and similar), warning and omitting the version instead; also set GIT_CONFIG_GLOBAL=/dev/null if appropriate. Add a bats regression case with a hostile filter driver that must not create its sentinel file (verify it fails on the current code), and document that --infer-version only trusts repositories whose local config is free of command-bearing keys.'
-    - title: Output delivery edge cases and find roots
-      id: wgQ3
-      date: "2026-10-05"
-      tags:
-        - type:bug
-        - priority:medium
-        - plan/phase:remediation-01
-        - effort:unspecified
-      text: 'Edge cases in the new delivery and discovery code. (1) src/cli/lib/output-plan.sh md2x-deliver-output (lines ~187-207): the directory guard ''[[ ! -d T ]] || [[ -L T ]]'' exempts symlinks to directories, so ''mv -f -- temp T'' moves the temp file INTO the linked directory, exits 0 with no output at the requested path and leaves a hidden .md2x-out.XXXXXX there (reproduced on macOS); refuse any target where [[ -d T ]] is true (it follows symlinks) and verify afterward that the target is a regular file. (2) The mktemp template starts with the unsanitized target directory, so ''-o -d/out.pdf'' makes mktemp parse a dash-leading parent as an option (delivery fails after planning); prefix relative dash-leading directories with ''./'' or otherwise protect the template. (3) The temp file has no EXIT/INT/TERM cleanup: an interrupt between mktemp and mv leaves .md2x-out.* in the output directory; register it with the existing run cleanup trap. Replacing a target also drops the pre-existing target''s mode/ownership (document the replace semantics). (4) src/cli/md2x.sh lines ~316-317: only roots starting with ''-'' get the ''./'' prefix, but find also treats a root that is exactly ''!'', ''('', '')'' or '','' as the start of the expression (''find !'' silently searches the current directory); always prefix non-absolute roots with ''./'' (and strip it from results) or handle those tokens. Add bats regression cases for each, verifying they fail on the old code.'
     - title: Always pass nonce; harden test-pack checks
       id: xDG1
       date: "2026-10-05"
@@ -138,4 +129,9 @@ closed:
       title: infer-version git may run repo config
       disposition: dismissed
       reason: 'Duplicate of r4Pu: remediation task 5.6 fixed fsmonitor/hooksPath; the remaining clean-filter execution via git status is fully described by r4Pu.'
+      date: "2026-10-05"
+    - id: wgQ3
+      title: Output delivery edge cases and find roots
+      disposition: dismissed
+      reason: Fixed by remediation task 6.2 (delivery refuses -d targets, ./ mktemp prefix, EXIT-trap temp cleanup, ./-prefixed find roots); round 2 security and combined reviews both found delivery and find roots sound.
       date: "2026-10-05"
