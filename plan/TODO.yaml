@@ -102,7 +102,7 @@ phases:
             branch: plan/golden-release-hardening-01-008
             commit:
                 - 19d4104
-            merge: null
+            merge: ac43c656e9c1ebbab7e5a461040df6afccd80b74
     - number: 2
       slug: interface-contract
       title: Interface Contract
