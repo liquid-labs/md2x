@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Filter pandoc template user-select warning
-      id: KhXI
-      date: "2026-10-05"
-      tags:
-        - type:bug
-        - priority:medium
-        - plan/phase:interface-contract
-        - effort:unspecified
-      text: 'Every PDF run still prints one WeasyPrint warning, "WARNING: Ignored `user-select: none` at 49:32, unknown property", which comes from pandoc''s own default-template style block (the pre.numberSource line-number rule), not from src/cli/lib/github.css. Add a narrow stderr filter in src/cli/lib/generate-page.sh that drops exactly that line, then remove the exemption for it in the PDF no-warnings case at the end of src/cli/test/bats/real-toolchain-e2e.bats so the test asserts zero ''WARNING: Ignored'' lines.'
     - title: Dash-leading sources parsed as CLI flags
       id: Xylz
       date: "2026-10-05"
@@ -143,4 +134,9 @@ closed:
       title: Directory arg starting with - read by find
       disposition: dismissed
       reason: 'Fixed by remediation task 5.3: dash-leading roots passed to find as ./root (md2x.sh:314-319), test input-discovery.bats:270; remaining find-token roots tracked by wgQ3.'
+      date: "2026-10-05"
+    - id: KhXI
+      title: Filter pandoc template user-select warning
+      disposition: dismissed
+      reason: 'Fixed by remediation task 5.4: exact-line grep -vxF filter in generate-page.sh; e2e exemption removed (real-toolchain-e2e.bats).'
       date: "2026-10-05"
