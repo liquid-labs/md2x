@@ -405,7 +405,7 @@ phases:
           findings:
             - SmNy
           git:
-            branch: null
+            branch: plan/golden-release-hardening-05-006
             commit: []
             merge: null
         - number: 7
