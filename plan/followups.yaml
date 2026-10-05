@@ -89,3 +89,13 @@ items:
         - plan/phase:interface-contract
         - plan/slug:golden-release-hardening
       text: 'Maintainability items in src/cli/md2x.sh (now ~690 lines): (1) ''import lists'' from @liquid-labs/bash-toolkit (line ~38) is used only for three list-add-item calls (lines ~272, 276, 325); replace with plain string appends and drop the devDependency and lock entries. (2) The Lua filter is embedded through a ''<<EOF'' heredoc filled by bash-rollup (line ~605); a bare EOF line in md2x-links.lua would silently truncate it, so use a unique terminator such as MD2X_LUA_EOF or add a bats guard that the extracted filter equals the source file. (3) Discovery/resolution could move to lib/input-discovery.sh. (4) Efficiency suggestions: md2x-percent-encode (src/cli/lib/link-filter.sh) forks per byte; md2x-lookup-record plan scan is O(n^2); md2xAsync output buffers in src/node/md2x.js are uncapped (sync path caps at 64MiB).'
+    - title: Validate pandoc floor and RELEASING artifacts
+      id: S0YR
+      date: "2026-10-05"
+      tags:
+        - type:documentation
+        - priority:low
+        - effort:unspecified
+        - plan/phase:interface-contract
+        - plan/slug:golden-release-hardening
+      text: 'Two items for the CI and release documentation tasks: (1) the pandoc >= 2.0 floor in src/cli/lib/preflight.sh is derived from changelogs only and only pandoc 3.10.1 has been exercised; add a CI job on an older pandoc to validate the claimed floor or raise the floor to the oldest tested release. (2) RELEASING.md line 7 still lists the published artifacts as bin/md2x and dist/md2x.js; the build now produces dist/md2x.mjs, dist/md2x.cjs and dist/index.d.ts (package.json files is bin/* and dist/*). Confirm the release-procedure task covers the artifact list.'
