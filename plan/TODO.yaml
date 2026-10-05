@@ -112,11 +112,13 @@ phases:
           slug: add-version-flag-and-help-contract
           title: Add Version Flag and Help Contract
           path: phase-02-interface-contract/001-add-version-flag-and-help-contract.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: Added a long-only --version. A placeholder is substituted from package.json by the Makefile after rollup, and the build fails if the version cannot be read. Help now carries exit-code section, homepage, --version row, abbreviation and = note, and a formats description naming only pdf, html and docx. Eight new bats cases; validation passed under bash 5 and 3.2.
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-02-001
+            commit:
+                - cc62ba9
             merge: null
         - number: 2
           slug: harden-input-discovery-and-validation
