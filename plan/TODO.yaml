@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 1
-    tasks_added: 1
+    tasks_added: 2
 phases:
     - number: 1
       slug: correctness-and-regression-tests
@@ -330,6 +330,19 @@ phases:
           findings:
             - 8xEp
             - tT72
+          git:
+            branch: null
+            commit: []
+            merge: null
+        - number: 2
+          slug: node-end-of-options-and-type-docs
+          title: Pass Sources After End-Of-Options And Correct Node Type Docs
+          path: phase-05-remediation-01/002-node-end-of-options-and-type-docs.md
+          done: false
+          tier: sonnet-med
+          findings:
+            - Xylz
+            - YkUH
           git:
             branch: null
             commit: []
