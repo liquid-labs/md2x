@@ -334,7 +334,8 @@ phases:
             - tT72
           git:
             branch: plan/golden-release-hardening-05-001
-            commit: []
+            commit:
+                - "3145e42"
             merge: null
         - number: 2
           slug: node-end-of-options-and-type-docs
