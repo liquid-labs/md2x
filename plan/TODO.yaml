@@ -106,6 +106,7 @@ phases:
     - number: 2
       slug: interface-contract
       title: Interface Contract
+      diff_base: 36ac22510bd3e0696656ba588f622cb94cc2bd17
       tasks:
         - number: 1
           slug: add-version-flag-and-help-contract
