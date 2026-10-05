@@ -38,3 +38,30 @@ md2x-validate-title() {
     md2x-die-usage "--title '$(md2x-title-display "${TITLE_IN}")' cannot be used as a file name."
   fi
 }
+
+# md2x-has-control-chars <text>
+# Returns 0 when <text> contains a control character (0x01-0x1F, 0x7F), including tab and
+# newline; the line- and tab-oriented input records and the messages that echo a name
+# cannot carry them. NUL cannot occur in a bash string.
+md2x-has-control-chars() {
+  local TEXT_IN="${1-}" STRIPPED
+  STRIPPED="$(printf '%s' "${TEXT_IN}" | LC_ALL=C tr -d '\001-\037\177'; printf x)"
+  [[ "${STRIPPED}" != "${TEXT_IN}x" ]]
+}
+
+# md2x-strip-markdown-ext <path>
+# Prints the basename of <path> with a trailing '.md' or '.markdown' removed, matched
+# case-insensitively (so 'Notes.MARKDOWN' gives 'Notes'). A name that is nothing but the
+# extension, or has neither, is printed unchanged. Uses parameter expansion, not
+# 'basename', so a name starting with '-' needs no '--'. Prints no newline.
+md2x-strip-markdown-ext() {
+  local BASE="${1##*/}" LOWER STEM
+  LOWER="$(printf '%s' "${BASE}" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+  STEM="${BASE}"
+  case "${LOWER}" in
+    *.markdown) STEM="${BASE%?????????}";;
+    *.md) STEM="${BASE%???}";;
+  esac
+  [[ -n "${STEM}" ]] || STEM="${BASE}"
+  printf '%s' "${STEM}"
+}

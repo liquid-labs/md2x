@@ -66,7 +66,8 @@ GitHub-style styling, automatic page headers and footers, batch directory
 processing, and single-page concatenation of multiple Markdown files.
 
 md2x accepts one or more file paths, one or more directory paths (searched
-recursively for '*.md' files), or a single '-' argument to read Markdown
+recursively for '*.md' and '*.markdown' files, matched case-insensitively),
+or a single '-' argument to read Markdown
 from stdin.
 
 Options:
@@ -92,7 +93,7 @@ Options:
   -p, --output-path <path>   Directory to write output files into. Default: '.'.
   -F, --output-format <format>
                               Output format: 'pdf' (default), 'html', or
-                              'docx'.
+                              'docx' (case-insensitive).
   -t, --title <title>        Document title; used for the output filename
                               and the PDF header text. Only honored when
                               exactly one file will be converted outside
@@ -133,7 +134,7 @@ Examples:
   # Convert a single Markdown file to PDF (the default format)
   md2x report.md
 
-  # Convert every *.md file in a directory to HTML, with an inferred title and version footer
+  # Convert every *.md and *.markdown file in a directory to HTML, with an inferred title and version footer
   md2x --output-format html --infer-title --infer-version --output-path ./out ./docs
 
   # Concatenate several files into one PDF
@@ -154,6 +155,10 @@ if [[ -n "${VERSION}" ]]; then
   exit 0
 fi
 
+# No input at all is a usage error, not a silent success.
+(( $# > 0 )) \
+  || md2x-die-usage "no input given. Usage: md2x [OPTIONS] <file>... | <directory>... | -"
+
 for EXEC in gs pandoc pdftk python3 jq; do
   type "${EXEC}" >/dev/null \
     || md2x-die-dependency "Required executable '${EXEC}' not found for 'md2x'. Add to 'PATH' or install."
@@ -168,7 +173,12 @@ test_formats() {
   return 1
 }
 [[ -n "${OUTPUT_FORMAT}" ]] || OUTPUT_FORMAT='pdf'
-test_formats || md2x-die-usage "Unsupported output format '${OUTPUT_FORMAT}'."
+# 'tr' lowercases here because '${var,,}' needs bash 4; the value is also validated
+# case-insensitively, so '-F PDF' is the same as '-F pdf'.
+OUTPUT_FORMAT_GIVEN="${OUTPUT_FORMAT}"
+OUTPUT_FORMAT="$(printf '%s' "${OUTPUT_FORMAT}" | tr '[:upper:]' '[:lower:]')"
+test_formats \
+  || md2x-die-usage "unsupported output format '$(md2x-title-display "${OUTPUT_FORMAT_GIVEN}")' (expected pdf|html|docx)"
 
 # '--toc' and '--no-toc' resolve to a single 'TOC_MODE' the pipeline consumes; giving
 # both is fatal, and must be checked before 'ensure-weasyprint' below, which can
@@ -193,13 +203,24 @@ SEARCH_DIRS=''
 MD_FILES=''
 # process args
 # 'STDIN_MODE' is non-empty when the sole argument is '-'; the document itself is copied
-# byte for byte into the work directory once that exists (see 'STDIN_FILE' below).
+# byte for byte into the work directory once that exists (see 'STDIN_FILE' below). A '-'
+# next to any other input is a usage error.
 STDIN_MODE=''
+for TEST_PATH in "$@"; do
+  if [[ "${TEST_PATH}" == '-' ]] && (( $# > 1 )); then
+    md2x-die-usage "'-' (stdin) cannot be combined with other inputs"
+  fi
+done
 if (( $# == 1 )) && [[ ${1} == '-' ]]; then
   STDIN_MODE='true'
 else
   while (( $# > 0 )); do
     TEST_PATH="${1}"; shift
+    # Records below are line- and tab-oriented, and every name is echoed in messages, so
+    # a control character (tab, newline, ESC, ...) in an input path is refused up front.
+    if md2x-has-control-chars "${TEST_PATH}"; then
+      md2x-die-usage "input path '$(md2x-title-display "${TEST_PATH}")' contains control characters."
+    fi
     if [[ -d "${TEST_PATH}" ]]; then
       list-add-item SEARCH_DIRS "${TEST_PATH}"
     elif [[ -f "${TEST_PATH}" ]]; then
@@ -207,9 +228,103 @@ else
     else
       # Planner decision: a nonexistent (or otherwise unusable) input argument is a usage
       # error (exit 2), not a runtime failure -- the caller named something invalid.
-      md2x-die-usage "'${TEST_PATH}' is neither a file nor a directory. Bailing out."
+      md2x-die-usage "'$(md2x-title-display "${TEST_PATH}")' is neither a file nor a directory. Bailing out."
     fi
   done
+fi
+
+# md2x-canonical-path <file>
+# Prints the physical directory of <file> (symlinks resolved at the directory level, via
+# 'pwd -P', which needs no GNU 'realpath') plus its basename. The file itself is never
+# resolved through a symlink.
+md2x-canonical-path() {
+  local FILE_IN="${1}" DIR_PART BASE_PART
+  case "${FILE_IN}" in
+    */*) DIR_PART="${FILE_IN%/*}"; BASE_PART="${FILE_IN##*/}";;
+    *) DIR_PART='.'; BASE_PART="${FILE_IN}";;
+  esac
+  [[ -n "${DIR_PART}" ]] || DIR_PART='/'
+  DIR_PART="$(CDPATH='' cd -- "${DIR_PART}" 2>/dev/null && pwd -P)" \
+    || { printf '%s' "${FILE_IN}"; return 0; }
+  printf '%s/%s' "${DIR_PART%/}" "${BASE_PART}"
+}
+
+# Build the resolved input list ONCE, before any conversion: 'RESOLVED_INPUTS' holds one
+# '<md-file><tab><search-root>' record per file to convert, directly named files first
+# (empty search-root field), then the recursive search results sorted by path; each
+# physical file appears once, the first occurrence winning (so its search root decides
+# its output location). 'RESOLVED_COUNT' is its length. Both the '--title' gate below
+# and the conversion loop consume this list, so they cannot drift.
+#
+# A search that fails (an unreadable root) stops the search of any later root, keeps what
+# was found so far, and is reported once the files found so far were converted; see
+# 'exit-codes.bats' "unreadable search root" cases and followup 8ZmD.
+RESOLVED_INPUTS=''
+RESOLVED_COUNT=0
+SEARCH_ERROR_ROOT=''
+if [[ -z "${STDIN_MODE}" ]]; then
+  CANDIDATES=''
+  EMPTY_DIRS=''
+  while IFS= read -r ROOT_DIR; do
+    [[ -n "${ROOT_DIR}" ]] || continue
+    # '-print0' piped through 'tr' (NUL to newline, and any newline inside a name to the
+    # control character \001) keeps every name on exactly one line and lets the control
+    # character check below see names that contain a newline.
+    FIND_STATUS=0
+    FOUND="$(find "${ROOT_DIR}" \( -iname '*.md' -o -iname '*.markdown' \) ! -type d -print0 \
+      | tr '\012\000' '\001\012')" || FIND_STATUS=$?
+    ROOT_FOUND=0
+    while IFS= read -r FOUND_FILE; do
+      [[ -n "${FOUND_FILE}" ]] || continue
+      if md2x-has-control-chars "${FOUND_FILE}"; then
+        md2x-die-usage "file name '$(md2x-title-display "${FOUND_FILE}")' found under" \
+          "'$(md2x-title-display "${ROOT_DIR}")' contains control characters."
+      fi
+      ROOT_FOUND=$(( ROOT_FOUND + 1 ))
+      CANDIDATES="${CANDIDATES}${FOUND_FILE}"$'\t'"${ROOT_DIR}"$'\n'
+    done <<< "${FOUND}"
+    if (( FIND_STATUS != 0 )); then
+      SEARCH_ERROR_ROOT="${ROOT_DIR}"
+      break
+    fi
+    (( ROOT_FOUND > 0 )) || list-add-item EMPTY_DIRS "${ROOT_DIR}"
+  done <<< "${SEARCH_DIRS}"
+
+  if [[ -n "${SEARCH_ERROR_ROOT}" ]] && [[ -z "${CANDIDATES}" ]] && [[ -z "${MD_FILES}" ]]; then
+    md2x-die-runtime "could not fully search '$(md2x-title-display "${SEARCH_ERROR_ROOT}")' for Markdown files. Bailing out."
+  fi
+
+  CANDIDATES="$(printf '%s' "${CANDIDATES}" | sort)"
+  SEEN_CANONICAL=$'\n'
+  ALL_CANDIDATES=''
+  while IFS= read -r NAMED_FILE; do
+    [[ -n "${NAMED_FILE}" ]] || continue
+    ALL_CANDIDATES="${ALL_CANDIDATES}${NAMED_FILE}"$'\t\n'
+  done <<< "${MD_FILES}"
+  ALL_CANDIDATES="${ALL_CANDIDATES}${CANDIDATES}"
+  while IFS=$'\t' read -r RESOLVE_FILE RESOLVE_ROOT; do
+    [[ -n "${RESOLVE_FILE}" ]] || continue
+    CANONICAL="$(md2x-canonical-path "${RESOLVE_FILE}")"
+    [[ "${SEEN_CANONICAL}" != *$'\n'"${CANONICAL}"$'\n'* ]] || continue
+    SEEN_CANONICAL="${SEEN_CANONICAL}${CANONICAL}"$'\n'
+    RESOLVED_INPUTS="${RESOLVED_INPUTS}${RESOLVE_FILE}"$'\t'"${RESOLVE_ROOT}"$'\n'
+    RESOLVED_COUNT=$(( RESOLVED_COUNT + 1 ))
+  done <<< "${ALL_CANDIDATES}"
+
+  if [[ -n "${EMPTY_DIRS}" ]]; then
+    if (( RESOLVED_COUNT == 0 )) && [[ -z "${SEARCH_ERROR_ROOT}" ]]; then
+      NO_MATCH_LABEL=''
+      while IFS= read -r EMPTY_DIR; do
+        [[ -n "${EMPTY_DIR}" ]] || continue
+        NO_MATCH_LABEL="${NO_MATCH_LABEL}${NO_MATCH_LABEL:+, }'$(md2x-title-display "${EMPTY_DIR}")'"
+      done <<< "${EMPTY_DIRS}"
+      md2x-die-usage "no Markdown files found in ${NO_MATCH_LABEL}"
+    fi
+    while IFS= read -r EMPTY_DIR; do
+      [[ -n "${EMPTY_DIR}" ]] || continue
+      md2x-warn "no Markdown files found in '$(md2x-title-display "${EMPTY_DIR}")'"
+    done <<< "${EMPTY_DIRS}"
+  fi
 fi
 
 # '--title'/'-t' only applies to a single-file conversion: the main per-file loop
@@ -217,22 +332,11 @@ fi
 # metadata) from 'TITLE', so an explicit '--title' with more than one file in play
 # would silently apply to only the loop's last iteration. This is checked only for the
 # non-'--single-page'/non-stdin path -- the other two input modes always produce
-# exactly one output file and already honor '--title' correctly. The file count below
-# does not replicate the real processing pipe's unreadable-search-root abort/continue
-# subtlety (see followup S92a, out of scope); a plain 'find ... | wc -l' per root is
-# sufficient here. Under 'pipefail', an unreadable root still makes the 'find | wc -l'
-# pipeline's own exit status non-zero even though 'wc -l' itself always succeeds --
-# empirically confirmed live, since it isn't obvious from reading alone -- so the
-# trailing '|| true' is required to keep this count-only pass from tripping the
-# top-level 'errexit' on a root the real pipe further below would otherwise just skip
-# with a stderr notice (see 'exit-codes.bats'' "unreadable search root" cases).
+# exactly one output file and already honor '--title' correctly. The count is the length
+# of the resolved, deduplicated input list built above, the same list the conversion
+# loop consumes.
 if [[ -z "${SINGLE_PAGE}" ]] && [[ -z "${STDIN_MODE}" ]]; then
-  TITLE_PRECEDENCE_FILE_COUNT=$(list-count MD_FILES)
-  while IFS= read -r SEARCH_ROOT; do
-    [[ -n "${SEARCH_ROOT}" ]] || continue
-    TITLE_PRECEDENCE_FILE_COUNT=$(( TITLE_PRECEDENCE_FILE_COUNT \
-      + $(find "${SEARCH_ROOT}" -name "*.md" | wc -l || true) ))
-  done <<< "${SEARCH_DIRS}"
+  TITLE_PRECEDENCE_FILE_COUNT="${RESOLVED_COUNT}"
 
   if [[ -n "${TITLE_SET:-}" ]] && (( TITLE_PRECEDENCE_FILE_COUNT > 1 )); then
     md2x-die-usage "Cannot use '--title'/'-t' with more than one input file" \
@@ -414,88 +518,35 @@ if [[ -n "${STDIN_MODE}" ]]; then
   [[ -s "${STDIN_FILE}" ]] || md2x-die-usage "no input on stdin."
 fi
 
-# A '< <(...)' process substitution's own failures never reach the parent shell's
-# 'errexit'/'pipefail' (see the file-discovery pipe below), so an unreadable search
-# root has no way to make the top-level script exit non-zero on its own. This file is
-# the signal: the process substitution's inner loop writes the failing root's path here
-# the moment 'find' fails for it, and the outer script checks it right after the loop
-# completes, exiting loudly instead of silently returning 0. See followup 8ZmD.
-SEARCH_ROOT_ERROR_FILE="${MD2X_WORK_DIR}/search-root-error"
-: > "${SEARCH_ROOT_ERROR_FILE}"
-
 # Announce the retained work directory once, to stderr (never stdout, which is the parsed
 # data channel for '--list-files'/'--to-stdout'), and not gated on '--quiet': '--quiet'
 # only suppresses the per-file "Created ..." status line, not this opt-in notice.
 [[ -z "${KEEP_INTERMEDIATE}" ]] \
   || echo "md2x: kept intermediate files in '${MD2X_WORK_DIR}'" >&2
 
-# md2x-list-inputs
-#
-# Prints one '<md-file><tab><search-root>' record per file to convert: directly-named
-# files first (with an empty search-root field), then the recursive '*.md' search results
-# sorted by path. Each record carries the search root the file was found under so the
-# conversion loop can place the output relative to it; the root is the second field so
-# that sorting still orders the stream by file path.
-#
-# This is a function, called from the '< <(...)' process substitution below, rather than
-# an inline body, because bash 3.2 mis-parses a process substitution (or '$(...)') body
-# that contains a comment with an apostrophe: it scans for the closing parenthesis while
-# treating that apostrophe as an unterminated quote and dies with 'bad substitution: no
-# closing )' (and, being a parse error, still exits 0). No comment containing an
-# apostrophe may sit inside a '$(...)' or '<(...)' body anywhere in 'src/cli/'.
-#
-# Empirically confirmed abort/continue behavior for a 'find' failure in the loop below
-# (e.g. an unreadable root), since it is not obvious from reading alone: under 'pipefail',
-# the pipe's exit status is the rightmost non-zero status among find and the while loop,
-# and the 'while read' loop always exits 0 (it just drains whatever 'find' emitted, or
-# nothing, then hits EOF), so a 'find' error becomes the pipe's exit status. Left
-# unguarded, that would trip 'errexit' right there, aborting the loop before
-# 'SEARCH_ROOT_ERROR_FILE' could be written: any root listed after the failing one in
-# 'SEARCH_DIRS' is never even attempted (silently dropped), while roots listed before it,
-# and files 'find' already emitted for the SAME root before erroring deeper in its tree,
-# are kept. Wrapping the pipe as an 'if !' condition exempts it from 'errexit' just long
-# enough to record the failure; the explicit 'exit 1' right after reproduces the same
-# abort-the-remaining-roots behavior 'errexit' would have produced on its own. Process
-# substitution failures are invisible to the parent's own 'errexit'/'pipefail' --
-# 'SEARCH_ROOT_ERROR_FILE' is what carries the failure out to the top-level script,
-# checked right after the conversion loop below. See 'exit-codes.bats' "unreadable search
-# root" cases and followup 8ZmD.
-md2x-list-inputs() {
-  local NAMED_FILE ROOT_DIR FOUND_FILE
-  while IFS= read -r NAMED_FILE; do
-    [[ -n "${NAMED_FILE}" ]] || continue
-    printf '%s\t\n' "${NAMED_FILE}"
-  done <<< "${MD_FILES}"
-  while IFS= read -r ROOT_DIR; do
-    [[ -n "${ROOT_DIR}" ]] || continue
-    if ! find "${ROOT_DIR}" -name "*.md" | while IFS= read -r FOUND_FILE; do
-          printf '%s\t%s\n' "${FOUND_FILE}" "${ROOT_DIR}"
-        done
-    then
-      printf '%s\n' "${ROOT_DIR}" > "${SEARCH_ROOT_ERROR_FILE}"
-      exit 1
-    fi
-  done <<< "${SEARCH_DIRS}" | sort
-}
-
 {
   if [[ -z "${STDIN_MODE}" ]]; then
-    # Each record is '<md-file><tab><search-root>'; an empty root means the file was
-    # named directly on the command line rather than found under a directory argument.
+    # Each record of the resolved input list is '<md-file><tab><search-root>'; an empty
+    # root means the file was named directly on the command line rather than found under
+    # a directory argument.
     while IFS=$'\t' read -r MD_FILE SEARCH_ROOT; do
       [[ -n "${MD_FILE}" ]] || continue
       # --to html5 : uses the HTML 5 engine. Yes, even when rendering PDF. It renders and
       #              prints and saves us the hassle of having to install pdflatex
 
       if [[ -n "${SINGLE_PAGE}" ]]; then
-        { cat "${MD_FILE}"; echo; } >> "${SINGLE_PAGE_FILE}"
+        # Validate each source on its own so an encoding error names that file, not the
+        # combined work-directory file.
+        python3 -c "${TOC_PREPROCESSOR}" --validate \
+          --source-name "$(md2x-title-display "${MD_FILE}")" < "${MD_FILE}" || exit 1
+        { cat -- "${MD_FILE}"; echo; } >> "${SINGLE_PAGE_FILE}"
       else
         # An explicit '--title' is honored as-is; the upfront gate above (requirement
         # 3) already guarantees this loop processes at most one file whenever
         # 'TITLE_SET' is non-empty, so 'TITLE' stays pinned to the explicit value for
         # the loop's single iteration. Absent '--title', fall back to each file's own
         # basename, as before.
-        [[ -n "${TITLE_SET:-}" ]] || TITLE=$(basename "${MD_FILE}" .md)
+        [[ -n "${TITLE_SET:-}" ]] || TITLE="$(md2x-strip-markdown-ext "${MD_FILE}")"
 
         BASE_OUTPUT="${OUTPUT_PATH}"
         [[ -n "${FLATTEN_DIRS}" ]] || {
@@ -521,15 +572,13 @@ md2x-list-inputs() {
     [[ -z "${STDIN_MODE}" ]] || MD_FILE="${STDIN_FILE}"
     generate-page
   fi
-} < <(md2x-list-inputs)
+} <<< "${RESOLVED_INPUTS}"
 
-# The process substitution above can't propagate a failed search root's exit status to
-# this, the parent shell -- see the comment at the 'find' pipe inside it. Its inner loop
-# writes the failing root's path to 'SEARCH_ROOT_ERROR_FILE' instead, the moment
-# 'find' fails for it; a non-empty file here means that happened, so abort loudly rather
-# than let the run's partial results pass as a silent success. Followup 8ZmD.
-[[ ! -s "${SEARCH_ROOT_ERROR_FILE}" ]] \
-  || md2x-die-runtime "could not fully search '$(cat "${SEARCH_ROOT_ERROR_FILE}")' for Markdown files. Bailing out."
+# A failed search (an unreadable root) was recorded while the input list was built; the
+# files found before it were converted above, and the run still ends loudly rather than
+# letting partial results pass as a silent success. Followup 8ZmD.
+[[ -z "${SEARCH_ERROR_ROOT}" ]] \
+  || md2x-die-runtime "could not fully search '$(md2x-title-display "${SEARCH_ERROR_ROOT}")' for Markdown files. Bailing out."
 
 # Reached only when every step above succeeded; see the lost-status backstop on the 'EXIT'
 # trap.
