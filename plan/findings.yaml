@@ -9,6 +9,15 @@ items:
         - plan/phase:interface-contract
         - effort:unspecified
       text: In src/cli/md2x.sh a search root whose name starts with '-' (for example a directory argument '-d') is passed to find unprefixed and is read as a find option instead of a path. Prefix such roots with './' (or pass them after an explicit path form) before calling find, and add a regression test.
+    - title: Filter pandoc template user-select warning
+      id: KhXI
+      date: "2026-10-05"
+      tags:
+        - type:bug
+        - priority:medium
+        - plan/phase:interface-contract
+        - effort:unspecified
+      text: 'Every PDF run still prints one WeasyPrint warning, "WARNING: Ignored `user-select: none` at 49:32, unknown property", which comes from pandoc''s own default-template style block (the pre.numberSource line-number rule), not from src/cli/lib/github.css. Add a narrow stderr filter in src/cli/lib/generate-page.sh that drops exactly that line, then remove the exemption for it in the PDF no-warnings case at the end of src/cli/test/bats/real-toolchain-e2e.bats so the test asserts zero ''WARNING: Ignored'' lines.'
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
