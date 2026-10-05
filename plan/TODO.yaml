@@ -406,7 +406,8 @@ phases:
             - SmNy
           git:
             branch: plan/golden-release-hardening-05-006
-            commit: []
+            commit:
+                - adc898d
             merge: null
         - number: 7
           slug: inode-safe-output-delivery
