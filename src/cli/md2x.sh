@@ -90,12 +90,21 @@ Options:
                               build artifacts (CSS, Pandoc log, PDF overlay,
                               and so on) instead of deleting it after
                               conversion; its path is printed to stderr.
+  -o, --output <file|->      Write the single output to <file>, creating its
+                              directory as needed ('-' is --to-stdout). Valid
+                              only when exactly one output results (one input
+                              file, stdin, or --single-page). The format is
+                              inferred from a .pdf, .html, or .docx extension
+                              when -F is absent; an unrecognized extension
+                              writes the default format (pdf) to <file> as
+                              given. Conflicts with -p.
   -p, --output-path <path>   Directory to write output files into. Default: '.'.
+                              Conflicts with -o.
   -F, --output-format <format>
                               Output format: 'pdf' (default), 'html', or
                               'docx' (case-insensitive).
   -t, --title <title>        Document title; used for the output filename
-                              and the PDF header text. Only honored when
+                              (unless -o is given) and the PDF header text. Only honored when
                               exactly one file will be converted outside
                               --single-page (a lone directly-named file,
                               or a directory search resolving to exactly
@@ -106,8 +115,10 @@ Options:
       --quiet                Suppress the "Created <file>" status message.
       --list-files           Print only the generated file path(s), instead
                               of "Created <file>".
-  -s, --to-stdout            Write the converted output to stdout (implies
-                              --quiet).
+  -s, --to-stdout            Write the single converted output to stdout and
+                              nothing to disk (implies --quiet). Needs exactly
+                              one output; conflicts with --list-files and
+                              with -o <file>.
       --toc                  Force a table of contents; overrides the
                               default heuristic below (see --no-toc).
       --no-toc               Suppress the table of contents. md2x
@@ -172,13 +183,53 @@ test_formats() {
   done
   return 1
 }
+# 'OUTPUT_FORMAT_GIVEN' is empty when '-F' was absent (the '-o' extension inference below
+# keys off that), before the default is applied.
+OUTPUT_FORMAT_GIVEN="${OUTPUT_FORMAT}"
 [[ -n "${OUTPUT_FORMAT}" ]] || OUTPUT_FORMAT='pdf'
 # 'tr' lowercases here because '${var,,}' needs bash 4; the value is also validated
 # case-insensitively, so '-F PDF' is the same as '-F pdf'.
-OUTPUT_FORMAT_GIVEN="${OUTPUT_FORMAT}"
 OUTPUT_FORMAT="$(printf '%s' "${OUTPUT_FORMAT}" | tr '[:upper:]' '[:lower:]')"
 test_formats \
   || md2x-die-usage "unsupported output format '$(md2x-title-display "${OUTPUT_FORMAT_GIVEN}")' (expected pdf|html|docx)"
+
+# '-o, --output <file|->': an explicit output file. Validated here, ahead of any input work.
+# 'OUTPUT_TARGET_FILE' is the explicit file ('-o -' is '--to-stdout' and has none).
+OUTPUT_TARGET_FILE=''
+if [[ -n "${OUTPUT_FILE_SET}" ]]; then
+  [[ -n "${OUTPUT_FILE}" ]] \
+    || md2x-die-usage "'-o'/'--output' needs a file name, or '-' for stdout."
+  ! md2x-has-control-chars "${OUTPUT_FILE}" \
+    || md2x-die-usage "output path '$(md2x-title-display "${OUTPUT_FILE}")' contains control characters."
+  [[ -z "${OUTPUT_PATH_SET}" ]] \
+    || md2x-die-usage "'-o'/'--output' cannot be combined with '-p'/'--output-path'."
+  if [[ "${OUTPUT_FILE}" == '-' ]]; then
+    TO_STDOUT=true
+  else
+    [[ -z "${TO_STDOUT}" ]] \
+      || md2x-die-usage "'-o'/'--output' <file> cannot be combined with '--to-stdout'."
+    OUTPUT_TARGET_FILE="${OUTPUT_FILE}"
+    # Format inference: a recognized extension sets the format when '-F' is absent and must
+    # agree with '-F' when it is given; an unrecognized one leaves the default format and
+    # the path is used exactly as given.
+    case "$(md2x-lowercase "${OUTPUT_TARGET_FILE##*/}")" in
+      *.pdf) EXT_FORMAT='pdf';;
+      *.html) EXT_FORMAT='html';;
+      *.docx) EXT_FORMAT='docx';;
+      *) EXT_FORMAT='';;
+    esac
+    if [[ -n "${EXT_FORMAT}" ]]; then
+      if [[ -z "${OUTPUT_FORMAT_GIVEN}" ]]; then
+        OUTPUT_FORMAT="${EXT_FORMAT}"
+      elif [[ "${OUTPUT_FORMAT}" != "${EXT_FORMAT}" ]]; then
+        md2x-die-usage "'-F ${OUTPUT_FORMAT}' contradicts the '.${EXT_FORMAT}' extension of" \
+          "'-o $(md2x-title-display "${OUTPUT_TARGET_FILE}")'."
+      fi
+    fi
+  fi
+fi
+[[ -z "${TO_STDOUT}" ]] || [[ -z "${LIST_FILES}" ]] \
+  || md2x-die-usage "'--to-stdout' (or '-o -') cannot be combined with '--list-files'."
 
 # '--toc' and '--no-toc' resolve to a single 'TOC_MODE' the pipeline consumes; giving
 # both is fatal, and must be checked before 'ensure-weasyprint' below, which can
@@ -232,22 +283,6 @@ else
     fi
   done
 fi
-
-# md2x-canonical-path <file>
-# Prints the physical directory of <file> (symlinks resolved at the directory level, via
-# 'pwd -P', which needs no GNU 'realpath') plus its basename. The file itself is never
-# resolved through a symlink.
-md2x-canonical-path() {
-  local FILE_IN="${1}" DIR_PART BASE_PART
-  case "${FILE_IN}" in
-    */*) DIR_PART="${FILE_IN%/*}"; BASE_PART="${FILE_IN##*/}";;
-    *) DIR_PART='.'; BASE_PART="${FILE_IN}";;
-  esac
-  [[ -n "${DIR_PART}" ]] || DIR_PART='/'
-  DIR_PART="$(CDPATH='' cd -- "${DIR_PART}" 2>/dev/null && pwd -P)" \
-    || { printf '%s' "${FILE_IN}"; return 0; }
-  printf '%s/%s' "${DIR_PART%/}" "${BASE_PART}"
-}
 
 # Build the resolved input list ONCE, before any conversion: 'RESOLVED_INPUTS' holds one
 # '<md-file><tab><search-root>' record per file to convert, directly named files first
@@ -348,52 +383,99 @@ fi
 
 # An explicit '--title' becomes the output file name, so validate it before any conversion
 # work (and before 'ensure-weasyprint', which can trigger a network install).
-[[ -z "${TITLE_SET:-}" ]] || md2x-validate-title "${TITLE}"
+# With '-o' or '--to-stdout' no file name is derived from the title (it is display-only), so
+# any printable title is accepted; the metadata and PostScript sinks still encode it.
+[[ -z "${TITLE_SET:-}" ]] || [[ -n "${OUTPUT_TARGET_FILE}" ]] || [[ -n "${TO_STDOUT}" ]] \
+  || md2x-validate-title "${TITLE}"
 
+# '-o' and '--to-stdout' are valid only when exactly one output results.
+if [[ -n "${STDIN_MODE}" ]] || [[ -n "${SINGLE_PAGE}" ]]; then
+  OUTPUT_COUNT=1
+else
+  OUTPUT_COUNT="${RESOLVED_COUNT}"
+fi
+if (( OUTPUT_COUNT != 1 )) && { [[ -n "${OUTPUT_TARGET_FILE}" ]] || [[ -n "${TO_STDOUT}" ]]; }; then
+  md2x-die-usage "'-o'/'--output' and '--to-stdout' need exactly one output, but ${OUTPUT_COUNT}" \
+    "files would be converted. Name one input, or use '--single-page' to combine them."
+fi
+
+# '--output-path': trailing slashes are dropped ('o3/' prints 'o3/a.html'; '/' stays '/'),
+# and an existing non-directory is a usage error.
 [[ -n "${OUTPUT_PATH}" ]] || OUTPUT_PATH='.'
+if [[ -z "${OUTPUT_TARGET_FILE}" ]] && [[ -z "${TO_STDOUT}" ]]; then
+  ! md2x-has-control-chars "${OUTPUT_PATH}" \
+    || md2x-die-usage "output path '$(md2x-title-display "${OUTPUT_PATH}")' contains control characters."
+  OUTPUT_PATH="$(md2x-trim-trailing-slashes "${OUTPUT_PATH}")"
+  if [[ -e "${OUTPUT_PATH}" ]] && [[ ! -d "${OUTPUT_PATH}" ]]; then
+    md2x-die-usage "'-p'/'--output-path' '$(md2x-title-display "${OUTPUT_PATH}")' exists and is not a directory."
+  fi
+fi
+
+# Target planning. Before any conversion (and before 'ensure-weasyprint' below, which can
+# trigger a minute-long install), compute every output target from the resolved input list
+# and run every check against it; the conversion loop consumes 'PLANNED_TARGETS' and
+# 'SINGLE_TARGET' and recomputes nothing.
+#   PLANNED_TARGETS  one '<md-file><tab><target>' record per file, outside --single-page/stdin
+#   SINGLE_TARGET    the target of the one --single-page/stdin output
+# With '--to-stdout' no destination file exists; targets stay empty and the output is
+# staged in the work directory only.
+PLANNED_TARGETS=''
+SINGLE_TARGET=''
+if [[ -z "${TO_STDOUT}" ]]; then
+  NL=$'\n'
+  TAB=$'\t'
+  INPUT_KEYS="${NL}"
+  TARGET_KEYS="${NL}"
+  while IFS=$'\t' read -r PLAN_FILE PLAN_ROOT; do
+    [[ -n "${PLAN_FILE}" ]] || continue
+    PLAN_KEY="$(md2x-lowercase "$(md2x-canonical-target "${PLAN_FILE}")")"
+    INPUT_KEYS="${INPUT_KEYS}${PLAN_KEY}${TAB}${PLAN_FILE}${NL}"
+  done <<< "${RESOLVED_INPUTS}"
+
+  # md2x-plan-register <source-label> <target>: checks <target> and records it.
+  md2x-plan-register() {
+    local REG_SOURCE="${1}" REG_TARGET="${2}" REG_KEY REG_OTHER
+    md2x-check-output-location "${REG_TARGET}"
+    REG_KEY="$(md2x-lowercase "$(md2x-canonical-target "${REG_TARGET}")")"
+    if REG_OTHER="$(md2x-lookup-record "${INPUT_KEYS}" "${REG_KEY}")"; then
+      md2x-die-usage "output '$(md2x-title-display "${REG_TARGET}")' would overwrite its own input" \
+        "'$(md2x-title-display "${REG_OTHER}")'."
+    fi
+    if REG_OTHER="$(md2x-lookup-record "${TARGET_KEYS}" "${REG_KEY}")"; then
+      md2x-die-usage "'$(md2x-title-display "${REG_OTHER}")' and '$(md2x-title-display "${REG_SOURCE}")'" \
+        "would both be written to '$(md2x-title-display "${REG_TARGET}")'."
+    fi
+    TARGET_KEYS="${TARGET_KEYS}${REG_KEY}${TAB}${REG_SOURCE}${NL}"
+  }
+
+  if [[ -n "${STDIN_MODE}" ]] || [[ -n "${SINGLE_PAGE}" ]]; then
+    if [[ -n "${OUTPUT_TARGET_FILE}" ]]; then
+      SINGLE_TARGET="${OUTPUT_TARGET_FILE}"
+    else
+      SINGLE_TARGET="$(md2x-join-path "${OUTPUT_PATH}" "${TITLE:-output}.${OUTPUT_FORMAT}")"
+    fi
+    md2x-plan-register "${SINGLE_PAGE:+--single-page}${STDIN_MODE:+stdin}" "${SINGLE_TARGET}"
+  else
+    while IFS=$'\t' read -r PLAN_FILE PLAN_ROOT; do
+      [[ -n "${PLAN_FILE}" ]] || continue
+      if [[ -n "${OUTPUT_TARGET_FILE}" ]]; then
+        PLAN_TARGET="${OUTPUT_TARGET_FILE}"
+      else
+        if [[ -n "${TITLE_SET:-}" ]]; then PLAN_TITLE="${TITLE}"; else PLAN_TITLE="$(md2x-strip-markdown-ext "${PLAN_FILE}")"; fi
+        PLAN_DIR="${OUTPUT_PATH}"
+        if [[ -z "${FLATTEN_DIRS}" ]]; then
+          PLAN_REL="$(relative-output-dir "${PLAN_FILE}" "${PLAN_ROOT}")"
+          [[ -z "${PLAN_REL}" ]] || PLAN_DIR="$(md2x-join-path "${PLAN_DIR}" "${PLAN_REL}")"
+        fi
+        PLAN_TARGET="$(md2x-join-path "${PLAN_DIR}" "${PLAN_TITLE}.${OUTPUT_FORMAT}")"
+      fi
+      md2x-plan-register "${PLAN_FILE}" "${PLAN_TARGET}"
+      PLANNED_TARGETS="${PLANNED_TARGETS}${PLAN_FILE}${TAB}${PLAN_TARGET}${NL}"
+    done <<< "${RESOLVED_INPUTS}"
+  fi
+fi
 
 [[ "${OUTPUT_FORMAT}" == 'pdf' ]] && ensure-weasyprint
-
-# Collapse repeated slashes, drop '/./' segments and any leading './' so that roots and
-# found paths written in different-but-equivalent forms ('docs', './docs', 'docs/')
-# compare as strings, and so no '/./' survives into a path we build or print.
-normalize-path() {
-  local PATH_IN="${1}"
-  while [[ "${PATH_IN}" == *'//'* ]]; do PATH_IN="${PATH_IN//\/\//\/}"; done
-  while [[ "${PATH_IN}" == *'/./'* ]]; do PATH_IN="${PATH_IN//\/.\//\/}"; done
-  while [[ "${PATH_IN}" == './'* ]]; do PATH_IN="${PATH_IN#./}"; done
-  printf '%s' "${PATH_IN}"
-}
-
-# relative-output-dir <md-file> <search-root>
-#
-# The directory the output file must occupy under '--output-path': the directory part of
-# <md-file> taken relative to <search-root>, the directory argument the file was found
-# under. An empty <search-root> means the file was named directly on the command line,
-# which the contract places directly in '--output-path'. Prints nothing when the file
-# sits at the root, so callers can skip appending a subdirectory entirely rather than
-# appending a '.' segment.
-relative-output-dir() {
-  local MD_PATH ROOT PREFIX REL
-  # A file named directly on the command line carries no search root; it is rooted at
-  # its own directory and so always lands directly in '--output-path'.
-  [[ -n "${2}" ]] || return 0
-
-  MD_PATH="$(normalize-path "${1}")"
-  ROOT="$(normalize-path "${2}")"
-
-  REL="${MD_PATH}"
-  if [[ -n "${ROOT}" ]] && [[ "${ROOT}" != '.' ]]; then
-    PREFIX="${ROOT}"
-    [[ "${PREFIX}" == */ ]] || PREFIX="${PREFIX}/"
-    # A found path always starts with the root 'find' was given, so the prefix match is
-    # the normal case; leaving REL as the whole path is a conservative fallback.
-    [[ "${MD_PATH}" != "${PREFIX}"* ]] || REL="${MD_PATH#"${PREFIX}"}"
-  fi
-
-  REL="$(dirname "${REL}")"
-  [[ "${REL}" == '.' ]] || [[ "${REL}" == '/' ]] || printf '%s' "${REL}"
-}
 
 [[ -z "${TO_STDOUT}" ]] || QUIET=true
 
@@ -524,55 +606,44 @@ fi
 [[ -z "${KEEP_INTERMEDIATE}" ]] \
   || echo "md2x: kept intermediate files in '${MD2X_WORK_DIR}'" >&2
 
-{
-  if [[ -z "${STDIN_MODE}" ]]; then
-    # Each record of the resolved input list is '<md-file><tab><search-root>'; an empty
-    # root means the file was named directly on the command line rather than found under
-    # a directory argument.
-    while IFS=$'\t' read -r MD_FILE SEARCH_ROOT; do
-      [[ -n "${MD_FILE}" ]] || continue
-      # --to html5 : uses the HTML 5 engine. Yes, even when rendering PDF. It renders and
-      #              prints and saves us the hassle of having to install pdflatex
+# Staged result of each conversion: a fixed name in the work directory, never derived from
+# '--title' or any other user input (see the delivery step in 'generate-page()').
+BASE_OUTPUT="${MD2X_WORK_DIR}/output.${OUTPUT_FORMAT}"
+FINAL_OUTPUT=''
 
-      if [[ -n "${SINGLE_PAGE}" ]]; then
-        # Validate each source on its own so an encoding error names that file, not the
-        # combined work-directory file.
-        python3 -c "${TOC_PREPROCESSOR}" --validate \
-          --source-name "$(md2x-title-display "${MD_FILE}")" < "${MD_FILE}" || exit 1
-        { cat -- "${MD_FILE}"; echo; } >> "${SINGLE_PAGE_FILE}"
-      else
-        # An explicit '--title' is honored as-is; the upfront gate above (requirement
-        # 3) already guarantees this loop processes at most one file whenever
-        # 'TITLE_SET' is non-empty, so 'TITLE' stays pinned to the explicit value for
-        # the loop's single iteration. Absent '--title', fall back to each file's own
-        # basename, as before.
-        [[ -n "${TITLE_SET:-}" ]] || TITLE="$(md2x-strip-markdown-ext "${MD_FILE}")"
+if [[ -n "${SINGLE_PAGE}" ]]; then
+  # Concatenate every resolved source into one document.
+  while IFS=$'\t' read -r MD_FILE SEARCH_ROOT; do
+    [[ -n "${MD_FILE}" ]] || continue
+    # Validate each source on its own so an encoding error names that file, not the
+    # combined work-directory file.
+    python3 -c "${TOC_PREPROCESSOR}" --validate \
+      --source-name "$(md2x-title-display "${MD_FILE}")" < "${MD_FILE}" || exit 1
+    { cat -- "${MD_FILE}"; echo; } >> "${SINGLE_PAGE_FILE}"
+  done <<< "${RESOLVED_INPUTS}"
+fi
 
-        BASE_OUTPUT="${OUTPUT_PATH}"
-        [[ -n "${FLATTEN_DIRS}" ]] || {
-          REL_DIR="$(relative-output-dir "${MD_FILE}" "${SEARCH_ROOT}")"
-          [[ -z "${REL_DIR}" ]] || BASE_OUTPUT="${BASE_OUTPUT}/${REL_DIR}"
-        }
-        # Both branches need this: '--flatten-dirs' writes straight into
-        # '--output-path', which is just as likely not to exist yet.
-        mkdir -p "${BASE_OUTPUT}"
-        BASE_OUTPUT="${BASE_OUTPUT}/${TITLE}"
-        BASE_OUTPUT="${BASE_OUTPUT}.${OUTPUT_FORMAT}"
-        
-        generate-page
-      fi
-    done
-  fi
-  
-  if [[ -n "${SINGLE_PAGE}" ]] || [[ -n "${STDIN_MODE}" ]]; then
-    TITLE="${TITLE:-output}"
-    mkdir -p "${OUTPUT_PATH}"
-    BASE_OUTPUT="${OUTPUT_PATH}/${TITLE:-output}.${OUTPUT_FORMAT}"
-    [[ -z "${SINGLE_PAGE}" ]] || MD_FILE="${SINGLE_PAGE_FILE}"
-    [[ -z "${STDIN_MODE}" ]] || MD_FILE="${STDIN_FILE}"
+if [[ -z "${STDIN_MODE}" ]] && [[ -z "${SINGLE_PAGE}" ]]; then
+  # Each record of the plan is '<md-file><tab><target>' (empty target for '--to-stdout').
+  while IFS=$'\t' read -r MD_FILE FINAL_OUTPUT; do
+    [[ -n "${MD_FILE}" ]] || continue
+    # '--to-stdout' has no planned target (the fallback list below carries search roots).
+    [[ -z "${TO_STDOUT}" ]] || FINAL_OUTPUT=''
+    # An explicit '--title' is honored as-is; the upfront gate above already guarantees
+    # at most one file whenever 'TITLE_SET' is non-empty. Absent '--title', fall back to
+    # each file's own basename.
+    [[ -n "${TITLE_SET:-}" ]] || TITLE="$(md2x-strip-markdown-ext "${MD_FILE}")"
     generate-page
-  fi
-} <<< "${RESOLVED_INPUTS}"
+  done <<< "${PLANNED_TARGETS:-${RESOLVED_INPUTS}}"
+fi
+
+if [[ -n "${SINGLE_PAGE}" ]] || [[ -n "${STDIN_MODE}" ]]; then
+  TITLE="${TITLE:-output}"
+  FINAL_OUTPUT="${SINGLE_TARGET}"
+  [[ -z "${SINGLE_PAGE}" ]] || MD_FILE="${SINGLE_PAGE_FILE}"
+  [[ -z "${STDIN_MODE}" ]] || MD_FILE="${STDIN_FILE}"
+  generate-page
+fi
 
 # A failed search (an unreadable root) was recorded while the input list was built; the
 # files found before it were converted above, and the run still ends loudly rather than

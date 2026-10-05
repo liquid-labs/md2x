@@ -171,11 +171,22 @@ generate-page() {
     mv "${STAMPED_FILE}" "${BASE_OUTPUT}"
   fi
 
+  # Delivery. 'BASE_OUTPUT' is the staged result in the per-run work directory, under a
+  # fixed name ('output.<format>'): pandoc picks its PDF writer from the extension of its
+  # '-o' path, so a user-chosen '-o' name could not be handed to it directly, and a failed
+  # conversion never leaves a partial file at the destination. '--to-stdout' streams that
+  # work-directory file and writes nothing else; otherwise it is copied to 'FINAL_OUTPUT',
+  # the planned target (see 'md2x.sh'), creating its parent directory first.
   if [[ -n "${TO_STDOUT}" ]]; then
-    cat "${BASE_OUTPUT}"
+    cat -- "${BASE_OUTPUT}"
+  else
+    mkdir -p -- "$(md2x-parent-dir "${FINAL_OUTPUT}")" 2>/dev/null \
+      || md2x-die-runtime "could not create the directory for '$(md2x-title-display "${FINAL_OUTPUT}")'."
+    cp -- "${BASE_OUTPUT}" "${FINAL_OUTPUT}" 2>/dev/null \
+      || md2x-die-runtime "could not write '$(md2x-title-display "${FINAL_OUTPUT}")'."
   fi
-  
+
   [[ -n "${QUIET}" ]] || {
-    [[ -n "${LIST_FILES}" ]] && echo "${BASE_OUTPUT}" || echo "Created ${BASE_OUTPUT}"
+    [[ -n "${LIST_FILES}" ]] && echo "${FINAL_OUTPUT}" || echo "Created ${FINAL_OUTPUT}"
   }
 }

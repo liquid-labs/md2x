@@ -26,6 +26,7 @@ MD2X_OPTION_TABLE=(
   '-|keep-intermediate|flag|KEEP_INTERMEDIATE'
   '-|list-files|flag|LIST_FILES'
   '-|no-toc|flag|NO_TOC'
+  'o|output|value|OUTPUT_FILE'
   'p|output-path|value|OUTPUT_PATH'
   '-|quiet|flag|QUIET'
   '-|single-page|flag|SINGLE_PAGE'
@@ -113,7 +114,7 @@ md2x-argv-requests-help() {
     case "${_h_arg}" in
       --) return 1;;
       --help|--hel|--he|--h) return 0;;
-      --output-path|--output-format|--title) _h_skip=true;;
+      --output|--output-path|--output-format|--title) _h_skip=true;;
       --*) ;;
       -?*)
         _h_rest="${_h_arg#-}"
@@ -122,7 +123,7 @@ md2x-argv-requests-help() {
           _h_rest="${_h_rest#?}"
           case "${_h_char}" in
             h) return 0;;
-            p|F|t)
+            o|p|F|t)
               # The rest of the cluster is this option's value; with none, the next
               # argument is.
               [[ -n "${_h_rest}" ]] || _h_skip=true
@@ -148,8 +149,8 @@ md2x-argv-requests-version() {
     case "${_v_arg}" in
       --) return 1;;
       --version) return 0;;
-      --output-path|--output-format|--title) _v_skip=true;;
-      -p|-F|-t) _v_skip=true;;
+      --output|--output-path|--output-format|--title) _v_skip=true;;
+      -o|-p|-F|-t) _v_skip=true;;
     esac
   done
   return 1

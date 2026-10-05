@@ -95,3 +95,11 @@ Follow [Output options](../notes/design-decisions.md#output-options) and [Output
 - After `-o` and format inference.
 - After the `--to-stdout` pure-stream change.
 - After `-p` normalization, the help text, and the bats cases.
+
+## Status
+
+- Outcome: succeeded (2026-10-05).
+- Validation: `make qa` passes (285 bats cases + node suite + lint); the full bats suite also passes with `MD2X_TEST_BASH=/bin/bash` (bash 3.2.57). The new `output-options.bats` has 29 of 34 cases failing against the pre-task code (the other 5 are exit-2-by-accident or "overwrite stays allowed" cases) and all pass after. Two real-toolchain cases added to `real-toolchain-e2e.bats` (`-o -` streams `%PDF` with no `.pdf` left in the cwd; `-o out/report` writes a real PDF).
+- Files: `src/cli/md2x.sh`, `src/cli/lib/output-plan.sh` (new), `src/cli/lib/generate-page.sh`, `src/cli/lib/parse-options.sh`, `src/cli/lib/index.sh`, `src/cli/test/bats/output-options.bats` (new), `src/cli/test/bats/real-toolchain-e2e.bats`.
+- Contract for later tasks: pandoc now writes to the staged `BASE_OUTPUT="${MD2X_WORK_DIR}/output.<format>"` (fixed name; needed so `-o x` without a `.pdf` extension still yields a PDF), and `generate-page` copies it to `FINAL_OUTPUT`, the planned target (empty for `--to-stdout`). Task 004 should read `FINAL_OUTPUT` for the final path. Targets are planned in `md2x.sh` into `PLANNED_TARGETS` (`<md-file><tab><target>` records) and `SINGLE_TARGET`.
+- Decisions: `--title` filename validation is skipped for `--to-stdout` as well as `-o` (no file name derives from it); `-o`/`-p` containing control characters are usage errors; collision and input-overwrite checks follow a final-component symlink and compare ASCII-case-insensitively.
