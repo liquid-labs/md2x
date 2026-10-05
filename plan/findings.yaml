@@ -108,6 +108,15 @@ items:
         - plan/phase:remediation-01
         - effort:unspecified
       text: 'Edge cases in the new delivery and discovery code. (1) src/cli/lib/output-plan.sh md2x-deliver-output (lines ~187-207): the directory guard ''[[ ! -d T ]] || [[ -L T ]]'' exempts symlinks to directories, so ''mv -f -- temp T'' moves the temp file INTO the linked directory, exits 0 with no output at the requested path and leaves a hidden .md2x-out.XXXXXX there (reproduced on macOS); refuse any target where [[ -d T ]] is true (it follows symlinks) and verify afterward that the target is a regular file. (2) The mktemp template starts with the unsanitized target directory, so ''-o -d/out.pdf'' makes mktemp parse a dash-leading parent as an option (delivery fails after planning); prefix relative dash-leading directories with ''./'' or otherwise protect the template. (3) The temp file has no EXIT/INT/TERM cleanup: an interrupt between mktemp and mv leaves .md2x-out.* in the output directory; register it with the existing run cleanup trap. Replacing a target also drops the pre-existing target''s mode/ownership (document the replace semantics). (4) src/cli/md2x.sh lines ~316-317: only roots starting with ''-'' get the ''./'' prefix, but find also treats a root that is exactly ''!'', ''('', '')'' or '','' as the start of the expression (''find !'' silently searches the current directory); always prefix non-absolute roots with ''./'' (and strip it from results) or handle those tokens. Add bats regression cases for each, verifying they fail on the old code.'
+    - title: Always pass nonce; harden test-pack checks
+      id: xDG1
+      date: "2026-10-05"
+      tags:
+        - type:security
+        - priority:low
+        - plan/phase:remediation-01
+        - effort:unspecified
+      text: 'Two small hardening items. (1) The per-run marker nonce is passed with -M only in --single-page mode (src/cli/lib/generate-page.sh ~59-64; filter at src/cli/lib/md2x-links.lua ~207-212), so in multi-file mode a source''s own YAML front matter ''md2x-nonce: x'' plus a ''nonce=x'' marker comment would be honored; always pass a random nonce (or an unforgeable sentinel) so source metadata cannot supply it, and add a regression case. (2) scripts/test-pack.sh (~64-66, 83-89): the embedded-build-path check treats a grep error (exit 2, for example a missing bundle) as no match and passes; ROOT uses logical pwd so a symlinked checkout would not match a physical path embedded by bun; and the TypeScript step silently falls back to a grep of the .d.ts when node_modules/.bin/tsc is absent. Check file existence first, also grep ''pwd -P'', and make a missing pinned tsc a hard failure in the release target.'
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
