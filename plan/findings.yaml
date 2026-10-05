@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: -o with trailing slash fails after convert
-      id: 3rV7
-      date: "2026-10-05"
-      tags:
-        - type:bug
-        - priority:medium
-        - plan/phase:interface-contract
-        - effort:unspecified
-      text: In src/cli/md2x.sh (target planning, around the -o validation) and src/cli/lib/generate-page.sh (delivery), '-o out/ a.md' where out/ does not yet exist passes planning (md2x-check-output-location only rejects an existing directory); delivery then runs mkdir -p out and cp output.pdf out/, which fails with a runtime error (exit 1) after conversion work and leaves an empty out/ directory. The contract is that an unusable output path is a usage error (exit 2) before any conversion. Reject an OUTPUT_FILE ending in '/' with md2x-die-usage at plan time and add a bats regression case.
     - title: index.d.ts JSDoc misdescribes options
       id: YkUH
       date: "2026-10-05"
@@ -131,4 +122,9 @@ closed:
       title: Node bundles hardcode build-time __dirname
       disposition: dismissed
       reason: 'Fixed by remediation task 5.1: import.meta.dirname plus CJS --define in Makefile; test-pack stub check proves installed bin resolution; build-path grep hardening tracked by xDG1.'
+      date: "2026-10-05"
+    - id: 3rV7
+      title: -o with trailing slash fails after convert
+      disposition: dismissed
+      reason: 'Fixed by remediation task 5.3: trailing-slash -o rejected with exit 2 at plan time (md2x.sh:207-211), test output-options.bats:391.'
       date: "2026-10-05"
