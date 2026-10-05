@@ -56,6 +56,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 6
+          slug: inline-html-css
+          title: Inline HTML CSS
+          path: phase-01-correctness-and-regression-tests/006-inline-html-css.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 2
       slug: interface-contract
       title: Interface Contract
