@@ -443,7 +443,7 @@ phases:
             branch: plan/golden-release-hardening-06-001
             commit:
                 - 3fda89b
-            merge: null
+            merge: 72565167afaaf7200d5104a82990162ce9a445e5
         - number: 2
           slug: harden-output-delivery-and-find-roots
           title: Harden Output Delivery Edge Cases And Find Root Handling
