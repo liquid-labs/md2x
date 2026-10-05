@@ -42,7 +42,7 @@ phases:
             branch: plan/golden-release-hardening-01-003
             commit:
                 - "4585085"
-            merge: null
+            merge: 57b0e846b29e1025c2191c53415b377bf0ea4959
         - number: 4
           slug: per-run-work-directory
           title: Per-Run Work Directory
