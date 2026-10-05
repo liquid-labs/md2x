@@ -420,5 +420,6 @@ phases:
             - m1SB
           git:
             branch: plan/golden-release-hardening-05-007
-            commit: []
+            commit:
+                - c5acb94
             merge: null
