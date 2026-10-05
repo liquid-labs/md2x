@@ -73,9 +73,10 @@ teardown() {
   md2x_run --infer-version --flatten-dirs --output-path . report.md
 
   assert_success
-  # Outside a git work tree the version probe falls back to the literal 'working',
-  # which the CLI bakes into the Ghostscript overlay's PostScript string.
-  assert_any_call_contains gs 'Version: working'
+  # Outside a git work tree the version is omitted, with one warning, rather than read
+  # from whatever repository the suite happens to run in.
+  assert_stderr_contains 'not inside a git work tree'
+  refute_any_call_contains gs 'Version:'
 }
 
 @test "harness: pandoc's process-substitution arguments are captured" {

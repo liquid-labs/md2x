@@ -1,1 +1,1 @@
-OUTPUT_FORMATS='docx html pdf' # opendocument
+OUTPUT_FORMATS='docx html pdf'

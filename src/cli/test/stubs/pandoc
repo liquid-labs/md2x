@@ -35,9 +35,23 @@
 #                                  nothing written).
 #   * MD2X_TEST_STUB_EXIT_CODE -- exit code the stub returns (default: 0).
 #
+# 'pandoc --version' (the CLI's minimum-version preflight) is answered separately; see
+# MD2X_TEST_STUB_VERSION below.
+#
 # Kept compatible with bash 3.2: the test PATH is deliberately minimal.
 
 STUB_NAME='pandoc'
+
+# --- 'pandoc --version' ---------------------------------------------------------------
+# The CLI's preflight reads this to enforce its minimum pandoc version. It is answered
+# before anything is recorded, so a version probe never counts as a conversion call.
+# MD2X_TEST_STUB_VERSION sets the first line (default: a version at or above the floor, so
+# the rest of the suite is unaffected); MD2X_TEST_STUB_VERSION_EXIT_CODE makes it fail.
+if [[ "${1:-}" == '--version' ]]; then
+  printf '%s\n' "${MD2X_TEST_STUB_VERSION-pandoc 3.10.1}"
+  printf 'Features: +server +lua\n'
+  exit "${MD2X_TEST_STUB_VERSION_EXIT_CODE:-0}"
+fi
 
 # --- record the invocation ---------------------------------------------------------
 if [[ -n "${MD2X_TEST_STUB_LOG:-}" ]]; then

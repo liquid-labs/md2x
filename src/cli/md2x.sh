@@ -36,18 +36,8 @@ set -o nounset # exit on use of uninitialized variable
 set -o pipefail
 
 import lists
-# import prompt
 
 source ./lib/index.sh
-
-# require-answer "Host OU or context path? (E.g., 'DevOps-ProductionMainApp', 'Security-SDLCTest', etc.)" HOST_OU_PATH
-# get-answer ""
-
-# export HOST_OU_PATH
-
-# At one point, we supported the idea of generating "final" yaml files from a gucci processed template file. It turned out to be unecessary (I think), but want to keep this around till confirmed.
-
-# $(npm bin)/gucci ./cloud/auths/environment/devops-admin-auths.yaml.tmpl
 
 # extract options (sets the option variables, and leaves the positional arguments in
 # 'MD2X_POSITIONAL'; see 'lib/parse-options.sh')
@@ -83,9 +73,11 @@ Options:
                               filename) as document metadata via Pandoc
                               (e.g. the HTML <title> element).
       --infer-version        Add an inferred version string to the PDF
-                              footer: the package.json version when
-                              'git status --porcelain' is clean, or
-                              'working' when the tree is dirty.
+                              footer: the package.json version of the git
+                              repository containing the first input (the
+                              current directory for stdin), or 'working' when
+                              its tree is dirty. Needs 'git' and 'jq', which
+                              are required only for this flag.
       --keep-intermediate    Keep the per-run work directory of intermediate
                               build artifacts (CSS, Pandoc log, PDF overlay,
                               and so on) instead of deleting it after
@@ -170,10 +162,14 @@ fi
 (( $# > 0 )) \
   || md2x-die-usage "no input given. Usage: md2x [OPTIONS] <file>... | <directory>... | -"
 
-for EXEC in gs pandoc pdftk python3 jq; do
-  type "${EXEC}" >/dev/null \
+# 'command -v' is quiet on a miss, so no raw shell text reaches stderr. 'git' and 'jq' are
+# not in this list: they are needed only for '--infer-version' and checked just below.
+for EXEC in gs pandoc pdftk python3; do
+  command -v "${EXEC}" >/dev/null 2>&1 \
     || md2x-die-dependency "Required executable '${EXEC}' not found for 'md2x'. Add to 'PATH' or install."
 done
+md2x-check-pandoc-version
+[[ -z "${INFER_VERSION}" ]] || md2x-require-infer-version-tools
 
 # process options
 test_formats() {
@@ -275,6 +271,8 @@ else
     if [[ -d "${TEST_PATH}" ]]; then
       list-add-item SEARCH_DIRS "${TEST_PATH}"
     elif [[ -f "${TEST_PATH}" ]]; then
+      [[ -r "${TEST_PATH}" ]] \
+        || md2x-die-usage "'$(md2x-title-display "${TEST_PATH}")' is not readable."
       list-add-item MD_FILES "${TEST_PATH}"
     else
       # Planner decision: a nonexistent (or otherwise unusable) input argument is a usage
@@ -306,7 +304,9 @@ if [[ -z "${STDIN_MODE}" ]]; then
     # control character \001) keeps every name on exactly one line and lets the control
     # character check below see names that contain a newline.
     FIND_STATUS=0
-    FOUND="$(find "${ROOT_DIR}" \( -iname '*.md' -o -iname '*.markdown' \) ! -type d -print0 \
+    # 'find' errors (an unreadable directory) are not shown raw: the status is checked and
+    # reported through 'md2x-die-runtime' below, naming the search root.
+    FOUND="$(find "${ROOT_DIR}" \( -iname '*.md' -o -iname '*.markdown' \) ! -type d -print0 2>/dev/null \
       | tr '\012\000' '\001\012')" || FIND_STATUS=$?
     ROOT_FOUND=0
     while IFS= read -r FOUND_FILE; do
@@ -479,14 +479,25 @@ fi
 
 [[ -z "${TO_STDOUT}" ]] || QUIET=true
 
-# used in the 'generate-page' call later
-VERSION=$(OUTPUT=$(git status --porcelain) && [ -z "${OUTPUT}" ] && cat package.json | jq '.version' || echo 'working')
+# Used by 'generate-page()' for the footer. Computed only with '--infer-version', against
+# the git repository of the first input's directory (the cwd for stdin), so without the
+# flag nothing here touches 'git', 'jq', or 'package.json'. Empty when no version could be
+# determined (a warning was already printed); the footer then omits it.
+INFERRED_VERSION=''
+if [[ -n "${INFER_VERSION}" ]]; then
+  INFER_DIR='.'
+  if [[ -z "${STDIN_MODE}" ]]; then
+    INFER_FIRST="${RESOLVED_INPUTS%%$'\t'*}"
+    INFER_DIR="$(md2x-parent-dir "${INFER_FIRST}")"
+  fi
+  INFERRED_VERSION="$(md2x-infer-version "${INFER_DIR}")"
+fi
 
 case "${OUTPUT_FORMAT}" in
   pdf|html)
-    INTERMEDIDATE_FORMAT=html5;;
+    INTERMEDIATE_FORMAT=html5;;
   *)
-    INTERMEDIDATE_FORMAT="${OUTPUT_FORMAT}";;
+    INTERMEDIATE_FORMAT="${OUTPUT_FORMAT}";;
 esac
 
 # '$CSS' (the embedded github.css content) is static, deterministic content that never
@@ -523,7 +534,7 @@ MD2X_TMP_ROOT="${TMPDIR:-/tmp}"
 while [[ "${MD2X_TMP_ROOT}" == */ ]] && [[ "${MD2X_TMP_ROOT}" != '/' ]]; do
   MD2X_TMP_ROOT="${MD2X_TMP_ROOT%/}"
 done
-MD2X_WORK_DIR="$(mktemp -d "${MD2X_TMP_ROOT}/md2x.XXXXXX")" \
+MD2X_WORK_DIR="$(mktemp -d "${MD2X_TMP_ROOT}/md2x.XXXXXX" 2>/dev/null)" \
   || md2x-die-runtime "could not create a work directory under '${MD2X_TMP_ROOT}'."
 
 # One cleanup trap: it removes the work directory (a no-op while the variable is unset or
@@ -547,7 +558,7 @@ MD2X_WORK_DIR="$(mktemp -d "${MD2X_TMP_ROOT}/md2x.XXXXXX")" \
 # short and turns that into exit 1 (a runtime failure) on every supported bash.
 trap 'MD2X_EXIT_STATUS=$?
       [[ -n "${KEEP_INTERMEDIATE:-}" ]] || [[ -z "${MD2X_WORK_DIR:-}" ]] \
-        || rm -rf "${MD2X_WORK_DIR}"
+        || rm -rf "${MD2X_WORK_DIR}" 2>/dev/null
       if (( MD2X_EXIT_STATUS == 0 )) && [[ -z "${MD2X_COMPLETED:-}" ]]; then
         md2x-emit "md2x:" "1;31" "run aborted before completion; see the error above."
         exit 1
@@ -558,8 +569,15 @@ trap 'MD2X_EXIT_STATUS=$?
 # it needs a real file ending in '.css' rather than a process-substitution '/dev/fd/N'
 # path. The work directory gives it a fixed '.css' name. '$CSS' is static, so the file is
 # written once per run, not once per 'generate-page()' call (followup QBKX).
+#
+# Every write into the work directory is guarded: the redirect's own error is silenced
+# (stderr is redirected first) and a failure (a full disk, say) is reported once through
+# 'md2x-work-write-failed' rather than as a raw shell error.
+md2x-work-write-failed() {
+  md2x-die-runtime "could not write to the work directory '$(md2x-title-display "${MD2X_WORK_DIR}")'."
+}
 CSS_FILE="${MD2X_WORK_DIR}/github.css"
-printf '%s' "${CSS}" > "${CSS_FILE}"
+printf '%s' "${CSS}" 2>/dev/null > "${CSS_FILE}" || md2x-work-write-failed
 
 # HTML output must not reference the work directory: a '--css' link would point at a file
 # deleted at exit, leaving every HTML file unstyled. So HTML embeds the stylesheet inline
@@ -569,7 +587,7 @@ STYLE_HEADER_FILE="${MD2X_WORK_DIR}/style.html"
   printf '%s\n' '<style>'
   printf '%s\n' "${CSS}"
   printf '%s\n' '</style>'
-} > "${STYLE_HEADER_FILE}"
+} 2>/dev/null > "${STYLE_HEADER_FILE}" || md2x-work-write-failed
 
 # 'github.css' scopes every rule under a bare '.markdown-body' class selector, and neither
 # Pandoc's default html5 template nor a '-V'/'--variable' metadata hook puts that class
@@ -579,8 +597,8 @@ STYLE_HEADER_FILE="${MD2X_WORK_DIR}/style.html"
 # '<body>' itself would. Static content, so written once per run.
 BODY_OPEN_FILE="${MD2X_WORK_DIR}/body-open.html"
 BODY_CLOSE_FILE="${MD2X_WORK_DIR}/body-close.html"
-printf '%s' '<div class="markdown-body">' > "${BODY_OPEN_FILE}"
-printf '%s' '</div>' > "${BODY_CLOSE_FILE}"
+printf '%s' '<div class="markdown-body">' 2>/dev/null > "${BODY_OPEN_FILE}" || md2x-work-write-failed
+printf '%s' '</div>' 2>/dev/null > "${BODY_CLOSE_FILE}" || md2x-work-write-failed
 
 # The link/image filter, and the file it records missing images in ('generate-page()'
 # reports them).
@@ -588,7 +606,7 @@ LINK_FILTER_FILE="${MD2X_WORK_DIR}/md2x-links.lua"
 # Written with a plain heredoc, not a '$(cat <<EOF ...)' substitution: bash 3.2 mis-parses
 # quotes and parentheses inside a heredoc nested in a command substitution, and the Lua
 # source has both.
-cat > "${LINK_FILTER_FILE}" <<'EOF'
+cat 2>/dev/null > "${LINK_FILTER_FILE}" <<'EOF' || md2x-work-write-failed
 source ./lib/md2x-links.lua # bash-rollup-no-recur
 EOF
 MISSING_IMAGES_FILE="${MD2X_WORK_DIR}/missing-images.txt"
@@ -607,7 +625,7 @@ STDIN_FILE="${MD2X_WORK_DIR}/stdin.md"
 # error; the trap above removes the work directory on that exit. Whitespace-only input is
 # not empty.
 if [[ -n "${STDIN_MODE}" ]]; then
-  cat > "${STDIN_FILE}" || md2x-die-runtime "could not read standard input."
+  { cat > "${STDIN_FILE}"; } 2>/dev/null || md2x-die-runtime "could not read standard input."
   [[ -s "${STDIN_FILE}" ]] || md2x-die-usage "no input on stdin."
 fi
 
@@ -626,6 +644,7 @@ if [[ -n "${SINGLE_PAGE}" ]]; then
   # Concatenate every resolved source into one document.
   while IFS=$'\t' read -r MD_FILE SEARCH_ROOT; do
     [[ -n "${MD_FILE}" ]] || continue
+    [[ -r "${MD_FILE}" ]] || md2x-die-runtime "cannot read '$(md2x-title-display "${MD_FILE}")'."
     # Validate each source on its own so an encoding error names that file, not the
     # combined work-directory file.
     python3 -c "${TOC_PREPROCESSOR}" --validate \
@@ -634,7 +653,8 @@ if [[ -n "${SINGLE_PAGE}" ]]; then
     # images are relative to. An unterminated code fence or raw HTML block in a source
     # would swallow the next marker (a known limitation).
     { printf '\n'; md2x-source-marker "${MD_FILE}"; printf '\n'; cat -- "${MD_FILE}"; echo; } \
-      >> "${SINGLE_PAGE_FILE}"
+      2>/dev/null >> "${SINGLE_PAGE_FILE}" \
+      || md2x-die-runtime "could not read '$(md2x-title-display "${MD_FILE}")' or write the combined document."
   done <<< "${RESOLVED_INPUTS}"
 fi
 

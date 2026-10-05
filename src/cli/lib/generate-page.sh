@@ -16,9 +16,6 @@ generate-page() {
   METADATA_ARGS=()
   [[ -z "${INFER_TITLE}" ]] || METADATA_ARGS=(-M "title=${TITLE}")
 
-# TODO: support 'author' if known
-  # echo "generate-page for ${MD_FILE}..."
-
   # Every intermediate file lives in the per-run work directory the caller (md2x.sh)
   # created and registered for cleanup: the CSS file, the body-open/body-close include
   # files (all written once per run, not per call), the preprocessed Markdown, the Pandoc
@@ -68,7 +65,7 @@ generate-page() {
     fi
     LINK_ARGS+=(-M "md2x-out-dir=${FILTER_OUT_DIR}")
   fi
-  : > "${MISSING_IMAGES_FILE}"
+  { : > "${MISSING_IMAGES_FILE}"; } 2>/dev/null || md2x-work-write-failed
 
   # Materialize the TOC-preprocessed Markdown to a real temp file
   # rather than handing Pandoc a process substitution. A process substitution's exit
@@ -79,7 +76,10 @@ generate-page() {
   # (see 'md2x.sh'); running it via 'python3 -c' lets the document occupy stdin
   # without a fourth temp file. Stdin mode reads the captured copy in
   # the work directory, byte for byte, via 'MD_FILE'.
-  cat -- "${MD_FILE}" \
+  # An input found by a directory search can still be unreadable; check it here, so 'cat'
+  # never reports it raw.
+  [[ -r "${MD_FILE}" ]] || md2x-die-runtime "cannot read '${INPUT_DISPLAY}'."
+  cat -- "${MD_FILE}" 2>/dev/null \
     | python3 -c "${TOC_PREPROCESSOR}" --mode "${TOC_MODE}" --source-name "${INPUT_DISPLAY}" \
     > "${PREPROCESSED_FILE}" \
     || {
@@ -106,7 +106,7 @@ generate-page() {
     --quiet \
     --standalone \
     --from gfm \
-    --to ${INTERMEDIDATE_FORMAT} \
+    --to ${INTERMEDIATE_FORMAT} \
     ${STYLE_ARGS[@]+"${STYLE_ARGS[@]}"} \
     ${METADATA_ARGS[@]+"${METADATA_ARGS[@]}"} \
     "${LINK_ARGS[@]}" \
@@ -160,7 +160,7 @@ generate-page() {
     # https://www.tek-tips.com/viewthread.cfm?qid=830058
     # Both strings are untrusted text interpolated into a PostScript program: encode them.
     PS_TITLE="$(md2x-ps-string "${TITLE}")"
-    PS_VERSION="$(md2x-ps-string "${VERSION:-}")"
+    PS_VERSION="$(md2x-ps-string "${INFERRED_VERSION:-}")"
 
     FOOTER_STRING="/Helvetica findfont \
       ${HF_FONT_SIZE} scalefont setfont \
@@ -172,7 +172,7 @@ generate-page() {
       show                      \
       ( of ${PAGE_COUNT}) show  "
 
-    if [[ -n "${INFER_VERSION}" ]]; then
+    if [[ -n "${INFER_VERSION}" ]] && [[ -n "${INFERRED_VERSION:-}" ]]; then
       FOOTER_STRING="${FOOTER_STRING}${VERSION_X_OFFSET} ${FOOTER_Y_OFFSET} moveto \
       ( Version: ${PS_VERSION} ) show "
     fi
@@ -196,7 +196,8 @@ generate-page() {
 
     pdftk "${BASE_OUTPUT}" multistamp "${OVERLAY_FILE}" output "${STAMPED_FILE}" \
       || md2x-die-runtime "pdftk failed for '${INPUT_DISPLAY}'."
-    mv "${STAMPED_FILE}" "${BASE_OUTPUT}"
+    mv -- "${STAMPED_FILE}" "${BASE_OUTPUT}" 2>/dev/null \
+      || md2x-die-runtime "could not move the stamped PDF into place for '${INPUT_DISPLAY}'."
   fi
 
   # Delivery. 'BASE_OUTPUT' is the staged result in the per-run work directory, under a
@@ -206,7 +207,8 @@ generate-page() {
   # work-directory file and writes nothing else; otherwise it is copied to 'FINAL_OUTPUT',
   # the planned target (see 'md2x.sh'), creating its parent directory first.
   if [[ -n "${TO_STDOUT}" ]]; then
-    cat -- "${BASE_OUTPUT}"
+    cat -- "${BASE_OUTPUT}" 2>/dev/null \
+      || md2x-die-runtime "could not write '${INPUT_DISPLAY}' to standard output."
   else
     mkdir -p -- "$(md2x-parent-dir "${FINAL_OUTPUT}")" 2>/dev/null \
       || md2x-die-runtime "could not create the directory for '$(md2x-title-display "${FINAL_OUTPUT}")'."

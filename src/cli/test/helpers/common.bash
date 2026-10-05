@@ -19,11 +19,9 @@
 # What 'md2x_setup' establishes, and why:
 #
 #   * A per-case temporary working directory OUTSIDE the repository, which becomes the
-#     case's cwd. This is not optional. 'src/cli/md2x.sh' probes 'git status
-#     --porcelain' and 'package.json' from the cwd on every invocation to derive the
-#     '--infer-version' string, so running from the repo root would make that string
-#     depend on whether the working tree happens to be dirty. Outside a work tree it
-#     resolves deterministically to 'working'.
+#     case's cwd. '--infer-version' resolves its version from the first input's git
+#     repository, so running from the repo root would make that string depend on the
+#     repository's own state; outside a work tree it deterministically warns and omits it.
 #   * A minimal PATH containing only the stub 'pandoc'/'gs'/'pdftk', the handful of
 #     real tools md2x shells out to, and the system directories. The real pandoc, gs
 #     and pdftk are deliberately unreachable, so 'md2x_path_without' can drop a stub
@@ -196,6 +194,7 @@ md2x_use_stub_path() {
   # otherwise report the temp directory), and shadowing 'bash' with a symlink to
   # itself is fine but shadowing it with a '#!/usr/bin/env bash' wrapper would recurse.
   for name in ${MD2X_TEST_PASSTHROUGH_TOOLS}; do
+    [[ "${omitted}" != *" ${name} "* ]] || continue
     real="$(PATH="${MD2X_TEST_ORIGINAL_PATH}" command -v "${name}" 2>/dev/null || true)"
     [[ -n "${real}" ]] && [[ -x "${real}" ]] || continue
     printf '#!/bin/sh\nexec %s "$@"\n' "'${real}'" > "${MD2X_TEST_BIN_DIR}/${name}"
@@ -207,6 +206,25 @@ md2x_use_stub_path() {
   hash -r 2>/dev/null || true
 }
 
+# md2x_use_filtered_system_path <binary>...
+# Points PATH at the case's stub/passthrough directory plus a directory of symlinks to every
+# entry of the system directories except the named binaries.
+md2x_use_filtered_system_path() {
+  local filtered="${MD2X_TEST_TMPDIR}/sysbin" name dir
+  rm -rf "${filtered}"
+  mkdir -p "${filtered}"
+  for dir in /usr/bin /bin /usr/sbin /sbin; do
+    [[ -d "${dir}" ]] || continue
+    ( cd "${dir}" && ln -s "${dir}"/* "${filtered}/" 2>/dev/null ) || true
+  done
+  for name in "$@"; do
+    rm -f "${filtered}/${name}"
+  done
+  PATH="${MD2X_TEST_BIN_DIR}:${filtered}"
+  export PATH
+  hash -r 2>/dev/null || true
+}
+
 # md2x_path_without <binary>...
 # Rebuilds PATH so the named binaries are not resolvable at all -- the case md2x's
 # preflight reports with exit status 3. Fails loudly if one is still reachable, since
@@ -214,6 +232,15 @@ md2x_use_stub_path() {
 md2x_path_without() {
   md2x_use_stub_path "$@"
   local name
+  # A tool that also lives in a system directory ('jq' and 'git' are in /usr/bin on many
+  # systems) is still reachable after the rebuild above; hide it by putting a filtered copy
+  # of the system directories on PATH instead.
+  for name in "$@"; do
+    if command -v "${name}" >/dev/null 2>&1; then
+      md2x_use_filtered_system_path "$@"
+      break
+    fi
+  done
   for name in "$@"; do
     if command -v "${name}" >/dev/null 2>&1; then
       md2x_fail "'${name}' is still on PATH after being excluded: $(command -v "${name}")" \
@@ -224,15 +251,6 @@ md2x_path_without() {
 }
 
 # --- running the CLI ---------------------------------------------------------------
-
-# Strip environment noise the CLI cannot avoid emitting, so a test can assert on
-# stderr. The version probe on 'src/cli/md2x.sh' line 135 runs 'git status --porcelain'
-# unconditionally; outside a work tree -- which is exactly where the harness puts every
-# case -- git writes a 'fatal: not a git repository' line to stderr and the probe falls
-# back to the literal 'working'. That line is expected, not a failure.
-md2x_filter_env_noise() {
-  grep -v '^fatal: not a git repository' || true
-}
 
 # md2x_kept_work_dir
 # Prints the work directory named by the '--keep-intermediate' notice in the last
@@ -259,7 +277,8 @@ md2x_exec() {
 #   $status  exit status
 #   $output  stdout only (bats' 'run' merges stderr into it; this wrapper does not)
 #   $lines   $output split on newlines
-#   $stderr  stderr, with the expected environment noise filtered out
+#   $stderr  stderr, verbatim (the CLI emits no environment noise: without '--infer-version'
+#            it never runs 'git' or 'jq')
 # Never fails the case itself -- assert on the captured values. stdin is inherited, so
 # the CLI's '-' (read from stdin) mode is driven with a here-string or a redirect:
 # 'md2x_run - <<< "# Heading"'.
@@ -271,7 +290,7 @@ md2x_run() {
   md2x_exec "$@" > "${stdout_file}" 2> "${stderr_file}" || status=$?
 
   output="$(cat -- "${stdout_file}")"
-  stderr="$(md2x_filter_env_noise < "${stderr_file}")"
+  stderr="$(cat -- "${stderr_file}")"
 
   lines=()
   local line

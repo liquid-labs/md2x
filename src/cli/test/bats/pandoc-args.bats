@@ -138,12 +138,15 @@ teardown() {
 
 @test "--infer-version adds a Version: string to the Ghostscript overlay invocation" {
   md2x_write_doc 'report.md'
+  # A dirty work tree infers the literal 'working'; the clean-tree and no-repository cases
+  # are covered in 'version-inference.bats'.
+  printf '{"name":"x","version":"2.3.4"}\n' > package.json
+  git init -q .
+  git add report.md package.json
 
   md2x_run --infer-version --output-format pdf --flatten-dirs --output-path . report.md
 
   assert_success
-  # Outside a git work tree (every case's temp cwd) the version probe falls back to
-  # the literal 'working' -- see plan/notes/test-tooling-survey.md.
   assert_any_call_contains gs 'Version: working'
 }
 

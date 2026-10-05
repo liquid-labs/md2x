@@ -3,6 +3,7 @@ source ./ensure-weasyprint.sh
 source ./generate-page.sh
 source ./link-filter.sh
 source ./output-plan.sh
+source ./preflight.sh
 source ./parameters.sh
 source ./parse-options.sh
 source ./title-safe.sh

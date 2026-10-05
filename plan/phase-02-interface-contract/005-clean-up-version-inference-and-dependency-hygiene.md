@@ -90,3 +90,11 @@ Out of scope:
 - After the pandoc floor preflight.
 - After the leak-site audit and dead-code removal.
 - After the bats cases.
+
+## Status
+
+- **Outcome:** succeeded (2026-10-05).
+- **Validation:** `make qa` passes; the full CLI suite also passes with `MD2X_TEST_BASH=/bin/bash` (bash 3.2.57). The S3 and N9 cases in `version-inference.bats` were run against the pre-task `bin/md2x` and 16 of them failed there, then passed after the change. The `INTERMEDIDATE|gucci|require-answer` grep finds nothing; no preflight use of `type` remains.
+- **Pandoc floor:** 2.0. Every feature md2x uses first appears in pandoc 2.0 (Lua filters, the `Pandoc` filter function, `pandoc.utils.stringify`, element `walk`, `--log`, `--pdf-engine` with weasyprint, the `gfm` reader and writer); `-M`, `--include-*` and `--css` are older. Only pandoc 3.10.1 has been exercised. Justification is recorded beside `MD2X_PANDOC_MIN_VERSION` in `src/cli/lib/preflight.sh`.
+- **Files:** `src/cli/lib/preflight.sh` (new), `src/cli/md2x.sh`, `src/cli/lib/generate-page.sh`, `src/cli/lib/output-plan.sh`, `src/cli/lib/parse-options.sh`, `src/cli/lib/parameters.sh`, `src/cli/lib/index.sh`, `src/cli/test/bats/version-inference.bats` (new), `exit-codes.bats`, `harness-smoke.bats`, `pandoc-args.bats`, `src/cli/test/helpers/common.bash`, `src/cli/test/stubs/pandoc`.
+- **Decisions:** version inference warns and omits the version when package.json is missing or has no version, even in a dirty tree; a dirty tree with a package.json gives `working`. README and spec text on `--infer-version` is left for Phase 3.
