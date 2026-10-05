@@ -455,7 +455,7 @@ phases:
             - wgQ3
             - m1SB
           git:
-            branch: null
+            branch: plan/golden-release-hardening-06-002
             commit: []
             merge: null
         - number: 3
