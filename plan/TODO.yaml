@@ -46,6 +46,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 5
+          slug: byte-exact-stdin
+          title: Byte-Exact Stdin
+          path: phase-01-correctness-and-regression-tests/005-byte-exact-stdin.md
+          done: false
+          tier: sonnet-low
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 2
       slug: interface-contract
       title: Interface Contract
