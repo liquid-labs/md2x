@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 1
-    tasks_added: 4
+    tasks_added: 5
 phases:
     - number: 1
       slug: correctness-and-regression-tests
@@ -368,6 +368,18 @@ phases:
           tier: sonnet-med
           findings:
             - KhXI
+          git:
+            branch: null
+            commit: []
+            merge: null
+        - number: 5
+          slug: unforgeable-single-page-source-marker
+          title: Make The Single-Page Source Marker Unforgeable
+          path: phase-05-remediation-01/005-unforgeable-single-page-source-marker.md
+          done: false
+          tier: sonnet-high
+          findings:
+            - z2v9
           git:
             branch: null
             commit: []
