@@ -138,6 +138,7 @@ phases:
           path: phase-02-interface-contract/003-add-output-option-and-collision-checks.md
           done: false
           tier: sonnet-high
+          digest: Added -o/--output with extension-based format inference, a pure --to-stdout stream built in the work directory, -p slash normalization and non-directory rejection, and an up-front target plan with case-insensitive collision and input-overwrite checks (exit 2 before any conversion). Pandoc output is staged under a fixed work-directory name and copied to the planned target. 34 new bats cases; validation passed under bash 5 and 3.2.
           git:
             branch: null
             commit: []
