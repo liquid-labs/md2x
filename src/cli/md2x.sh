@@ -353,6 +353,16 @@ trap 'MD2X_EXIT_STATUS=$?
 CSS_FILE="${MD2X_WORK_DIR}/github.css"
 printf '%s' "${CSS}" > "${CSS_FILE}"
 
+# HTML output must not reference the work directory: a '--css' link would point at a file
+# deleted at exit, leaving every HTML file unstyled. So HTML embeds the stylesheet inline
+# via '--include-in-header' instead, from this file ('<style>' + '${CSS}' + '</style>').
+STYLE_HEADER_FILE="${MD2X_WORK_DIR}/style.html"
+{
+  printf '%s\n' '<style>'
+  printf '%s\n' "${CSS}"
+  printf '%s\n' '</style>'
+} > "${STYLE_HEADER_FILE}"
+
 # 'github.css' scopes every rule under a bare '.markdown-body' class selector, and neither
 # Pandoc's default html5 template nor a '-V'/'--variable' metadata hook puts that class
 # anywhere in the generated document. '--include-before-body'/'--include-after-body'

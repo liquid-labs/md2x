@@ -2,7 +2,7 @@ generate-page() {
   # Names the input in tool-failure messages; stdin mode has no file.
   local INPUT_LABEL="${MD_FILE:-}"
   local LINK_CONVERTER
-  local -a INCLUDE_BODY_ARGS
+  local -a INCLUDE_BODY_ARGS STYLE_ARGS
   local DOC_DATA PAGE_COUNT MEDIA_DIMENSIONS XPAGE YPAGE HF_FONT_SIZE PG_NUMBER_X_OFFSET
   local VERSION_X_OFFSET FOOTER_Y_OFFSET HEADER_Y_OFFSET TITLE_X_OFFSET FOOTER_STRING
   [[ -z "${STDIN_MODE:-}" ]] || INPUT_LABEL='stdin'
@@ -40,6 +40,15 @@ generate-page() {
   [[ "${OUTPUT_FORMAT}" == 'docx' ]] \
     || INCLUDE_BODY_ARGS=(--include-before-body "${BODY_OPEN_FILE}" --include-after-body "${BODY_CLOSE_FILE}")
 
+  # Stylesheet delivery: pdf hands WeasyPrint the work-directory '.css' file (read during
+  # the run); html embeds it inline as a '<style>' block via '--include-in-header', so the
+  # output never references the (deleted-at-exit) work directory; docx takes neither.
+  STYLE_ARGS=()
+  case "${OUTPUT_FORMAT}" in
+    pdf) STYLE_ARGS=(--css "${CSS_FILE}");;
+    html) STYLE_ARGS=(--include-in-header "${STYLE_HEADER_FILE}");;
+  esac
+
   # Materialize the TOC-preprocessed, link-converted Markdown to a real temp file
   # rather than handing Pandoc a process substitution. A process substitution's exit
   # status is invisible to this script's 'errexit'/'pipefail', so a failing
@@ -65,7 +74,7 @@ generate-page() {
     --standalone \
     --from gfm \
     --to ${INTERMEDIDATE_FORMAT} \
-    --css "${CSS_FILE}" \
+    ${STYLE_ARGS[@]+"${STYLE_ARGS[@]}"} \
     --metadata-file <(echo "${SETTINGS}") \
     "${PREPROCESSED_FILE}" \
     -o "${BASE_OUTPUT}" \
