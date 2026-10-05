@@ -441,7 +441,8 @@ phases:
             - r4Pu
           git:
             branch: plan/golden-release-hardening-06-001
-            commit: []
+            commit:
+                - 3fda89b
             merge: null
         - number: 2
           slug: harden-output-delivery-and-find-roots
