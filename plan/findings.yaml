@@ -99,15 +99,6 @@ items:
         - plan/phase:interface-contract
         - effort:unspecified
       text: md2x-infer-version in src/cli/lib/preflight.sh runs 'git -C <input dir> rev-parse' and 'git status --porcelain' in a directory taken from the inputs; in a repository with attacker-supplied .git/config (for example an extracted archive), core.fsmonitor or similar settings make git execute commands. Run git with '-c core.fsmonitor= -c core.hooksPath=/dev/null' (and GIT_CONFIG_NOSYSTEM=1, status --no-optional-locks), or document that --infer-version assumes a trusted repository.
-    - title: Validate pandoc floor and RELEASING artifacts
-      id: S0YR
-      date: "2026-10-05"
-      tags:
-        - type:documentation
-        - priority:low
-        - plan/phase:interface-contract
-        - effort:unspecified
-      text: 'Two items for the CI and release documentation tasks: (1) the pandoc >= 2.0 floor in src/cli/lib/preflight.sh is derived from changelogs only and only pandoc 3.10.1 has been exercised; add a CI job on an older pandoc to validate the claimed floor or raise the floor to the oldest tested release. (2) RELEASING.md line 7 still lists the published artifacts as bin/md2x and dist/md2x.js; the build now produces dist/md2x.mjs, dist/md2x.cjs and dist/index.d.ts (package.json files is bin/* and dist/*). Confirm the release-procedure task covers the artifact list.'
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
@@ -128,4 +119,9 @@ closed:
       title: Drop bash-toolkit lists, harden heredoc
       disposition: promoted
       ref: 32b8
+      date: "2026-10-05"
+    - id: S0YR
+      title: Validate pandoc floor and RELEASING artifacts
+      disposition: promoted
+      ref: S0YR
       date: "2026-10-05"
