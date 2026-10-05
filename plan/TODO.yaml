@@ -203,7 +203,7 @@ phases:
             branch: plan/golden-release-hardening-02-008
             commit:
                 - 2514e6a
-            merge: null
+            merge: beb32a26520d3f80cbe878bc7f090cb0a0ee4a1f
     - number: 3
       slug: docs-ci-and-release-readiness
       title: Docs, CI, and Release Readiness
