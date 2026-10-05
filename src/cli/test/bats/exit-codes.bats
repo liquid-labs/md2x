@@ -1,8 +1,8 @@
 #!/usr/bin/env bats
 #
 # Behavioural coverage for md2x's non-zero exit paths: a missing required external
-# binary (exit 2, naming the binary -- docs/md2x-spec.md's 'General features' and
-# 'Exit behavior') and an input path that is neither a file nor a directory (non-zero,
+# binary (exit 3, naming the binary -- docs/md2x-spec.md's 'General features' and
+# 'Exit behavior') and an input path that is neither a file nor a directory (exit 2,
 # naming the path -- 'Exit behavior'). 'harness-smoke.bats' exercises the missing-
 # 'pandoc' case as part of proving the harness's 'md2x_path_without' helper works;
 # these cases are the dedicated behavioural coverage for the CLI's own contract.
@@ -31,7 +31,7 @@ teardown() {
 
   md2x_run report.md
 
-  assert_failure 2
+  assert_failure 3
   assert_stderr_contains "Required executable 'pandoc' not found"
   refute_stub_called pandoc
   assert_file_not_exists './report.pdf'
@@ -43,17 +43,17 @@ teardown() {
 
   md2x_run report.md
 
-  assert_failure 2
+  assert_failure 3
   assert_stderr_contains "Required executable 'gs' not found"
   refute_stub_called gs
   refute_stub_called pandoc
   assert_file_not_exists './report.pdf'
 }
 
-@test "an input path that is neither a file nor a directory exits non-zero and names the path" {
+@test "an input path that is neither a file nor a directory exits 2 and names the path" {
   md2x_run no-such-file.md
 
-  assert_failure
+  assert_failure 2
   assert_stderr_contains "'no-such-file.md' is neither a file nor a directory"
 }
 
@@ -83,7 +83,7 @@ teardown() {
 
   md2x_run --output-format html --output-path out unreadable-root good-root
 
-  assert_failure
+  assert_failure 1
   assert_stderr_contains 'Permission denied'
   assert_stderr_contains 'unreadable-root'
   assert_file_not_exists 'out/report.html'
@@ -101,7 +101,7 @@ teardown() {
 
   md2x_run --output-format html --output-path out good-root unreadable-root
 
-  assert_failure
+  assert_failure 1
   assert_stderr_contains 'Permission denied'
   assert_stderr_contains 'unreadable-root'
   # The good root's own conversion already completed before the later root's failure

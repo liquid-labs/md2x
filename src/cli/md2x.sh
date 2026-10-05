@@ -5,7 +5,6 @@ set -o errexit # exit on errors
 set -o nounset # exit on use of uninitialized variable
 set -o pipefail
 
-import echoerr
 import lists
 import options
 # import prompt
@@ -106,10 +105,8 @@ EOF
 fi
 
 for EXEC in gs pandoc pdftk python3 jq; do
-  type "${EXEC}" >/dev/null || {
-    echo "Required executable '${EXEC}' not found for 'md2x'. Add to 'PATH' or install." >&2
-    exit 2
-  }
+  type "${EXEC}" >/dev/null \
+    || md2x-die-dependency "Required executable '${EXEC}' not found for 'md2x'. Add to 'PATH' or install."
 done
 
 # process options
@@ -121,14 +118,14 @@ test_formats() {
   return 1
 }
 [[ -n "${OUTPUT_FORMAT}" ]] || OUTPUT_FORMAT='pdf'
-test_formats || echoerrandexit "Unsupported output format '${OUTPUT_FORMAT}'."
+test_formats || md2x-die-usage "Unsupported output format '${OUTPUT_FORMAT}'."
 
 # '--toc' and '--no-toc' resolve to a single 'TOC_MODE' the pipeline consumes; giving
 # both is fatal, and must be checked before 'ensure-weasyprint' below, which can
 # trigger a minute-long network install on a cold machine -- the conflict must abort
 # before any conversion work begins.
 [[ -z "${TOC}" ]] || [[ -z "${NO_TOC}" ]] \
-  || echoerrandexit "Cannot specify both '--toc' and '--no-toc'."
+  || md2x-die-usage "Cannot specify both '--toc' and '--no-toc'."
 TOC_MODE='auto'
 [[ -z "${TOC}" ]] || TOC_MODE='on'
 [[ -z "${NO_TOC}" ]] || TOC_MODE='off'
@@ -158,7 +155,9 @@ else
     elif [[ -f "${TEST_PATH}" ]]; then
       list-add-item MD_FILES "${TEST_PATH}"
     else
-      echoerrandexit "'${TEST_PATH}' is neither a file nor a directory. Bailing out."
+      # Planner decision: a nonexistent (or otherwise unusable) input argument is a usage
+      # error (exit 2), not a runtime failure -- the caller named something invalid.
+      md2x-die-usage "'${TEST_PATH}' is neither a file nor a directory. Bailing out."
     fi
   done
 fi
@@ -186,7 +185,7 @@ if [[ -z "${SINGLE_PAGE}" ]] && [[ -z "${INPUT}" ]]; then
   done <<< "${SEARCH_DIRS}"
 
   if [[ -n "${TITLE_SET:-}" ]] && (( TITLE_PRECEDENCE_FILE_COUNT > 1 )); then
-    echoerrandexit "Cannot use '--title'/'-t' with more than one input file" \
+    md2x-die-usage "Cannot use '--title'/'-t' with more than one input file" \
       "(${TITLE_PRECEDENCE_FILE_COUNT} files would be converted); '--title' only" \
       "applies to a single-file conversion. Use '--single-page' to combine multiple" \
       "files under one title, or omit '--title' to use each file's own basename."
@@ -334,9 +333,16 @@ SEARCH_ROOT_ERROR_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-search-root-error.XXX
 # want to retain -- it is purely an internal signal -- so its removal is unconditional,
 # with the '--keep-intermediate' gate moved inside the trap body instead of around the
 # whole registration.
-trap '[[ -n "${KEEP_INTERMEDIATE:-}" ]] \
+#
+# Exit-status backstop (keep this in any rewrite of this trap): the trap also normalizes
+# any exit status outside the 0-3 contract (see 'lib/errors.sh') to 1, so a tool that
+# slips past the explicit '|| md2x-die-runtime' guards under 'errexit' (e.g. a stub or
+# real tool exiting 64) can never leak its own status as md2x's.
+trap 'MD2X_EXIT_STATUS=$?
+      [[ -n "${KEEP_INTERMEDIATE:-}" ]] \
         || rm -f "${CSS_TMP_FILE:-}" "${BODY_OPEN_TMP_FILE:-}" "${BODY_CLOSE_TMP_FILE:-}" "${PREPROCESSED_TMP_FILE:-}" "${SINGLE_PAGE_COMBINED_FILE:-}"
-      rm -f "${SEARCH_ROOT_ERROR_TMP_FILE:-}"' EXIT
+      rm -f "${SEARCH_ROOT_ERROR_TMP_FILE:-}"
+      if (( MD2X_EXIT_STATUS < 0 || MD2X_EXIT_STATUS > 3 )); then exit 1; fi' EXIT
 
 # Unlike the Pandoc log and the PDF header/footer overlay -- both written into the user's own
 # working/output tree, and therefore discoverable by normal directory listing -- 'CSS_TMP_FILE'
@@ -444,4 +450,4 @@ trap '[[ -n "${KEEP_INTERMEDIATE:-}" ]] \
 # 'find' fails for it; a non-empty file here means that happened, so abort loudly rather
 # than let the run's partial results pass as a silent success. Followup 8ZmD.
 [[ ! -s "${SEARCH_ROOT_ERROR_TMP_FILE}" ]] \
-  || echoerrandexit "md2x: could not fully search '$(cat "${SEARCH_ROOT_ERROR_TMP_FILE}")' for Markdown files. Bailing out."
+  || md2x-die-runtime "could not fully search '$(cat "${SEARCH_ROOT_ERROR_TMP_FILE}")' for Markdown files. Bailing out."

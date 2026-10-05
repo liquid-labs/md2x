@@ -1,4 +1,7 @@
 generate-page() {
+  # Names the input in tool-failure messages; stdin mode has no file.
+  local INPUT_LABEL="${MD_FILE:-}"
+  [[ -z "${INPUT}" ]] || INPUT_LABEL='stdin'
   local SETTINGS='---
 '
   if [[ -n "${INFER_TITLE}" ]]; then
@@ -63,7 +66,8 @@ generate-page() {
   if [[ -z "${INPUT}" ]]; then cat "${MD_FILE}"; else printf '%s\n' "${INPUT}"; fi \
     | python3 -c "${TOC_PREPROCESSOR}" --mode "${TOC_MODE}" \
     | eval $LINK_CONVERTER \
-    > "${PREPROCESSED_TMP_FILE}"
+    > "${PREPROCESSED_TMP_FILE}" \
+    || md2x-die-runtime "TOC preprocessing failed for '${INPUT_LABEL}'."
 
   pandoc \
     $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
@@ -77,7 +81,8 @@ generate-page() {
     "${PREPROCESSED_TMP_FILE}" \
     -o "${BASE_OUTPUT}" \
     --log 'pandoc-log.log' \
-    1>/dev/null
+    1>/dev/null \
+    || md2x-die-runtime "pandoc failed for '${INPUT_LABEL}'."
   # Pandoc's own stdout is inert when '-o <file>' is given; the explicit redirect
   # guarantees stdout purity for '--to-stdout'/'--list-files' by construction rather
   # than by relying on that behavior. Stderr is left untouched: WeasyPrint runs as a
@@ -107,7 +112,8 @@ generate-page() {
     # Note, if we ever go back to a latex generator, you can use 'header-include' to configure to generate headers and
     # footers as part of the first run.
 
-    DOC_DATA="$(pdftk "${BASE_OUTPUT}" dump_data)"
+    DOC_DATA="$(pdftk "${BASE_OUTPUT}" dump_data)" \
+      || md2x-die-runtime "pdftk failed for '${INPUT_LABEL}'."
     PAGE_COUNT=$(echo "${DOC_DATA}" | grep NumberOfPages | cut -d: -f2)
     MEDIA_DIMENSIONS=$(echo "${DOC_DATA}" | grep PageMediaDimensions | head -n 1)
     XPAGE=$(echo "${MEDIA_DIMENSIONS}" | cut -d: -f2 | cut -d' ' -f 2)
@@ -157,11 +163,13 @@ generate-page() {
       -sDEVICE=pdfwrite             \
       -g${XPAGE}0x${YPAGE}0         \
       -c "${FOOTER_STRING}"         \
-      -q > /dev/null
+      -q > /dev/null \
+      || md2x-die-runtime "gs failed for '${INPUT_LABEL}'."
 
     local COMBINED_FILE="${TITLE}-combined.${OUTPUT_FORMAT}"
 
-    pdftk "${BASE_OUTPUT}" multistamp "${OVERLAY_OUTPUT}" output "${COMBINED_FILE}"
+    pdftk "${BASE_OUTPUT}" multistamp "${OVERLAY_OUTPUT}" output "${COMBINED_FILE}" \
+      || md2x-die-runtime "pdftk failed for '${INPUT_LABEL}'."
     # mv "${COMBINED_FILE}" "${OUTPUT_PATH}/${TITLE}.${OUTPUT_FORMAT}"
     mv "${COMBINED_FILE}" "${BASE_OUTPUT}"
     [[ -n "${KEEP_INTERMEDIATE}" ]] || rm "${OVERLAY_OUTPUT}"

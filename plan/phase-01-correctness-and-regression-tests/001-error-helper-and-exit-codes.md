@@ -101,3 +101,10 @@ architectural_impact: true
 - After the helper module exists and is sourced.
 - After `md2x.sh` and `ensure-weasyprint.sh` call sites are migrated.
 - After tool-failure mapping and the bats updates.
+
+## Status
+
+- Outcome: succeeded (2026-10-04).
+- Validation: `make qa` passes; new cases in `src/cli/test/bats/error-output.bats` and the new install-failure case in `weasyprint-bootstrap-locking.bats` fail against the pre-change `bin/md2x`; grep checks clean; no bare `assert_failure` remains; manual TTY/`NO_COLOR` check done (exit 2 both).
+- Files: `src/cli/lib/errors.sh` (new), `src/cli/lib/index.sh`, `src/cli/md2x.sh`, `src/cli/lib/generate-page.sh`, `src/cli/lib/ensure-weasyprint.sh`, bats files under `src/cli/test/bats/`, `src/cli/test/helpers/common.bash`.
+- The `EXIT` trap in `md2x.sh` normalizes any status outside 0-3 to 1; later trap rewrites must keep it.

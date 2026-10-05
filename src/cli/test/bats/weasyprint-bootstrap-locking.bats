@@ -181,6 +181,9 @@ case "${1:-}" in
         ;;
       pip)
         # argv: python3 -m pip install weasyprint==69.0
+        # 'MD2X_TEST_WPL_FAIL_PIP' simulates a failed install (exercises
+        # 'ensure-weasyprint-fail()').
+        [[ -z "${MD2X_TEST_WPL_FAIL_PIP:-}" ]] || exit 9
         BIN_DIR="$(dirname "$0")"
         sleep "${MD2X_TEST_WPL_SLEEP:-0.4}"
         cat > "${BIN_DIR}/weasyprint" <<'WEASY'
@@ -332,8 +335,8 @@ weasyprint_lock_assert_no_overlap() {
   local stderr_content
   stderr_content="$(cat "${WPL_TMPDIR}/stderr-mkdir-fail")"
 
-  [[ "${status_val}" -eq 2 ]] \
-    || md2x_fail "expected exit status 2, got ${status_val}" "stderr: ${stderr_content}"
+  [[ "${status_val}" -eq 3 ]] \
+    || md2x_fail "expected exit status 3, got ${status_val}" "stderr: ${stderr_content}"
 
   (( elapsed < 30 )) \
     || md2x_fail "expected a fast fail-fast exit, but took ${elapsed}s (close to the 180s lock timeout -- looks like it busy-waited instead of failing fast)"
@@ -343,6 +346,25 @@ weasyprint_lock_assert_no_overlap() {
 
   [[ "${stderr_content}" != *'rm -rf'* ]] \
     || md2x_fail "expected stderr NOT to recommend 'rm -rf' as remediation for a persistent mkdir failure" "stderr: ${stderr_content}"
+}
+
+@test "weasyprint-bootstrap-locking: a failed install step exits 3 and cleans up the lock and venv" {
+  md2x_write_doc 'report.md'
+
+  local status_val=0
+  HOME="${WPL_HOME}" MD2X_TEST_WPL_LOG="${WPL_LOG}" MD2X_TEST_WPL_ID='pip-fail' MD2X_TEST_WPL_FAIL_PIP=1 \
+    "${MD2X_BIN}" --flatten-dirs --output-path "${WPL_TMPDIR}/out-pip-fail" report.md \
+    > "${WPL_TMPDIR}/stdout-pip-fail" 2> "${WPL_TMPDIR}/stderr-pip-fail" || status_val=$?
+
+  local stderr_content
+  stderr_content="$(cat "${WPL_TMPDIR}/stderr-pip-fail")"
+
+  [[ "${status_val}" -eq 3 ]] \
+    || md2x_fail "expected exit status 3, got ${status_val}" "stderr: ${stderr_content}"
+  [[ "${stderr_content}" == *'failed to install weasyprint (step: pip install weasyprint)'* ]] \
+    || md2x_fail "expected stderr to name the failing step" "stderr: ${stderr_content}"
+  assert_file_not_exists "${WPL_HOME}/.md2x-venv.lock"
+  assert_file_not_exists "${WPL_HOME}/.md2x/venv"
 }
 
 @test "weasyprint-bootstrap-locking: warm path (pre-existing weasyprint) never touches the lock" {

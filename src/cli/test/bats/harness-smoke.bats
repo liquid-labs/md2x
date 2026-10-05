@@ -147,7 +147,7 @@ teardown() {
 
   md2x_run report.md
 
-  assert_failure 2
+  assert_failure 3
   assert_stderr_contains "Required executable 'pandoc' not found"
   refute_stub_called pandoc
 }
