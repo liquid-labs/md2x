@@ -201,7 +201,8 @@ phases:
           digest: Replaced the single CJS bundle with ESM and CJS bundles plus hand-written types and an exports map. The packed tarball passes native ESM named import, CJS require and a strict tsc check via make test-pack (scripts/test-pack.sh).
           git:
             branch: plan/golden-release-hardening-02-008
-            commit: []
+            commit:
+                - 2514e6a
             merge: null
     - number: 3
       slug: docs-ci-and-release-readiness
