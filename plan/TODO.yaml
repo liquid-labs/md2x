@@ -78,7 +78,7 @@ phases:
             branch: plan/golden-release-hardening-01-006
             commit:
                 - ffa2498
-            merge: null
+            merge: 65330f3e531e830b4b0b3334b44da63dc8b92c16
         - number: 7
           slug: title-safe-sinks
           title: Title-Safe Sinks
