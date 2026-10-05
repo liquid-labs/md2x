@@ -14,3 +14,7 @@ phases:
       slug: docs-ci-and-release-readiness
       title: Docs, CI, and Release Readiness
       tasks: []
+    - number: 4
+      slug: doc-updates
+      title: Documentation Updates
+      tasks: []
