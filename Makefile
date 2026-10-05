@@ -48,7 +48,7 @@ $(NODE_DIST_ESM): package.json $(NODE_FILES)
 
 $(NODE_DIST_CJS): package.json $(NODE_FILES)
 	mkdir -p $(dir $@)
-	bun build $(NODE_SRC)/index.js --target=node --format=cjs --packages=external --outfile=$@
+	bun build $(NODE_SRC)/index.js --target=node --format=cjs --packages=external --define import.meta.dirname=module.path --define import.meta.url=undefined --outfile=$@
 
 # The hand-written type declarations ship as-is.
 $(NODE_DIST_TYPES): $(NODE_SRC)/index.d.ts
