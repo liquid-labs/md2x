@@ -343,6 +343,7 @@ phases:
           path: phase-05-remediation-01/002-node-end-of-options-and-type-docs.md
           done: false
           tier: sonnet-med
+          digest: Sources now go after '--' so '-weird.md' is treated as a file, while '-' (stdin) still works. index.d.ts JSDoc for inferTitle, inferVersion and singlePage matches CLI help. Tests updated plus two new -weird.md tests; make qa and make test-pack pass.
           findings:
             - Xylz
             - YkUH
