@@ -131,7 +131,7 @@ phases:
             branch: plan/golden-release-hardening-02-002
             commit:
                 - 99b3244
-            merge: null
+            merge: 784a074da7347b076f1713cfe6d3db12dd5d0f3b
         - number: 3
           slug: add-output-option-and-collision-checks
           title: Add Output Option and Collision Checks
