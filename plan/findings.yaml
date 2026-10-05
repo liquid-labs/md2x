@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Output overwrite check is advisory only
-      id: m1SB
-      date: "2026-10-05"
-      tags:
-        - type:security
-        - priority:low
-        - plan/phase:interface-contract
-        - effort:unspecified
-      text: 'The collision and input-overwrite checks planned in src/cli/md2x.sh / src/cli/lib/output-plan.sh compare canonical path strings at plan time, but generate-page.sh delivers later with ''cp -- output FINAL_OUTPUT'': (a) a symlink swapped into the target or its parent after planning (for example during a long WeasyPrint install) defeats the check because cp follows a final-component symlink; (b) a hard link to an input, or another mount path to the same inode, is not detected. Also find lists symlinked *.md files (! -type d) so a symlink in a searched tree is read. Re-check inode equality (test -ef) against each input immediately before delivery, write via a temp file in the target directory then mv (or use no-follow semantics), and consider find -type f or document that symlinked sources are followed.'
     - title: infer-version git status runs clean filters
       id: r4Pu
       date: "2026-10-05"
@@ -134,4 +125,9 @@ closed:
       title: Output delivery edge cases and find roots
       disposition: dismissed
       reason: Fixed by remediation task 6.2 (delivery refuses -d targets, ./ mktemp prefix, EXIT-trap temp cleanup, ./-prefixed find roots); round 2 security and combined reviews both found delivery and find roots sound.
+      date: "2026-10-05"
+    - id: m1SB
+      title: Output overwrite check is advisory only
+      disposition: dismissed
+      reason: 'Fixed by remediation tasks 5.7 and 6.2: inode re-check and temp+mv delivery; symlinked *.md following and parent-dir trust assumption documented in docs/md2x-spec.md; round 2 reviews found delivery sound.'
       date: "2026-10-05"
