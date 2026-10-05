@@ -366,7 +366,7 @@ phases:
             branch: plan/golden-release-hardening-05-003
             commit:
                 - 928a0f4
-            merge: null
+            merge: 357d27cdd1b316fe66c77e7f9a767a25965acd58
         - number: 4
           slug: filter-pandoc-user-select-warning
           title: Filter Pandoc Template User-Select Warning From PDF Stderr
