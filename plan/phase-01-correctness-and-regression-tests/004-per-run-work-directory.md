@@ -88,3 +88,11 @@ architectural_impact: true
 - After the work directory and trap exist, with CSS and the body files moved.
 - After the single-page, log, overlay, and combined paths are moved.
 - After `work-directory.bats` and the existing-test updates.
+
+## Status
+
+- Outcome: succeeded (2026-10-04).
+- One `mktemp -d` work directory per run (`src/cli/md2x.sh`), created after option/input validation, removed by a single `EXIT` trap unless `--keep-intermediate`; kept path printed once to stderr. Fixed names: `github.css`, `body-open.html`, `body-close.html`, `preprocessed.md`, `single-page.md`, `pandoc.log`, `overlay.pdf`, `combined.pdf`, `search-root-error`. `generate-page` (`src/cli/lib/generate-page.sh`) no longer creates or removes files; its variables are `local`.
+- Validation: `make qa` passes; `MD2X_TEST_BASH=/bin/bash make test-cli` passes (193 cases, including real-toolchain e2e); real PDF run left only the input and output in cwd and an empty TMPDIR.
+- New tests: `src/cli/test/bats/work-directory.bats`. Pre-change, cases 1, 2, 5, 7, 8 fail; cases 3, 4, 6 pass on the old code because it already cleaned up on success and usage errors.
+- Docs updated for the changed `--keep-intermediate` behavior: README.md, docs/md2x-spec.md, docs/architecture.md.

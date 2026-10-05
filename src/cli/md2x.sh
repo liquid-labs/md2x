@@ -86,9 +86,10 @@ Options:
                               footer: the package.json version when
                               'git status --porcelain' is clean, or
                               'working' when the tree is dirty.
-      --keep-intermediate    Keep intermediate build artifacts (the Pandoc
-                              log and the PDF header/footer overlay) instead
-                              of deleting them after conversion.
+      --keep-intermediate    Keep the per-run work directory of intermediate
+                              build artifacts (CSS, Pandoc log, PDF overlay,
+                              and so on) instead of deleting it after
+                              conversion; its path is printed to stderr.
   -p, --output-path <path>   Directory to write output files into. Default: '.'.
   -F, --output-format <format>
                               Output format: 'pdf' (default), 'html', or
@@ -280,19 +281,6 @@ case "${OUTPUT_FORMAT}" in
     INTERMEDIDATE_FORMAT="${OUTPUT_FORMAT}";;
 esac
 
-if [[ -n "${SINGLE_PAGE}" ]]; then
-  # Prefixed 'SINGLE_PAGE_' rather than the bare 'COMBINED_FILE' its own name would
-  # suggest: 'generate-page()' (src/cli/lib/generate-page.sh) assigns its own,
-  # unrelated 'COMBINED_FILE' global -- the pdftk multistamp output path for the PDF
-  # header/footer overlay -- on every pdf-format call, with no 'local' to scope it. A
-  # bare 'COMBINED_FILE' here would get silently clobbered by that assignment the
-  # moment 'generate-page()' runs, leaving this script's own end-of-run cleanup below
-  # reading a stale, already-'mv'-away path instead of this concatenation file's real
-  # one. See followup flSJ.
-  SINGLE_PAGE_COMBINED_FILE="${TITLE:-input}.md"
-  ! [[ -f "${SINGLE_PAGE_COMBINED_FILE}" ]] || rm "${SINGLE_PAGE_COMBINED_FILE}"
-fi
-
 # '$CSS' (the embedded github.css content) is static, deterministic content that never
 # varies across 'generate-page()' calls within one md2x invocation, but the per-file
 # loop below (and the single-page/stdin call further down) can invoke 'generate-page()'
@@ -315,55 +303,26 @@ source ./lib/toc-preprocess.py # bash-rollup-no-recur
 EOF
 )
 
-# WeasyPrint (the pinned '--pdf-engine') MIME-sniffs '--css' from its path extension, so
-# it needs a real file ending in '.css' rather than a process-substitution '/dev/fd/N'
-# path. macOS's native (BSD) 'mktemp' -- unlike GNU coreutils' -- only randomizes a
-# *trailing* run of 'X's: a template with a literal suffix after the 'X's (e.g.
-# 'md2x-css.XXXXXX.css') is returned verbatim, unrandomized, so a second call collides
-# with the first call's still-open file. Create the file with a trailing-only template,
-# then rename it to add the '.css' suffix.
-CSS_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-css.XXXXXX")"
-mv "${CSS_TMP_FILE}" "${CSS_TMP_FILE}.css"
-CSS_TMP_FILE="${CSS_TMP_FILE}.css"
-printf '%s' "${CSS}" > "${CSS_TMP_FILE}"
+# One per-run work directory holds every intermediate file this invocation creates (the
+# CSS file, the body-wrapper include files, the TOC-preprocessed Markdown, the
+# '--single-page' concatenation, the Pandoc log, the PDF overlay, the pdftk output, and
+# the search-root error signal), so nothing but the requested outputs is ever written to
+# the cwd or the output directory. It is created once, here -- after option and input
+# validation, so a usage error never creates it -- and before any conversion work. The
+# template's 'X's must be trailing: BSD 'mktemp' only randomizes a trailing run of 'X's.
+MD2X_WORK_DIR=''
+MD2X_TMP_ROOT="${TMPDIR:-/tmp}"
+while [[ "${MD2X_TMP_ROOT}" == */ ]] && [[ "${MD2X_TMP_ROOT}" != '/' ]]; do
+  MD2X_TMP_ROOT="${MD2X_TMP_ROOT%/}"
+done
+MD2X_WORK_DIR="$(mktemp -d "${MD2X_TMP_ROOT}/md2x.XXXXXX")" \
+  || md2x-die-runtime "could not create a work directory under '${MD2X_TMP_ROOT}'."
 
-# A '< <(...)' process substitution's own failures never reach the parent shell's
-# 'errexit'/'pipefail' (see the file-discovery pipe below), so an unreadable search
-# root has no way to make the top-level script exit non-zero on its own. This file is
-# the signal: the process substitution's inner loop writes the failing root's path here
-# the moment 'find' fails for it, and the outer script checks it right after the loop
-# completes, exiting loudly instead of silently returning 0. See followup 8ZmD.
-SEARCH_ROOT_ERROR_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-search-root-error.XXXXXX")"
-
-# 'generate-page()' can run once per input file, under this script's 'errexit'. A
-# failing Pandoc/WeasyPrint invocation aborts the whole script immediately, skipping any
-# cleanup written after the loop below -- so a plain post-loop 'rm' would still leak
-# 'CSS_TMP_FILE' (and 'generate-page()'s own per-call body-open/body-close temp files)
-# on that path. Registering this trap up front instead guarantees they are removed
-# whether the script ends normally or aborts mid-batch: it always fires at real script
-# exit (bash runs an 'EXIT' trap on every exit path, including one triggered by
-# 'errexit'), by which point 'BODY_OPEN_TMP_FILE'/'BODY_CLOSE_TMP_FILE' hold either
-# already-removed paths (the normal case -- 'generate-page()' cleans up its own files
-# directly at the end of every successful call, so 'rm -f' here is a harmless no-op) or
-# the one in-flight call's not-yet-cleaned files (the failure case). The ':-' defaults
-# keep the trap itself safe under 'nounset' if it fires before any 'generate-page()'
-# call has run at all. 'PREPROCESSED_TMP_FILE' -- the materialized, TOC-preprocessed
-# Markdown 'generate-page()' hands to Pandoc -- follows the same per-call lifecycle and
-# is covered here for the same reason. 'SINGLE_PAGE_COMBINED_FILE' -- the '--single-page'
-# concatenation target (see its own comment above for the 'SINGLE_PAGE_' naming) -- is
-# instead set once, up front, and only read (not written) by 'generate-page()', but the
-# same errexit-can-skip-post-loop-cleanup risk applies to it, so it rides along in this
-# trap too. The ':-' default keeps it safe under 'nounset' on runs where '--single-page'
-# was never passed and 'SINGLE_PAGE_COMBINED_FILE' is never set. See followups
-# 9hZL/MwYH/QBKX/flSJ.
-#
-# 'SEARCH_ROOT_ERROR_TMP_FILE' is folded into this same trap rather than gated behind a
-# second, separately-registered one: bash keeps only one handler per signal, so a later
-# 'trap ... EXIT' would silently replace this one instead of adding to it. Unlike the
-# '--keep-intermediate'-gated files above, it is never a build artifact a user would
-# want to retain -- it is purely an internal signal -- so its removal is unconditional,
-# with the '--keep-intermediate' gate moved inside the trap body instead of around the
-# whole registration.
+# One cleanup trap: it removes the work directory (a no-op while the variable is unset or
+# empty) unless '--keep-intermediate' was given. bash runs an 'EXIT' trap on every exit
+# path -- normal completion, 'errexit', and every 'md2x-die-*' -- so nothing leaks however
+# the run ends. Bash keeps only one handler per signal, so any later need must be folded
+# into this trap rather than registered separately.
 #
 # Exit-status backstop (keep this in any rewrite of this trap): the trap also normalizes
 # any exit status outside the 0-3 contract (see 'lib/errors.sh') to 1, so a tool that
@@ -379,33 +338,54 @@ SEARCH_ROOT_ERROR_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-search-root-error.XXX
 # very end of this script, so a trap that sees status 0 without it knows the run was cut
 # short and turns that into exit 1 (a runtime failure) on every supported bash.
 trap 'MD2X_EXIT_STATUS=$?
-      [[ -n "${KEEP_INTERMEDIATE:-}" ]] \
-        || rm -f "${CSS_TMP_FILE:-}" "${BODY_OPEN_TMP_FILE:-}" "${BODY_CLOSE_TMP_FILE:-}" "${PREPROCESSED_TMP_FILE:-}" "${SINGLE_PAGE_COMBINED_FILE:-}"
-      rm -f "${SEARCH_ROOT_ERROR_TMP_FILE:-}"
+      [[ -n "${KEEP_INTERMEDIATE:-}" ]] || [[ -z "${MD2X_WORK_DIR:-}" ]] \
+        || rm -rf "${MD2X_WORK_DIR}"
       if (( MD2X_EXIT_STATUS == 0 )) && [[ -z "${MD2X_COMPLETED:-}" ]]; then
         md2x-emit "md2x:" "1;31" "run aborted before completion; see the error above."
         exit 1
       fi
       if (( MD2X_EXIT_STATUS < 0 || MD2X_EXIT_STATUS > 3 )); then exit 1; fi' EXIT
 
-# Unlike the Pandoc log and the PDF header/footer overlay -- both written into the user's own
-# working/output tree, and therefore discoverable by normal directory listing -- 'CSS_TMP_FILE'
-# lives in '${TMPDIR:-/tmp}', so a user retaining it via '--keep-intermediate' has no way to find
-# it without an explicit announcement. Print to stderr (never stdout, which is the parsed data
-# channel for '--list-files'/'--to-stdout') and don't gate this on '--quiet': '--quiet' only
-# suppresses the per-file "Created ..." status line, not this one-time opt-in retention notice.
-[[ -z "${KEEP_INTERMEDIATE}" ]] \
-  || echo "md2x: kept intermediate CSS file: '${CSS_TMP_FILE}'" >&2
+# WeasyPrint (the pinned '--pdf-engine') MIME-sniffs '--css' from its path extension, so
+# it needs a real file ending in '.css' rather than a process-substitution '/dev/fd/N'
+# path. The work directory gives it a fixed '.css' name. '$CSS' is static, so the file is
+# written once per run, not once per 'generate-page()' call (followup QBKX).
+CSS_FILE="${MD2X_WORK_DIR}/github.css"
+printf '%s' "${CSS}" > "${CSS_FILE}"
 
-# 'SINGLE_PAGE_COMBINED_FILE' (the '--single-page' concatenation target, set above) is only an
-# intermediate artifact in service of the eventual 'generate-page()' call -- it doesn't
-# escape the '${TMPDIR}' vs. cwd distinction that motivates the CSS notice above (it's
-# always written into the cwd, so it's already discoverable by directory listing), but a
-# user who passed '--keep-intermediate' still benefits from the same one-time
-# announcement the other kept artifacts get, so print it here too. Guarded on
-# 'SINGLE_PAGE' since 'SINGLE_PAGE_COMBINED_FILE' is only ever set in that mode.
-[[ -z "${SINGLE_PAGE}" || -z "${KEEP_INTERMEDIATE}" ]] \
-  || echo "md2x: kept intermediate combined file: '${SINGLE_PAGE_COMBINED_FILE}'" >&2
+# 'github.css' scopes every rule under a bare '.markdown-body' class selector, and neither
+# Pandoc's default html5 template nor a '-V'/'--variable' metadata hook puts that class
+# anywhere in the generated document. '--include-before-body'/'--include-after-body'
+# inject literal content just inside the opening/closing '<body>' tag, so wrapping the
+# whole rendered body in this div satisfies those selectors exactly as well as a class on
+# '<body>' itself would. Static content, so written once per run.
+BODY_OPEN_FILE="${MD2X_WORK_DIR}/body-open.html"
+BODY_CLOSE_FILE="${MD2X_WORK_DIR}/body-close.html"
+printf '%s' '<div class="markdown-body">' > "${BODY_OPEN_FILE}"
+printf '%s' '</div>' > "${BODY_CLOSE_FILE}"
+
+# Fixed names for the remaining intermediates; none is derived from '--title' or any
+# other user input.
+SINGLE_PAGE_FILE="${MD2X_WORK_DIR}/single-page.md"
+PREPROCESSED_FILE="${MD2X_WORK_DIR}/preprocessed.md"
+PANDOC_LOG_FILE="${MD2X_WORK_DIR}/pandoc.log"
+OVERLAY_FILE="${MD2X_WORK_DIR}/overlay.pdf"
+STAMPED_FILE="${MD2X_WORK_DIR}/combined.pdf"
+
+# A '< <(...)' process substitution's own failures never reach the parent shell's
+# 'errexit'/'pipefail' (see the file-discovery pipe below), so an unreadable search
+# root has no way to make the top-level script exit non-zero on its own. This file is
+# the signal: the process substitution's inner loop writes the failing root's path here
+# the moment 'find' fails for it, and the outer script checks it right after the loop
+# completes, exiting loudly instead of silently returning 0. See followup 8ZmD.
+SEARCH_ROOT_ERROR_FILE="${MD2X_WORK_DIR}/search-root-error"
+: > "${SEARCH_ROOT_ERROR_FILE}"
+
+# Announce the retained work directory once, to stderr (never stdout, which is the parsed
+# data channel for '--list-files'/'--to-stdout'), and not gated on '--quiet': '--quiet'
+# only suppresses the per-file "Created ..." status line, not this opt-in notice.
+[[ -z "${KEEP_INTERMEDIATE}" ]] \
+  || echo "md2x: kept intermediate files in '${MD2X_WORK_DIR}'" >&2
 
 # md2x-list-inputs
 #
@@ -428,14 +408,14 @@ trap 'MD2X_EXIT_STATUS=$?
 # and the 'while read' loop always exits 0 (it just drains whatever 'find' emitted, or
 # nothing, then hits EOF), so a 'find' error becomes the pipe's exit status. Left
 # unguarded, that would trip 'errexit' right there, aborting the loop before
-# 'SEARCH_ROOT_ERROR_TMP_FILE' could be written: any root listed after the failing one in
+# 'SEARCH_ROOT_ERROR_FILE' could be written: any root listed after the failing one in
 # 'SEARCH_DIRS' is never even attempted (silently dropped), while roots listed before it,
 # and files 'find' already emitted for the SAME root before erroring deeper in its tree,
 # are kept. Wrapping the pipe as an 'if !' condition exempts it from 'errexit' just long
 # enough to record the failure; the explicit 'exit 1' right after reproduces the same
 # abort-the-remaining-roots behavior 'errexit' would have produced on its own. Process
 # substitution failures are invisible to the parent's own 'errexit'/'pipefail' --
-# 'SEARCH_ROOT_ERROR_TMP_FILE' is what carries the failure out to the top-level script,
+# 'SEARCH_ROOT_ERROR_FILE' is what carries the failure out to the top-level script,
 # checked right after the conversion loop below. See 'exit-codes.bats' "unreadable search
 # root" cases and followup 8ZmD.
 md2x-list-inputs() {
@@ -450,7 +430,7 @@ md2x-list-inputs() {
           printf '%s\t%s\n' "${FOUND_FILE}" "${ROOT_DIR}"
         done
     then
-      printf '%s\n' "${ROOT_DIR}" > "${SEARCH_ROOT_ERROR_TMP_FILE}"
+      printf '%s\n' "${ROOT_DIR}" > "${SEARCH_ROOT_ERROR_FILE}"
       exit 1
     fi
   done <<< "${SEARCH_DIRS}" | sort
@@ -466,7 +446,7 @@ md2x-list-inputs() {
       #              prints and saves us the hassle of having to install pdflatex
 
       if [[ -n "${SINGLE_PAGE}" ]]; then
-        { cat "${MD_FILE}"; echo; } >> "${SINGLE_PAGE_COMBINED_FILE}"
+        { cat "${MD_FILE}"; echo; } >> "${SINGLE_PAGE_FILE}"
       else
         # An explicit '--title' is honored as-is; the upfront gate above (requirement
         # 3) already guarantees this loop processes at most one file whenever
@@ -495,18 +475,18 @@ md2x-list-inputs() {
     TITLE="${TITLE:-output}"
     mkdir -p "${OUTPUT_PATH}"
     BASE_OUTPUT="${OUTPUT_PATH}/${TITLE:-output}.${OUTPUT_FORMAT}"
-    [[ -z "${SINGLE_PAGE}" ]] || MD_FILE="${SINGLE_PAGE_COMBINED_FILE}"
+    [[ -z "${SINGLE_PAGE}" ]] || MD_FILE="${SINGLE_PAGE_FILE}"
     generate-page
   fi
 } < <(md2x-list-inputs)
 
 # The process substitution above can't propagate a failed search root's exit status to
 # this, the parent shell -- see the comment at the 'find' pipe inside it. Its inner loop
-# writes the failing root's path to 'SEARCH_ROOT_ERROR_TMP_FILE' instead, the moment
+# writes the failing root's path to 'SEARCH_ROOT_ERROR_FILE' instead, the moment
 # 'find' fails for it; a non-empty file here means that happened, so abort loudly rather
 # than let the run's partial results pass as a silent success. Followup 8ZmD.
-[[ ! -s "${SEARCH_ROOT_ERROR_TMP_FILE}" ]] \
-  || md2x-die-runtime "could not fully search '$(cat "${SEARCH_ROOT_ERROR_TMP_FILE}")' for Markdown files. Bailing out."
+[[ ! -s "${SEARCH_ROOT_ERROR_FILE}" ]] \
+  || md2x-die-runtime "could not fully search '$(cat "${SEARCH_ROOT_ERROR_FILE}")' for Markdown files. Bailing out."
 
 # Reached only when every step above succeeded; see the lost-status backstop on the 'EXIT'
 # trap.

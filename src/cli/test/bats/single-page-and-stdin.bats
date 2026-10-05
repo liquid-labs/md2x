@@ -114,7 +114,7 @@ teardown() {
   assert_file_not_exists './CombinedReport.md'
 }
 
-@test "--single-page --keep-intermediate retains the concatenation file and announces it on stderr" {
+@test "--single-page --keep-intermediate retains the concatenation file in the announced work directory" {
   md2x_write_doc 'chapter1.md' 'Chapter One'
   md2x_write_doc 'chapter2.md' 'Chapter Two'
 
@@ -122,6 +122,11 @@ teardown() {
 
   assert_success
   assert_file_exists './CombinedReport.pdf'
-  assert_file_exists './CombinedReport.md'
-  assert_stderr_contains "kept intermediate combined file: 'CombinedReport.md'"
+  assert_file_not_exists './CombinedReport.md'
+  local kept
+  kept="$(md2x_kept_work_dir)"
+  [[ -n "${kept}" ]] || md2x_fail 'expected a kept-intermediate notice on stderr' "got: ${stderr}"
+  assert_file_exists "${kept}/single-page.md"
+  assert_file_contains "${kept}/single-page.md" 'Chapter One'
+  assert_file_contains "${kept}/single-page.md" 'Chapter Two'
 }

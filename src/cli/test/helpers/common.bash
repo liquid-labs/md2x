@@ -102,6 +102,7 @@ md2x_setup() {
   MD2X_TEST_ORIGINAL_PATH="${PATH}"
   MD2X_TEST_ORIGINAL_HOME="${HOME}"
   MD2X_TEST_ORIGINAL_DIR="${PWD}"
+  MD2X_TEST_ORIGINAL_TMPDIR="${TMPDIR-}"
 
   local tmp_root="${TMPDIR:-/tmp}"
   tmp_root="${tmp_root%/}"
@@ -124,6 +125,13 @@ md2x_setup() {
   MD2X_TEST_STUB_CAPTURE_DIR="${MD2X_TEST_TMPDIR}/captures"
   MD2X_TEST_HOME_DIR="${MD2X_TEST_TMPDIR}/home"
   export MD2X_TEST_STUB_LOG MD2X_TEST_STUB_CAPTURE_DIR
+
+  # The CLI creates its per-run work directory under TMPDIR. Pointing TMPDIR at a
+  # case-private directory means a '--keep-intermediate' run's retained work directory is
+  # removed with the rest of the case, and never leaks into the developer's real TMPDIR.
+  mkdir -p "${MD2X_TEST_TMPDIR}/tmp"
+  TMPDIR="${MD2X_TEST_TMPDIR}/tmp"
+  export TMPDIR
 
   mkdir -p "${MD2X_TEST_WORK_DIR}" "${MD2X_TEST_STUB_CAPTURE_DIR}"
   : > "${MD2X_TEST_STUB_LOG}"
@@ -157,6 +165,12 @@ md2x_teardown() {
   if [[ -n "${MD2X_TEST_ORIGINAL_HOME:-}" ]]; then
     HOME="${MD2X_TEST_ORIGINAL_HOME}"
     export HOME
+  fi
+  if [[ -n "${MD2X_TEST_ORIGINAL_TMPDIR:-}" ]]; then
+    TMPDIR="${MD2X_TEST_ORIGINAL_TMPDIR}"
+    export TMPDIR
+  else
+    unset TMPDIR
   fi
   unset MD2X_TEST_STUB_LOG MD2X_TEST_STUB_CAPTURE_DIR MD2X_TEST_TMPDIR MD2X_TEST_HOME_DIR
 }
@@ -219,6 +233,14 @@ md2x_path_without() {
 # back to the literal 'working'. That line is expected, not a failure.
 md2x_filter_env_noise() {
   grep -v '^fatal: not a git repository' || true
+}
+
+# md2x_kept_work_dir
+# Prints the work directory named by the '--keep-intermediate' notice in the last
+# 'md2x_run's stderr ("md2x: kept intermediate files in '<dir>'"); prints nothing when
+# there is no such notice.
+md2x_kept_work_dir() {
+  printf '%s\n' "${stderr}" | sed -n "s/^md2x: kept intermediate files in '\(.*\)'\$/\1/p"
 }
 
 # md2x_exec [args]...
