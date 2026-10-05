@@ -23,7 +23,7 @@ make test-node  # bun test over src/node, with coverage
 
 `make test-cli` needs the build, so it depends on `all`. `make test-node` runs `bun test` directly against the sources in `src/node` (no compile step) and writes a text coverage report plus a `coverage/` directory, which is gitignored.
 
-The bulk of the suite runs the CLI against **stub `pandoc`, `gs`, and `pdftk` executables** placed on a test-controlled `PATH`, so it does **not** require a working Pandoc PDF pipeline — only `git`, `jq`, `perl`, `python3`, and (on macOS) `brew`, which the CLI itself shells out to or requires in its preflight check. The stubs record their argument vectors so tests can assert on what the CLI asked for; see `src/cli/test/helpers/common.bash` for the harness contract and `src/cli/test/bats/harness-smoke.bats` for worked examples.
+The bulk of the suite runs the CLI against **stub `pandoc`, `gs`, and `pdftk` executables** placed on a test-controlled `PATH`, so it does **not** require a working Pandoc PDF pipeline — only `git`, `jq`, `perl`, `python3`, and GNU `getopt` (on macOS, e.g. the Homebrew `gnu-getopt` keg, which the CLI finds by probing known install paths), which the CLI itself shells out to or requires in its preflight check. The stubs record their argument vectors so tests can assert on what the CLI asked for; see `src/cli/test/helpers/common.bash` for the harness contract and `src/cli/test/bats/harness-smoke.bats` for worked examples.
 
 Real conversions are covered by an opt-in, interactive, macOS-only visual check that is deliberately outside the default test path:
 

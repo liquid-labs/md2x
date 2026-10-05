@@ -36,7 +36,6 @@ set -o nounset # exit on use of uninitialized variable
 set -o pipefail
 
 import lists
-import options
 # import prompt
 
 source ./lib/index.sh
@@ -50,8 +49,10 @@ source ./lib/index.sh
 
 # $(npm bin)/gucci ./cloud/auths/environment/devops-admin-auths.yaml.tmpl
 
-# extract options
-eval "$(setSimpleOptions --script FLATTEN_DIRS:D INFER_TITLE: INFER_VERSION KEEP_INTERMEDIATE: OUTPUT_PATH:p= OUTPUT_FORMAT:F= TITLE:t= SINGLE_PAGE QUIET LIST_FILES TO_STDOUT:s TOC: NO_TOC HELP:h -- "$@")"
+# extract options (sets the option variables, and leaves the positional arguments in
+# 'MD2X_POSITIONAL'; see 'lib/parse-options.sh')
+md2x-parse-options "$@"
+set -- ${MD2X_POSITIONAL[@]+"${MD2X_POSITIONAL[@]}"}
 
 if [[ -n "${HELP}" ]]; then
   cat <<'EOF'

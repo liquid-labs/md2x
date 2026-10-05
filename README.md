@@ -16,7 +16,7 @@ md2x checks for these at startup and exits (code `2`) naming the first missing b
 
 [WeasyPrint](https://weasyprint.org/) — the engine Pandoc uses to render PDF output — is **not** a manual prerequisite: md2x installs it automatically into an isolated per-user virtual environment at `~/.md2x/venv` the first time a PDF conversion runs, printing a one-time notice while it does so. `python3` is what makes this possible, which is why it's on the list above. That first PDF conversion therefore takes noticeably longer and needs network access; `rm -rf ~/.md2x/venv` forces a clean reinstall on the next PDF conversion.
 
-On macOS, [Homebrew](https://brew.sh/) must also be installed: md2x's option parser resolves GNU getopt via `brew --prefix gnu-getopt` on every invocation, on macOS only.
+GNU `getopt` is also required (on macOS the system `getopt` is BSD and is not enough): `brew install gnu-getopt`, `port install getopt`, or util-linux on Linux. md2x finds it without needing Homebrew at runtime; `MD2X_GETOPT` can point at it explicitly.
 
 Install md2x itself as an npm dependency, or globally for the standalone CLI:
 
