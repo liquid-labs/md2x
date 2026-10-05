@@ -262,3 +262,17 @@ make_repo() {
   [[ "$(printf '%s\n' "${stderr}" | wc -l | tr -d ' ')" == 1 ]] || md2x_fail "expected one stderr line: ${stderr}"
   refute_stderr_contains 'type:'
 }
+
+@test "--infer-version does not run a command named by the repository's core.fsmonitor" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  local sentinel="${PWD}/fsmonitor-ran"
+  rm -f "${sentinel}"
+  git -C repo config core.fsmonitor "touch '${sentinel}'; true"
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_success
+  [[ ! -e "${sentinel}" ]] || md2x_fail "the repository's core.fsmonitor command ran"
+  assert_any_call_contains gs 'Version: 2.3.4'
+}

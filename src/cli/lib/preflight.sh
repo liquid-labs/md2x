@@ -71,6 +71,14 @@ md2x-require-infer-version-tools() {
   done
 }
 
+# md2x-infer-git <git args...>
+# Runs 'git' with the repository-local configuration neutralized: the directory comes from
+# the inputs, and a '.git/config' there (core.fsmonitor, core.hooksPath) can otherwise make
+# git execute commands.
+md2x-infer-git() {
+  GIT_CONFIG_NOSYSTEM=1 git --no-optional-locks -c core.fsmonitor= -c core.hooksPath=/dev/null "$@"
+}
+
 # md2x-infer-version <dir>
 # Prints the version string for the footer, resolved against the git repository containing
 # <dir>: the 'version' of '<toplevel>/package.json', or 'working' when the work tree has
@@ -79,7 +87,7 @@ md2x-require-infer-version-tools() {
 # omits the version from the footer and carries on. Needs 'git' and 'jq' (see above).
 md2x-infer-version() {
   local DIR="${1}" TOP PKG STATUS VER
-  TOP="$(git -C "${DIR}" rev-parse --show-toplevel 2>/dev/null)" || TOP=''
+  TOP="$(md2x-infer-git -C "${DIR}" rev-parse --show-toplevel 2>/dev/null)" || TOP=''
   if [[ -z "${TOP}" ]]; then
     md2x-warn "--infer-version: '$(md2x-title-display "${DIR}")' is not inside a git work tree; no version in the footer."
     return 0
@@ -89,7 +97,7 @@ md2x-infer-version() {
     md2x-warn "--infer-version: no package.json at the top of the git work tree '$(md2x-title-display "${TOP}")'; no version in the footer."
     return 0
   fi
-  STATUS="$(git -C "${TOP}" status --porcelain 2>/dev/null)" || STATUS='?'
+  STATUS="$(md2x-infer-git -C "${TOP}" status --porcelain 2>/dev/null)" || STATUS='?'
   if [[ -n "${STATUS}" ]]; then
     printf 'working'
     return 0
