@@ -165,7 +165,8 @@ phases:
           digest: Added lib/preflight.sh with pandoc >= 2.0 floor check, lazy unquoted --infer-version inference using the first input's repo, git/jq required only for --infer-version, and md2x-formatted errors instead of raw tool errors at audited leak sites. 19 new bats cases; validation passed under bash 5 and 3.2.
           git:
             branch: plan/golden-release-hardening-02-005
-            commit: []
+            commit:
+                - 6dd07a4
             merge: null
         - number: 6
           slug: prune-weasyprint-unsupported-css
