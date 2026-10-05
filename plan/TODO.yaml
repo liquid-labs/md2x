@@ -463,11 +463,13 @@ phases:
           slug: always-pass-filter-nonce-and-harden-test-pack
           title: Always Pass The Marker Nonce And Make Test-Pack Checks Fail Closed
           path: phase-06-remediation-02/003-always-pass-filter-nonce-and-harden-test-pack.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: The marker nonce and all md2x-* filter settings are now always passed with -M in every mode, so a source's front matter cannot supply or change them. test-pack now fails closed on missing bundles, grep errors and missing pinned tsc, and checks both logical and physical root paths. New regression case fails on pre-change code; qa, test-pack and bash 3.2 suite pass.
           findings:
             - xDG1
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-06-003
+            commit:
+                - 9732bbb
             merge: null
