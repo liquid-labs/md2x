@@ -224,6 +224,10 @@ if [[ -z "${SINGLE_PAGE}" ]] && [[ -z "${STDIN_MODE}" ]]; then
   fi
 fi
 
+# An explicit '--title' becomes the output file name, so validate it before any conversion
+# work (and before 'ensure-weasyprint', which can trigger a network install).
+[[ -z "${TITLE_SET:-}" ]] || md2x-validate-title "${TITLE}"
+
 [[ -n "${OUTPUT_PATH}" ]] || OUTPUT_PATH='.'
 
 [[ "${OUTPUT_FORMAT}" == 'pdf' ]] && ensure-weasyprint

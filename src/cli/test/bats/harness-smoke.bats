@@ -85,9 +85,7 @@ teardown() {
 
   assert_success
   assert_equal "$(md2x_pandoc_capture_count)" '1' 'pandoc invocation count'
-  run_metadata="$(md2x_pandoc_capture metadata)"
-  [[ "${run_metadata}" == *"title: 'report'"* ]] \
-    || md2x_fail "expected captured metadata to carry the title, got: ${run_metadata}"
+  assert_last_call_has_arg pandoc 'title=report'
 
   run_input="$(md2x_pandoc_capture input)"
   [[ "${run_input}" == *'Report Heading'* ]] \
