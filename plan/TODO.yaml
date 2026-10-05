@@ -66,6 +66,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 7
+          slug: title-safe-sinks
+          title: Title-Safe Sinks
+          path: phase-01-correctness-and-regression-tests/007-title-safe-sinks.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 2
       slug: interface-contract
       title: Interface Contract
