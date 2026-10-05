@@ -3,7 +3,7 @@
 # native ESM named import, CJS require, and TypeScript types all work from the packed artifact.
 # Run via 'make test-pack'. Needs the built artifacts ('make all'). The tarball install is a local file
 # install; the TypeScript check uses the lockfile-pinned devDependency 'node_modules/.bin/tsc' (never a network
-# fetch) and otherwise degrades to a syntactic check of the .d.ts.
+# fetch) and fails when it is absent (run 'bun install').
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -61,9 +61,20 @@ console.log("ok")
 '
 node --input-type=module -e "import { md2x } from '@liquid-labs/md2x'; $STUB_CHECK"
 node -e "const { md2x } = require('@liquid-labs/md2x'); $STUB_CHECK"
-if grep -lF "$ROOT" node_modules/@liquid-labs/md2x/dist/md2x.mjs node_modules/@liquid-labs/md2x/dist/md2x.cjs; then
-  echo "FAIL: installed bundles embed the build path $ROOT" >&2; exit 1
-fi
+for BUNDLE in node_modules/@liquid-labs/md2x/dist/md2x.mjs node_modules/@liquid-labs/md2x/dist/md2x.cjs; do
+  [ -f "$BUNDLE" ] && [ -r "$BUNDLE" ] || { echo "FAIL: installed bundle $BUNDLE is missing or unreadable" >&2; exit 1; }
+done
+# Both the logical ('pwd') and the physical ('pwd -P') form of the root; grep status 1 is "no match" (good),
+# 2 or higher is a grep error and must fail the check rather than read as a pass.
+for BUILD_ROOT in "$ROOT" "$(cd "$ROOT" && pwd -P)"; do
+  GREP_STATUS=0
+  grep -lF -- "$BUILD_ROOT" node_modules/@liquid-labs/md2x/dist/md2x.mjs node_modules/@liquid-labs/md2x/dist/md2x.cjs || GREP_STATUS=$?
+  [ "$GREP_STATUS" -eq 1 ] || {
+    if [ "$GREP_STATUS" -eq 0 ]; then echo "FAIL: installed bundles embed the build path $BUILD_ROOT" >&2
+    else echo "FAIL: grep errored (status $GREP_STATUS) checking for the build path" >&2; fi
+    exit 1
+  }
+done
 
 echo "== TypeScript types =="
 cat > consumer.ts <<'TS'
@@ -81,11 +92,7 @@ void files; void pending; void bad
 TS
 TSC_ARGS=(--noEmit --strict --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck false consumer.ts)
 TSC="$ROOT/node_modules/.bin/tsc"
-if [ -x "$TSC" ]; then
-  "$TSC" "${TSC_ARGS[@]}"
-else
-  echo "pinned TypeScript not installed (run 'bun install'); syntactic check of the .d.ts only (node --check cannot parse .d.ts)" >&2
-  grep -q 'export function md2xAsync' node_modules/@liquid-labs/md2x/dist/index.d.ts
-fi
+[ -x "$TSC" ] || { echo "FAIL: $TSC not found; pinned TypeScript is not installed (run 'bun install')" >&2; exit 1; }
+"$TSC" "${TSC_ARGS[@]}"
 echo "ok"
 echo "test-pack: all checks passed"

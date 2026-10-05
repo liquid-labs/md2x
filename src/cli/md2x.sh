@@ -654,12 +654,14 @@ fi
 BASE_OUTPUT="${MD2X_WORK_DIR}/output.${OUTPUT_FORMAT}"
 FINAL_OUTPUT=''
 
+# Per-run secret handed to the filter in every mode (always as '-M md2x-nonce', so a source's
+# front matter cannot set it) and carried by the '--single-page' source markers. The filter
+# honors only a marker bearing it, so a '<!-- md2x:source-dir=... -->' comment written in a
+# source cannot redirect image resolution or warning attribution.
+MD2X_MARKER_NONCE="$(md2x-new-nonce)" \
+  || md2x-die-runtime "could not read random data to build the source-marker token."
+
 if [[ -n "${SINGLE_PAGE}" ]]; then
-  # Per-run secret the source markers carry. The filter honors only a marker bearing it, so
-  # a '<!-- md2x:source-dir=... -->' comment written in a source cannot redirect image
-  # resolution or warning attribution.
-  MD2X_MARKER_NONCE="$(md2x-new-nonce)" \
-    || md2x-die-runtime "could not read random data to build the source-marker token."
   # Concatenate every resolved source into one document.
   while IFS=$'\t' read -r MD_FILE SEARCH_ROOT; do
     [[ -n "${MD_FILE}" ]] || continue

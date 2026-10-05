@@ -377,7 +377,9 @@ teardown() {
 
   assert_success
   grep -q 'md2x:source' "${MD2X_TEST_STUB_CAPTURE_DIR}/pandoc-1-filter"
-  refute_last_call_contains pandoc 'md2x-out-dir='
+  # Every filter setting is always passed by '-M' (empty when unused), so front matter cannot set one.
+  assert_last_call_has_arg pandoc 'md2x-out-dir='
+  assert_last_call_contains pandoc 'md2x-nonce='
 }
 
 @test "--single-page inserts one source marker before each source (and the harness provides no perl)" {
