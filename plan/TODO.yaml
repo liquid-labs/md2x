@@ -399,13 +399,15 @@ phases:
           slug: harden-infer-version-git-calls
           title: Neutralize Repository Git Config In Version Inference
           path: phase-05-remediation-01/006-harden-infer-version-git-calls.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: Both git calls in version inference now go through a hardened wrapper, and a sentinel regression test (verified failing on the old build) proves a repo-local core.fsmonitor command no longer executes.
           findings:
             - SmNy
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-05-006
+            commit:
+                - adc898d
             merge: null
         - number: 7
           slug: inode-safe-output-delivery
