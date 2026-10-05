@@ -63,7 +63,7 @@ phases:
           tier: sonnet-low
           digest: Stdin is now captured byte-exact to a work-dir file via cat instead of a shell variable, fixing indentation, backslash and trailing-newline corruption; empty stdin is now a usage error (exit 2) instead of a silent exit. Regression cases fail on the old build; suite passes under bash 5 and 3.2.
           git:
-            branch: null
+            branch: plan/golden-release-hardening-01-005
             commit: []
             merge: null
         - number: 6
