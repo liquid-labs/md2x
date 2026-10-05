@@ -26,3 +26,11 @@ Fixes findings 8xEp and tT72 from the Phase 2 review. The work targets the plan 
 - Finding 8xEp, in this plan's `plan/findings.yaml`.
 - Finding tT72, in this plan's `plan/findings.yaml`.
 - Files: `src/node/md2x.js`, `Makefile`, `scripts/test-pack.sh`, `package.json`, `bun.lock`.
+
+## Status
+
+- Outcome: succeeded (2026-10-05).
+- `src/node/md2x.js` resolves its directory via `import.meta.dirname` (fallback `import.meta.url`); the Makefile CJS build defines `import.meta.dirname=module.path` and `import.meta.url=undefined`, so neither bundle embeds a build path or `var __dirname =`.
+- `scripts/test-pack.sh` now swaps the installed `bin/md2x` for a stub and requires the wrapper to reach it (ESM and CJS), greps the installed bundles for the repo root, and uses `node_modules/.bin/tsc` (new pinned `typescript` devDependency in `package.json`/`bun.lock`) instead of `npx`.
+- Negative check: reintroducing bare `__dirname` makes `make test-pack` fail at "installed bin resolution".
+- Validation: grep clean, `make test-pack` and `make qa` green.

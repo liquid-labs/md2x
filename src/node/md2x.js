@@ -20,9 +20,12 @@ const FORMATS = ['pdf', 'html', 'docx']
 
 // Resolves md2x's own CLI executable by path, so the wrapper never goes through npx/bunx/PATH (which could fetch and
 // run an unpinned package). From the built bundles (dist/md2x.{mjs,cjs}) the bin is at '../bin/md2x'; from source
-// (src/node/md2x.js) it is at '../../bin/md2x'. Native ESM has no '__dirname', so fall back to 'import.meta.url'.
-// Guarded by 'typeof' so the same source works in the CJS bundle, the ESM bundle, and 'bun test'.
-const moduleDir = () => typeof __dirname === 'string' ? __dirname : fsPath.dirname(fileURLToPath(import.meta.url))
+// (src/node/md2x.js) it is at '../../bin/md2x'.
+// 'bun build' inlines a bare '__dirname' (and, in the CJS format, 'import.meta.url') as a BUILD-TIME absolute path, which
+// would point an installed package at the build host's tree. So neither is used: the code reads 'import.meta.dirname'
+// (kept as-is in the ESM bundle and in unbundled source), and the Makefile's CJS build defines 'import.meta.dirname' as
+// the runtime 'module.path' and 'import.meta.url' as 'undefined', so no build path reaches either bundle.
+const moduleDir = () => import.meta.dirname ?? fsPath.dirname(fileURLToPath(import.meta.url))
 
 const resolveBin = () => {
   const dir = moduleDir()

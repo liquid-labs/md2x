@@ -2,8 +2,8 @@
 # Release-time check: packs the package, installs the tarball into a fresh temp project, and proves the
 # native ESM named import, CJS require, and TypeScript types all work from the packed artifact.
 # Run via 'make test-pack'. Needs the built artifacts ('make all'). The tarball install is a local file
-# install; the TypeScript check uses 'npx --yes -p typescript tsc' only if tsc is not already on the PATH,
-# and otherwise degrades to a syntactic check of the .d.ts.
+# install; the TypeScript check uses the lockfile-pinned devDependency 'node_modules/.bin/tsc' (never a network
+# fetch) and otherwise degrades to a syntactic check of the .d.ts.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -46,6 +46,25 @@ node --input-type=module -e "import { md2x, md2xAsync } from '@liquid-labs/md2x'
 echo "== CJS require =="
 node -e "const { md2x, md2xAsync } = require('@liquid-labs/md2x'); $CHECK"
 
+echo "== installed bin resolution =="
+# Replace the INSTALLED bin with a stub. The wrapper must reach the stub (exit 42 plus the marker); if it resolved the
+# CLI from anywhere else (e.g. a build-time absolute path into the repo tree), it would run the real CLI and fail here.
+INSTALLED_BIN="$WORK/consumer/node_modules/@liquid-labs/md2x/bin/md2x"
+[ -f "$INSTALLED_BIN" ] || { echo "FAIL: $INSTALLED_BIN missing from the installed package" >&2; exit 1; }
+printf '#!/bin/sh\necho MD2X_INSTALLED_STUB >&2\nexit 42\n' > "$INSTALLED_BIN"
+chmod +x "$INSTALLED_BIN"
+STUB_CHECK='
+const ok = (c, m) => { if (!c) { console.error("FAIL: " + m); process.exit(1) } }
+try { md2x({ sources: ["a.md"] }); ok(false, "stub did not fail") }
+catch (e) { ok(e.exitCode === 42 && String(e.stderr).includes("MD2X_INSTALLED_STUB"), "CLI was not resolved from the installed package: " + e.message) }
+console.log("ok")
+'
+node --input-type=module -e "import { md2x } from '@liquid-labs/md2x'; $STUB_CHECK"
+node -e "const { md2x } = require('@liquid-labs/md2x'); $STUB_CHECK"
+if grep -lF "$ROOT" node_modules/@liquid-labs/md2x/dist/md2x.mjs node_modules/@liquid-labs/md2x/dist/md2x.cjs; then
+  echo "FAIL: installed bundles embed the build path $ROOT" >&2; exit 1
+fi
+
 echo "== TypeScript types =="
 cat > consumer.ts <<'TS'
 import { md2x, md2xAsync } from '@liquid-labs/md2x'
@@ -61,12 +80,11 @@ const bad: Md2xOptions = { markdown: 'x', sources: ['a.md'] }
 void files; void pending; void bad
 TS
 TSC_ARGS=(--noEmit --strict --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck false consumer.ts)
-if command -v tsc >/dev/null 2>&1; then
-  tsc "${TSC_ARGS[@]}"
-elif npx --yes -p typescript tsc --version >/dev/null 2>&1; then
-  npx --yes -p typescript tsc "${TSC_ARGS[@]}"
+TSC="$ROOT/node_modules/.bin/tsc"
+if [ -x "$TSC" ]; then
+  "$TSC" "${TSC_ARGS[@]}"
 else
-  echo "TypeScript unavailable; syntactic check of the .d.ts only (node --check cannot parse .d.ts)" >&2
+  echo "pinned TypeScript not installed (run 'bun install'); syntactic check of the .d.ts only (node --check cannot parse .d.ts)" >&2
   grep -q 'export function md2xAsync' node_modules/@liquid-labs/md2x/dist/index.d.ts
 fi
 echo "ok"
