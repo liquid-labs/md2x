@@ -16,6 +16,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: bash-3-2-compatibility
+          title: Bash 3.2 Compatibility
+          path: phase-01-correctness-and-regression-tests/002-bash-3-2-compatibility.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 2
       slug: interface-contract
       title: Interface Contract
