@@ -341,7 +341,7 @@ phases:
           slug: node-end-of-options-and-type-docs
           title: Pass Sources After End-Of-Options And Correct Node Type Docs
           path: phase-05-remediation-01/002-node-end-of-options-and-type-docs.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Sources now go after '--' so '-weird.md' is treated as a file, while '-' (stdin) still works. index.d.ts JSDoc for inferTitle, inferVersion and singlePage matches CLI help. Tests updated plus two new -weird.md tests; make qa and make test-pack pass.
           findings:
