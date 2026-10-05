@@ -191,7 +191,7 @@ phases:
             branch: plan/golden-release-hardening-02-007
             commit:
                 - 9b14495
-            merge: null
+            merge: 74623d6ce924b60de02f53fc3a64b3fb18caf4ea
         - number: 8
           slug: package-node-library-for-esm-cjs-and-types
           title: Package Node Library for ESM, CJS, and Types
