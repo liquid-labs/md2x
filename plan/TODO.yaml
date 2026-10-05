@@ -97,6 +97,7 @@ phases:
           path: phase-01-correctness-and-regression-tests/008-node-staging-path.md
           done: false
           tier: sonnet-low
+          digest: Node markdown staging now uses fs.mkdtempSync(os.tmpdir()/md2x-) with a fixed input.md file name, so a title such as ../esc can no longer build a path outside the staging directory. Tests rewritten with regression tests for ../esc, O'Brien and Math.random; new tests fail on old code.
           git:
             branch: null
             commit: []
