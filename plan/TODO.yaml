@@ -36,6 +36,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 4
+          slug: per-run-work-directory
+          title: Per-Run Work Directory
+          path: phase-01-correctness-and-regression-tests/004-per-run-work-directory.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 2
       slug: interface-contract
       title: Interface Contract
