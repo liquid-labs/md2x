@@ -179,7 +179,7 @@ phases:
             branch: plan/golden-release-hardening-02-006
             commit:
                 - a11e4c4
-            merge: null
+            merge: 1705a759121f908e3e02895d002385d5651f3959
         - number: 7
           slug: rewrite-node-wrapper-on-child-process
           title: Rewrite Node Wrapper on Child Process
