@@ -119,7 +119,7 @@ phases:
             branch: plan/golden-release-hardening-02-001
             commit:
                 - cc62ba9
-            merge: null
+            merge: 5785104f830bb0604914b53bcdc950e2cb36d911
         - number: 2
           slug: harden-input-discovery-and-validation
           title: Harden Input Discovery and Validation
