@@ -5,7 +5,17 @@ phases:
     - number: 1
       slug: correctness-and-regression-tests
       title: Correctness and Regression Tests
-      tasks: []
+      tasks:
+        - number: 1
+          slug: error-helper-and-exit-codes
+          title: Error Helper and Exit Codes
+          path: phase-01-correctness-and-regression-tests/001-error-helper-and-exit-codes.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 2
       slug: interface-contract
       title: Interface Contract
