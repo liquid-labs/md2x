@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 1
-    tasks_added: 6
+    tasks_added: 7
 phases:
     - number: 1
       slug: correctness-and-regression-tests
@@ -392,6 +392,18 @@ phases:
           tier: sonnet-med
           findings:
             - SmNy
+          git:
+            branch: null
+            commit: []
+            merge: null
+        - number: 7
+          slug: inode-safe-output-delivery
+          title: Re-Check Input Identity And Deliver Output Without Following Symlinks
+          path: phase-05-remediation-01/007-inode-safe-output-delivery.md
+          done: false
+          tier: sonnet-med
+          findings:
+            - m1SB
           git:
             branch: null
             commit: []
