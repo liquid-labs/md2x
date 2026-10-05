@@ -351,7 +351,7 @@ phases:
             branch: plan/golden-release-hardening-05-002
             commit:
                 - 9df95a1
-            merge: null
+            merge: 02d0158b108998b8717348b9f765bc832b30bcc9
         - number: 3
           slug: reject-trailing-slash-output-and-dash-roots
           title: Reject Trailing-Slash Output Paths And Protect Dash-Leading Search Roots
