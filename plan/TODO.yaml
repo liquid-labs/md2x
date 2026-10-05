@@ -470,5 +470,6 @@ phases:
             - xDG1
           git:
             branch: plan/golden-release-hardening-06-003
-            commit: []
+            commit:
+                - 9732bbb
             merge: null
