@@ -61,10 +61,9 @@ Usage:
   md2x [OPTIONS] <directory>...
   md2x [OPTIONS] -
 
-Converts Markdown documents into PDF, HTML, DOCX, and other Pandoc-supported
-formats, adding consistent GitHub-style styling, automatic page headers and
-footers, batch directory processing, and single-page concatenation of
-multiple Markdown files.
+Converts Markdown documents into PDF, HTML, and DOCX, adding consistent
+GitHub-style styling, automatic page headers and footers, batch directory
+processing, and single-page concatenation of multiple Markdown files.
 
 md2x accepts one or more file paths, one or more directory paths (searched
 recursively for '*.md' files), or a single '-' argument to read Markdown
@@ -119,6 +118,16 @@ Options:
                               four or more top-level sections. Giving both
                               flags is an error.
   -h, --help                 Print this help text and exit.
+      --version              Print the md2x version and exit.
+
+Long options may be abbreviated to any unambiguous prefix (--single for
+--single-page), and a value may be attached with '=' (--title=Report).
+
+Exit codes:
+  0  Success.
+  1  Runtime or conversion failure.
+  2  Usage error (bad option, bad argument, or unusable input path).
+  3  Missing or unusable dependency (for example pandoc, or GNU getopt).
 
 Examples:
   # Convert a single Markdown file to PDF (the default format)
@@ -132,7 +141,16 @@ Examples:
 
   # Read Markdown from stdin
   cat report.md | md2x -
+
+Homepage: https://github.com/liquid-labs/md2x
 EOF
+  exit 0
+fi
+
+if [[ -n "${VERSION}" ]]; then
+  # The placeholder is replaced with the package.json version when 'bin/md2x' is built
+  # (see the Makefile); nothing reads package.json at run time for this.
+  printf 'md2x %s\n' '@MD2X_VERSION@'
   exit 0
 fi
 

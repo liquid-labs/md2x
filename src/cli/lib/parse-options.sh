@@ -32,6 +32,7 @@ MD2X_OPTION_TABLE=(
   's|to-stdout|flag|TO_STDOUT'
   't|title|value|TITLE'
   '-|toc|flag|TOC'
+  '-|version|flag|VERSION'
 )
 
 # md2x-getopt-install-hints: the install guidance appended to a missing-getopt error.
@@ -133,6 +134,27 @@ md2x-argv-requests-help() {
   return 1
 }
 
+# md2x-argv-requests-version <arg>...
+# Fallback used only when no GNU getopt is resolvable: true when the arguments, scanned up
+# to '--', contain an exact '--version'. It skips the value of a value-taking option, so
+# 'md2x --title --version' is not a version request. Help is checked first by the caller.
+md2x-argv-requests-version() {
+  local _v_arg _v_skip=''
+  for _v_arg in "$@"; do
+    if [[ -n "${_v_skip}" ]]; then
+      _v_skip=''
+      continue
+    fi
+    case "${_v_arg}" in
+      --) return 1;;
+      --version) return 0;;
+      --output-path|--output-format|--title) _v_skip=true;;
+      -p|-F|-t) _v_skip=true;;
+    esac
+  done
+  return 1
+}
+
 # md2x-getopt-usage-error <getopt-stderr-line>
 # Re-words getopt's first error line as an 'md2x: ' usage error (exit 2).
 md2x-getopt-usage-error() {
@@ -163,8 +185,8 @@ md2x-getopt-usage-error() {
 #
 #   set -- ${MD2X_POSITIONAL[@]+"${MD2X_POSITIONAL[@]}"}
 #
-# Help works without GNU getopt: when none is resolvable, a help-only argv scan runs, and
-# only if it finds no help request is the missing dependency fatal (exit 3).
+# Help and '--version' work without GNU getopt: when none is resolvable, a help-only and
+# then a version-only argv scan run, and only if neither finds a request is the missing dependency fatal (exit 3).
 md2x-parse-options() {
   local _p_row _p_short _p_long _p_kind _p_var
   local _p_shorts='' _p_longs='' _p_suffix
@@ -182,6 +204,10 @@ md2x-parse-options() {
   if (( _p_status != 0 )); then
     if md2x-argv-requests-help "$@"; then
       HELP=true
+      return 0
+    fi
+    if md2x-argv-requests-version "$@"; then
+      VERSION=true
       return 0
     fi
     if (( _p_status == 2 )); then
