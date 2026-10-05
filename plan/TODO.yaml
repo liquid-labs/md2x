@@ -349,7 +349,8 @@ phases:
             - YkUH
           git:
             branch: plan/golden-release-hardening-05-002
-            commit: []
+            commit:
+                - 9df95a1
             merge: null
         - number: 3
           slug: reject-trailing-slash-output-and-dash-roots
