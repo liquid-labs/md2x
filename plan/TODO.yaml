@@ -18,7 +18,7 @@ phases:
             branch: plan/golden-release-hardening-01-001
             commit:
                 - "8903965"
-            merge: null
+            merge: 9f6523e90b9bfac7c68bb406502b6fa06dbbb854
         - number: 2
           slug: bash-3-2-compatibility
           title: Bash 3.2 Compatibility
