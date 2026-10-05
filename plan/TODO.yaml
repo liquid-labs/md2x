@@ -328,6 +328,7 @@ phases:
           path: phase-05-remediation-01/001-fix-node-bundle-bin-resolution.md
           done: false
           tier: sonnet-high
+          digest: Fixed bin resolution in both bundles using import.meta.dirname plus a CJS-only Makefile --define to module.path, so no build path or __dirname reaches dist/. test-pack now proves the installed bin is the one used (stub check, build-path grep) and the typescript check uses a lockfile-pinned devDependency instead of npx. Reintroducing bare __dirname makes test-pack fail.
           findings:
             - 8xEp
             - tT72
