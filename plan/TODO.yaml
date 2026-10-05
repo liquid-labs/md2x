@@ -80,6 +80,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 8
+          slug: package-node-library-for-esm-cjs-and-types
+          title: Package Node Library for ESM, CJS, and Types
+          path: phase-02-interface-contract/008-package-node-library-for-esm-cjs-and-types.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 3
       slug: docs-ci-and-release-readiness
       title: Docs, CI, and Release Readiness
