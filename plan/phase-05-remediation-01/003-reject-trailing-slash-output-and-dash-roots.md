@@ -24,3 +24,7 @@ Fixes findings 3rV7 and yV1b from the Phase 2 review. The work targets the plan 
 - Finding 3rV7, in this plan's `plan/findings.yaml`.
 - Finding yV1b, in this plan's `plan/findings.yaml`.
 - Files: `src/cli/md2x.sh`, `src/cli/test/bats/`.
+
+## Status
+
+Succeeded, 2026-10-05. `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` both pass (331 cases). Both new bats cases fail on the old code. Changes: `src/cli/md2x.sh` (trailing-slash `-o` rejected with usage error; dash-leading search roots searched as `./<root>` with the prefix stripped from results), `src/cli/test/bats/output-options.bats`, `src/cli/test/bats/input-discovery.bats`.
