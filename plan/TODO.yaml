@@ -54,7 +54,7 @@ phases:
             branch: plan/golden-release-hardening-01-004
             commit:
                 - affc656
-            merge: null
+            merge: db674932fea6eae6511b71b7581cf4d8c49b01c3
         - number: 5
           slug: byte-exact-stdin
           title: Byte-Exact Stdin
