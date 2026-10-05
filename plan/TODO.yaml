@@ -40,7 +40,8 @@ phases:
           digest: 'Replaced the toolkit setSimpleOptions parser with project-owned src/cli/lib/parse-options.sh: explicit flag table, brew-free GNU getopt probe with MD2X_GETOPT override, help without getopt, friendly md2x usage errors with exit 2. -s now means --to-stdout; -q/-l/-n/-i rejected; brew dropped from test harness. 26 new regression cases pass under bash 5 and 3.2.'
           git:
             branch: plan/golden-release-hardening-01-003
-            commit: []
+            commit:
+                - "4585085"
             merge: null
         - number: 4
           slug: per-run-work-directory
