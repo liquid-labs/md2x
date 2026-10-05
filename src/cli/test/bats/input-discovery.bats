@@ -275,3 +275,24 @@ teardown() {
   assert_success
   assert_output_equals './a.pdf'
 }
+
+@test "search roots named '!' and '(' each search only that directory and list only that directory's files" {
+  mkdir -p '!' '(' other
+  md2x_write_doc '!/a.md'
+  md2x_write_doc '(/b.md'
+  md2x_write_doc 'other/c.md'
+
+  md2x_run -F html --list-files '!'
+
+  assert_success
+  assert_output_contains 'a.html'
+  [[ "${output}" != *'b.html'* ]]
+  [[ "${output}" != *'c.html'* ]]
+
+  md2x_run -F html --list-files '('
+
+  assert_success
+  assert_output_contains 'b.html'
+  [[ "${output}" != *'a.html'* ]]
+  [[ "${output}" != *'c.html'* ]]
+}

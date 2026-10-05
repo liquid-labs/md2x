@@ -28,3 +28,7 @@ Fixes findings wgQ3 and m1SB from the Remediation Round 1 review. The work targe
 - Finding wgQ3, in this plan's `plan/findings.yaml`.
 - Finding m1SB, in this plan's `plan/findings.yaml`.
 - Files: `src/cli/lib/output-plan.sh`, `src/cli/md2x.sh`, `src/cli/lib/generate-page.sh`, `src/cli/test/bats/output-options.bats`, `src/cli/test/bats/input-discovery.bats`, `docs/md2x-spec.md`.
+
+## Status
+
+Succeeded (2026-10-05). `md2x-deliver-output` now refuses any `-d` target (including a symlink to a directory), prefixes relative mktemp directories with `./`, registers the temp file as `MD2X_DELIVERY_TEMP` for the run EXIT trap (bash 3.2 backstop kept), and checks the result is a regular file. `find` discovery prefixes every non-absolute root with `./` and strips it from results. Spec updated (`docs/md2x-spec.md`, Input and Output delivery paragraphs). New bats cases in `src/cli/test/bats/output-options.bats` and `input-discovery.bats`. The symlink-to-directory case already passed pre-change (planning-time check exits 2), so it is a guard; the other three fail on the pre-change build. `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` green.

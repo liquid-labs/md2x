@@ -186,22 +186,38 @@ md2x-deliver-output() {
   TARGET_SHOWN="$(md2x-title-display "${TARGET}")"
   TARGET_DIR="$(md2x-parent-dir "${TARGET}")"
   # 'mv' onto a directory would move the file into it instead of replacing it.
-  [[ ! -d "${TARGET}" ]] || [[ -L "${TARGET}" ]] \
+  # A symlink to a directory is refused too ('-d' follows it): 'mv' would move the file into
+  # the linked directory.
+  [[ ! -d "${TARGET}" ]] \
     || md2x-die-runtime "could not write '${TARGET_SHOWN}': it is a directory."
+  # A relative directory starting with '-' would be read by 'mktemp' as an option, so a
+  # relative directory is given an explicit './' prefix.
+  [[ "${TARGET_DIR}" == /* ]] || TARGET_DIR="./${TARGET_DIR}"
   TEMP_FILE="$(mktemp "${TARGET_DIR%/}/.md2x-out.XXXXXX" 2>/dev/null)" \
     || md2x-die-runtime "could not write '${TARGET_SHOWN}'."
+  # Registered with the run cleanup trap in 'md2x.sh', so an interrupted or failed delivery
+  # leaves no temp file behind; cleared once the rename has put the file in place.
+  MD2X_DELIVERY_TEMP="${TEMP_FILE}"
   # 'mktemp' creates the file 0600; give it the mode a plain new file would get.
   MODE="$(printf '%03o' $(( 0666 & ~$(umask) )))"
   if ! { cp -- "${STAGED}" "${TEMP_FILE}" && chmod "${MODE}" "${TEMP_FILE}"; } 2>/dev/null; then
     rm -f -- "${TEMP_FILE}"
+    MD2X_DELIVERY_TEMP=''
     md2x-die-runtime "could not write '${TARGET_SHOWN}'."
   fi
   if md2x-target-is-input "${TARGET}" "${INPUTS}"; then
     rm -f -- "${TEMP_FILE}"
+    MD2X_DELIVERY_TEMP=''
     md2x-die-runtime "refusing to overwrite '${TARGET_SHOWN}': it is the same file as an input."
   fi
   if ! mv -f -- "${TEMP_FILE}" "${TARGET}" 2>/dev/null; then
     rm -f -- "${TEMP_FILE}"
+    MD2X_DELIVERY_TEMP=''
     md2x-die-runtime "could not write '${TARGET_SHOWN}'."
+  fi
+  MD2X_DELIVERY_TEMP=''
+  # The rename must have produced a regular file at the target, not a symlink or directory.
+  if [[ ! -f "${TARGET}" ]] || [[ -L "${TARGET}" ]]; then
+    md2x-die-runtime "could not write '${TARGET_SHOWN}': the result is not a regular file."
   fi
 }

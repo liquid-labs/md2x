@@ -73,6 +73,10 @@ md2x has two external surfaces: the CLI (`md2x`) and the Node library function (
 
 **Input.** md2x accepts, as trailing arguments: one or more file paths, one or more directory paths (searched recursively for `*.md` files), or a single `-` to read Markdown from stdin. Mixing files and directories in one invocation is supported; `-` must be the sole argument when used.
 
+A symlinked `*.md` file found in a searched directory is followed (its target is read). Search roots are taken literally, whatever their names (for example `!`, `(` or `-x`), and are listed as the user typed them.
+
+**Output delivery.** Each output is written to a temporary file in the target's directory and renamed over the target; a temporary file left by an interrupted run is removed on exit. A target that is a directory, or a symlink to one, is refused. Replacing an existing target creates a new file with a umask-derived mode, so the previous file's mode and ownership are not kept. The output directory and its parent directories must not be writable by an untrusted party: a parent directory swapped for a symlink during the run redirects delivery.
+
 **Flags.**
 
 | Flag | Required behavior |
