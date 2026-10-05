@@ -391,3 +391,41 @@ assert_cwd_files() {
   assert_stderr_contains "ends in '/'"
   [[ ! -e out ]]
 }
+
+# --- delivery: identity re-check and no write through the target path -----------------------
+
+@test "an output path that is a hard link to an input exits 1 and leaves the input untouched" {
+  md2x_write_doc 'a.md'
+  local before
+  before="$(cat a.md)"
+  ln a.md link.html
+
+  md2x_run -F html -o link.html a.md
+
+  assert_failure 1
+  assert_stderr_contains 'same file'
+  [[ "$(cat a.md)" == "${before}" ]]
+  [[ "$(cat link.html)" == "${before}" ]]
+}
+
+@test "an output path that is a symlink to another file replaces the symlink and spares the file" {
+  md2x_write_doc 'a.md'
+  printf 'precious\n' > other.txt
+  ln -s other.txt out.html
+
+  md2x_run -F html -o out.html a.md
+
+  assert_success
+  [[ ! -L out.html ]]
+  assert_file_contains 'out.html' 'to: html5'
+  [[ "$(cat other.txt)" == 'precious' ]]
+}
+
+@test "delivery leaves no temp file beside the output" {
+  md2x_write_doc 'a.md'
+
+  md2x_run -F html -o out/x.html a.md
+
+  assert_success
+  [[ -z "$(find out -name '.md2x-out.*')" ]]
+}
