@@ -90,15 +90,6 @@ e2e_teardown() {
      && [[ -d "${MD2X_TEST_TMPDIR}" ]]; then
     rm -rf "${MD2X_TEST_TMPDIR}"
   fi
-  # This file's PDF case below passes '--keep-intermediate', which -- since task 004 --
-  # also retains 'generate-page()'s preprocessed-Markdown temp file, exactly like the
-  # PDF overlay it exists to prove ran. That file lives in the ambient '${TMPDIR}', not
-  # 'MD2X_TEST_TMPDIR' above, so it survives the removal two lines up; delete it here so
-  # a real-toolchain run of this file leaves no orphan 'md2x-preprocessed.*' behind (see
-  # plan/phase-01-markdown-toc-generation/004-wire-preprocessor-into-generate-page.md's
-  # '## Validation'). A serial, one-file-at-a-time bats run (this Makefile's default)
-  # never has another case racing to create one of its own at the same moment.
-  rm -f "${TMPDIR:-/tmp}"/md2x-preprocessed.* 2>/dev/null || true
   unset MD2X_TEST_TMPDIR MD2X_TEST_WORK_DIR E2E_ORIGINAL_DIR
 }
 
@@ -234,8 +225,8 @@ EOF
 
   md2x_copy_fixture 'tiny-doc.md'
 
-  # '--keep-intermediate' keeps '<title>-overlay.pdf' around instead of deleting it once
-  # merged, so its presence here is direct proof the Ghostscript/pdftk stage actually
+  # '--keep-intermediate' keeps the work directory (and its 'overlay.pdf') around instead
+  # of deleting it once merged, so the overlay's presence there is direct proof the Ghostscript/pdftk stage actually
   # ran -- not just that Pandoc produced a PDF on its own.
   md2x_run --flatten-dirs --output-path . --keep-intermediate tiny-doc.md
 
@@ -243,9 +234,16 @@ EOF
   e2e_assert_nonempty './tiny-doc.pdf'
   e2e_assert_pdf_magic './tiny-doc.pdf'
 
-  assert_file_exists './tiny-doc-overlay.pdf'
-  e2e_assert_nonempty './tiny-doc-overlay.pdf'
-  e2e_assert_pdf_magic './tiny-doc-overlay.pdf'
+  local kept
+  kept="$(md2x_kept_work_dir)"
+  [[ -n "${kept}" ]] || md2x_fail 'expected a kept-intermediate notice on stderr' "got: ${stderr}"
+  assert_file_exists "${kept}/overlay.pdf"
+  e2e_assert_nonempty "${kept}/overlay.pdf"
+  e2e_assert_pdf_magic "${kept}/overlay.pdf"
+  rm -rf "${kept}"
+  # Nothing but the input and the requested output may sit in the cwd.
+  [[ "$(ls -A | LC_ALL=C sort | tr '\n' ' ')" == 'tiny-doc.md tiny-doc.pdf ' ]] \
+    || md2x_fail 'unexpected files in the cwd' "$(ls -A)"
 }
 
 @test "e2e: --single-page concatenates two fixtures into one real HTML document" {

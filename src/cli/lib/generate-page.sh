@@ -1,6 +1,10 @@
 generate-page() {
   # Names the input in tool-failure messages; stdin mode has no file.
   local INPUT_LABEL="${MD_FILE:-}"
+  local LINK_CONVERTER
+  local -a INCLUDE_BODY_ARGS
+  local DOC_DATA PAGE_COUNT MEDIA_DIMENSIONS XPAGE YPAGE HF_FONT_SIZE PG_NUMBER_X_OFFSET
+  local VERSION_X_OFFSET FOOTER_Y_OFFSET HEADER_Y_OFFSET TITLE_X_OFFSET FOOTER_STRING
   [[ -z "${INPUT}" ]] || INPUT_LABEL='stdin'
   local SETTINGS='---
 '
@@ -20,36 +24,21 @@ generate-page() {
   # perl -pe 's/(\[[^\]]+\]\()(?!\/|https?:\/\/)(?:\.\/)?(.*)\.md\s*\)$/$1.\/$2.docx)/g'
   LINK_CONVERTER='perl -pe '"'"'s/(\[[^\]]+\]\()(?!\/|https?:\/\/)(?:\.\/)?(.*)\.md\s*\)$/$1.\/$2.'${OUTPUT_FORMAT}")/g'"
 
-  # '$CSS' is static, deterministic content (github.css) that never varies across
-  # 'generate-page()' calls within a single md2x invocation, but a batch/directory
-  # conversion calls this function once per input file. 'CSS_TMP_FILE' is therefore
-  # created once, up front, by the caller (md2x.sh) rather than here -- recreating an
-  # identical file on every call would be redundant filesystem I/O (see followup QBKX).
-  # This function only consumes the already-populated '${CSS_TMP_FILE}'.
-
-  # 'github.css' scopes every rule under a bare '.markdown-body' class selector, and
-  # neither Pandoc's default html5 template nor a '-V'/'--variable' metadata hook puts
-  # that class anywhere in the generated document. '--include-before-body'/
-  # '--include-after-body' inject literal content just inside the opening/closing
-  # '<body>' tag, so wrapping the whole rendered body in this div satisfies those
-  # selectors exactly as well as a class on '<body>' itself would (see task doc
-  # plan/phase-01-restore-pdf-styling/004-wrap-generated-body-in-markdown-body-div.md).
-  MARKDOWN_BODY_OPEN='<div class="markdown-body">'
-  MARKDOWN_BODY_CLOSE='</div>'
-  BODY_OPEN_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-body-open.XXXXXX")"
-  BODY_CLOSE_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-body-close.XXXXXX")"
-  printf '%s' "${MARKDOWN_BODY_OPEN}" > "${BODY_OPEN_TMP_FILE}"
-  printf '%s' "${MARKDOWN_BODY_CLOSE}" > "${BODY_CLOSE_TMP_FILE}"
+  # Every intermediate file lives in the per-run work directory the caller (md2x.sh)
+  # created and registered for cleanup: the CSS file, the body-open/body-close include
+  # files (all written once per run, not per call), the preprocessed Markdown, the Pandoc
+  # log, the overlay, and the pdftk output. This function only consumes them, and needs no
+  # cleanup of its own: the caller's 'EXIT' trap removes the work directory.
 
   # Passed as separate, already-quoted array elements rather than folded into an
   # unquoted command-substitution string (the pattern the other conditional flags below
-  # still use): a mktemp-produced path built from a '${TMPDIR}' containing whitespace
+  # still use): a path built from a '${TMPDIR}' containing whitespace
   # would otherwise get IFS-word-split into extra, misaligned pandoc arguments instead
   # of failing loudly. It is empty for 'docx', and bash before 4.4 treats an empty array
   # as unset under 'nounset', so its expansion below uses the '[@]+' guard form.
   INCLUDE_BODY_ARGS=()
   [[ "${OUTPUT_FORMAT}" == 'docx' ]] \
-    || INCLUDE_BODY_ARGS=(--include-before-body "${BODY_OPEN_TMP_FILE}" --include-after-body "${BODY_CLOSE_TMP_FILE}")
+    || INCLUDE_BODY_ARGS=(--include-before-body "${BODY_OPEN_FILE}" --include-after-body "${BODY_CLOSE_FILE}")
 
   # Materialize the TOC-preprocessed, link-converted Markdown to a real temp file
   # rather than handing Pandoc a process substitution. A process substitution's exit
@@ -63,11 +52,10 @@ generate-page() {
   # preprocessor runs ahead of 'LINK_CONVERTER': the two do not interfere, since
   # 'LINK_CONVERTER' only rewrites links whose target ends in '.md)', and generated
   # TOC entries end in ')' directly after a '#anchor'.
-  PREPROCESSED_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-preprocessed.XXXXXX")"
   if [[ -z "${INPUT}" ]]; then cat "${MD_FILE}"; else printf '%s\n' "${INPUT}"; fi \
     | python3 -c "${TOC_PREPROCESSOR}" --mode "${TOC_MODE}" \
     | eval $LINK_CONVERTER \
-    > "${PREPROCESSED_TMP_FILE}" \
+    > "${PREPROCESSED_FILE}" \
     || md2x-die-runtime "TOC preprocessing failed for '${INPUT_LABEL}'."
 
   pandoc \
@@ -77,11 +65,11 @@ generate-page() {
     --standalone \
     --from gfm \
     --to ${INTERMEDIDATE_FORMAT} \
-    --css "${CSS_TMP_FILE}" \
+    --css "${CSS_FILE}" \
     --metadata-file <(echo "${SETTINGS}") \
-    "${PREPROCESSED_TMP_FILE}" \
+    "${PREPROCESSED_FILE}" \
     -o "${BASE_OUTPUT}" \
-    --log 'pandoc-log.log' \
+    --log "${PANDOC_LOG_FILE}" \
     1>/dev/null \
     || md2x-die-runtime "pandoc failed for '${INPUT_LABEL}'."
   # Pandoc's own stdout is inert when '-o <file>' is given; the explicit redirect
@@ -93,20 +81,12 @@ generate-page() {
   #
   # Pandoc's own native table-of-contents flag is retired for every format: md2x now
   # generates the TOC itself, ahead of Pandoc, as ordinary Markdown content in
-  # '${PREPROCESSED_TMP_FILE}' -- see 'toc-preprocess.py' and
+  # '${PREPROCESSED_FILE}' -- see 'toc-preprocess.py' and
   # 'plan/notes/toc-defaults-and-page-heuristic.md'. This is also what gives DOCX a
   # TOC for the first time: the 'docx' short-circuit that used to gate that flag is
   # gone along with the flag itself. The separate 'docx' short-circuit on
   # 'INCLUDE_BODY_ARGS' above is unrelated -- that one is about the 'markdown-body'
   # wrapper div, not the TOC.
-  [[ -n "${KEEP_INTERMEDIATE}" ]] || rm pandoc-log.log
-  # Ordinary-completion cleanup for this call's own body-open/body-close temp files. If
-  # a Pandoc/WeasyPrint failure above aborted this function under 'errexit' instead of
-  # reaching here, the caller's script-level EXIT trap (see md2x.sh) removes them -- and
-  # 'CSS_TMP_FILE' -- on that path instead; see followups 9hZL/MwYH.
-  [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${BODY_OPEN_TMP_FILE}"
-  [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${BODY_CLOSE_TMP_FILE}"
-  [[ -n "${KEEP_INTERMEDIATE}" ]] || rm -f "${PREPROCESSED_TMP_FILE}"
 
   if [[ "${OUTPUT_FORMAT}" == 'pdf' ]]; then
     # generate headers and footers as a separate document and overlay them.
@@ -134,7 +114,6 @@ generate-page() {
     # TODO: make the positioning relative to the margins, with proper justification; abstract into a 'top-left', 'top-
     # centered', 'top-right', 'bottom-right', 'bottom-centered', and 'bottom-left' abstraction
     # https://www.tek-tips.com/viewthread.cfm?qid=830058
-    OVERLAY_OUTPUT="${OUTPUT_PATH}/${TITLE}-overlay.pdf"
     FOOTER_STRING="/Helvetica findfont \
       ${HF_FONT_SIZE} scalefont setfont \
       1 1  ${PAGE_COUNT} {      \
@@ -160,22 +139,18 @@ generate-page() {
       } if \
       showpage                  \
       } for"
-    gs -o "${OVERLAY_OUTPUT}"       \
+    gs -o "${OVERLAY_FILE}"       \
       -sDEVICE=pdfwrite             \
       -g${XPAGE}0x${YPAGE}0         \
       -c "${FOOTER_STRING}"         \
       -q > /dev/null \
       || md2x-die-runtime "gs failed for '${INPUT_LABEL}'."
 
-    local COMBINED_FILE="${TITLE}-combined.${OUTPUT_FORMAT}"
-
-    pdftk "${BASE_OUTPUT}" multistamp "${OVERLAY_OUTPUT}" output "${COMBINED_FILE}" \
+    pdftk "${BASE_OUTPUT}" multistamp "${OVERLAY_FILE}" output "${STAMPED_FILE}" \
       || md2x-die-runtime "pdftk failed for '${INPUT_LABEL}'."
-    # mv "${COMBINED_FILE}" "${OUTPUT_PATH}/${TITLE}.${OUTPUT_FORMAT}"
-    mv "${COMBINED_FILE}" "${BASE_OUTPUT}"
-    [[ -n "${KEEP_INTERMEDIATE}" ]] || rm "${OVERLAY_OUTPUT}"
+    mv "${STAMPED_FILE}" "${BASE_OUTPUT}"
   fi
-  
+
   if [[ -n "${TO_STDOUT}" ]]; then
     cat "${BASE_OUTPUT}"
   fi

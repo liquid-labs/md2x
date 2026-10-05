@@ -2,8 +2,8 @@
 #
 # Behavioural coverage for the flags that change what md2x hands to 'pandoc' and 'gs':
 # '--infer-title' (title metadata), '--infer-version' (the Ghostscript footer's
-# version string), and '--keep-intermediate' (retaining the Pandoc log, PDF overlay,
-# and CSS temp file). Pandoc's own '--toc' is retired for every format -- md2x
+# version string), and '--keep-intermediate' (retaining the per-run work directory with the
+# Pandoc log, PDF overlay, CSS file, and so on). Pandoc's own '--toc' is retired for every format -- md2x
 # generates the table of contents itself, ahead of Pandoc, as ordinary Markdown
 # content; this file only asserts that Pandoc's '--toc' argument never reappears.
 # The behavioural TOC coverage (placement, content, the '--toc'/'--no-toc' resolution)
@@ -22,16 +22,6 @@ setup() {
 }
 
 teardown() {
-  # 'PREPROCESSED_TMP_FILE' lives in the ambient '${TMPDIR}', not the case's own
-  # working directory that 'md2x_teardown' removes wholesale -- exactly like the CSS
-  # and body-open/body-close temp files this file's '--keep-intermediate' cases below
-  # already retain on purpose. Delete it here so those cases leave no orphan
-  # 'md2x-preprocessed.*' file behind (see this task's '## Validation'); harmless
-  # no-op for every other case, since a non-'--keep-intermediate' run has already
-  # removed the file itself by the time its test body finishes.
-  local leaked_preprocessed_tmp_file
-  leaked_preprocessed_tmp_file="$(md2x_stub_last_call_args pandoc 2>/dev/null | grep 'md2x-preprocessed\.' || true)"
-  [[ -z "${leaked_preprocessed_tmp_file}" ]] || rm -f "${leaked_preprocessed_tmp_file}"
   md2x_teardown
 }
 
@@ -172,17 +162,22 @@ teardown() {
 
 # --- --keep-intermediate ---------------------------------------------------------------
 
-@test "--keep-intermediate retains the pandoc log and pdf overlay after conversion" {
+@test "--keep-intermediate retains the pandoc log and pdf overlay in the work directory" {
   md2x_write_doc 'report.md'
 
   md2x_run --keep-intermediate --output-format pdf --flatten-dirs --output-path . report.md
 
   assert_success
-  assert_file_exists 'pandoc-log.log'
-  assert_file_exists './report-overlay.pdf'
+  local kept
+  kept="$(md2x_kept_work_dir)"
+  [[ -n "${kept}" ]] || md2x_fail 'expected a kept-intermediate notice on stderr' "got: ${stderr}"
+  assert_file_exists "${kept}/pandoc.log"
+  assert_file_exists "${kept}/overlay.pdf"
+  assert_file_not_exists 'pandoc-log.log'
+  assert_file_not_exists './report-overlay.pdf'
 }
 
-@test "without --keep-intermediate, the pandoc log and pdf overlay are removed after conversion" {
+@test "without --keep-intermediate, no pandoc log or pdf overlay is left anywhere" {
   md2x_write_doc 'report.md'
 
   md2x_run --output-format pdf --flatten-dirs --output-path . report.md
@@ -190,73 +185,70 @@ teardown() {
   assert_success
   assert_file_not_exists 'pandoc-log.log'
   assert_file_not_exists './report-overlay.pdf'
+  refute_stderr_contains 'kept intermediate'
+  [[ -z "$(ls -A "${TMPDIR}")" ]] || md2x_fail 'expected TMPDIR to be empty' "$(ls -A "${TMPDIR}")"
 }
 
-@test "--keep-intermediate retains the css temp file handed to pandoc after conversion" {
+@test "--keep-intermediate retains the css file handed to pandoc after conversion" {
   md2x_write_doc 'report.md'
 
   md2x_run --keep-intermediate --output-format pdf --flatten-dirs --output-path . report.md
 
   assert_success
-  local css_tmp_file
-  css_tmp_file="$(md2x_stub_last_call_args pandoc | grep '\.css$' || true)"
-  [[ -n "${css_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --css argument ending in .css'
-  assert_file_exists "${css_tmp_file}"
-  assert_stderr_contains "${css_tmp_file}"
+  local css_file kept
+  css_file="$(md2x_stub_last_call_args pandoc | grep '\.css$' || true)"
+  [[ -n "${css_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --css argument ending in .css'
+  assert_file_exists "${css_file}"
+  kept="$(md2x_kept_work_dir)"
+  [[ "${css_file}" == "${kept}/"* ]] || md2x_fail "expected the css file inside '${kept}', got '${css_file}'"
 }
 
-@test "--quiet --keep-intermediate still prints the retained css temp file path to stderr" {
+@test "--quiet --keep-intermediate still prints the kept work directory to stderr" {
   md2x_write_doc 'report.md'
 
   md2x_run --quiet --keep-intermediate --output-format pdf --flatten-dirs --output-path . report.md
 
   assert_success
-  local css_tmp_file
-  css_tmp_file="$(md2x_stub_last_call_args pandoc | grep '\.css$' || true)"
-  [[ -n "${css_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --css argument ending in .css'
-  assert_stderr_contains "${css_tmp_file}"
+  [[ -n "$(md2x_kept_work_dir)" ]] || md2x_fail 'expected a kept-intermediate notice on stderr' "got: ${stderr}"
+  assert_output_equals ''
 }
 
-@test "without --keep-intermediate, the css temp file handed to pandoc is removed after conversion" {
+@test "without --keep-intermediate, the css file handed to pandoc is removed after conversion" {
   md2x_write_doc 'report.md'
 
   md2x_run --output-format pdf --flatten-dirs --output-path . report.md
 
   assert_success
-  local css_tmp_file
-  css_tmp_file="$(md2x_stub_last_call_args pandoc | grep '\.css$' || true)"
-  [[ -n "${css_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --css argument ending in .css'
-  assert_file_not_exists "${css_tmp_file}"
+  local css_file
+  css_file="$(md2x_stub_last_call_args pandoc | grep '\.css$' || true)"
+  [[ -n "${css_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --css argument ending in .css'
+  assert_file_not_exists "${css_file}"
 }
 
-@test "--keep-intermediate retains the body-open/body-close temp files handed to pandoc after conversion" {
+@test "--keep-intermediate retains the body-open/body-close files handed to pandoc after conversion" {
   md2x_write_doc 'report.md'
 
   md2x_run --keep-intermediate --output-format pdf --flatten-dirs --output-path . report.md
 
   assert_success
-  local body_open_tmp_file body_close_tmp_file
-  body_open_tmp_file="$(md2x_stub_last_call_args pandoc | grep 'md2x-body-open\.' || true)"
-  body_close_tmp_file="$(md2x_stub_last_call_args pandoc | grep 'md2x-body-close\.' || true)"
-  [[ -n "${body_open_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --include-before-body argument naming a md2x-body-open temp file'
-  [[ -n "${body_close_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --include-after-body argument naming a md2x-body-close temp file'
-  assert_file_exists "${body_open_tmp_file}"
-  assert_file_exists "${body_close_tmp_file}"
+  local kept
+  kept="$(md2x_kept_work_dir)"
+  assert_file_exists "${kept}/body-open.html"
+  assert_file_exists "${kept}/body-close.html"
+  assert_last_call_has_arg pandoc "${kept}/body-open.html"
+  assert_last_call_has_arg pandoc "${kept}/body-close.html"
 }
 
-@test "without --keep-intermediate, the body-open/body-close temp files handed to pandoc are removed after conversion" {
+@test "without --keep-intermediate, the body-open/body-close files handed to pandoc are removed after conversion" {
   md2x_write_doc 'report.md'
 
   md2x_run --output-format pdf --flatten-dirs --output-path . report.md
 
   assert_success
-  local body_open_tmp_file body_close_tmp_file
-  body_open_tmp_file="$(md2x_stub_last_call_args pandoc | grep 'md2x-body-open\.' || true)"
-  body_close_tmp_file="$(md2x_stub_last_call_args pandoc | grep 'md2x-body-close\.' || true)"
-  [[ -n "${body_open_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --include-before-body argument naming a md2x-body-open temp file'
-  [[ -n "${body_close_tmp_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a --include-after-body argument naming a md2x-body-close temp file'
-  assert_file_not_exists "${body_open_tmp_file}"
-  assert_file_not_exists "${body_close_tmp_file}"
+  local body_open_file
+  body_open_file="$(md2x_stub_last_call_args pandoc | grep 'body-open\.html$' || true)"
+  [[ -n "${body_open_file}" ]] || md2x_fail 'expected the last pandoc invocation to carry a body-open include file'
+  assert_file_not_exists "${body_open_file}"
 }
 
 # --- '--include-before-body'/'--include-after-body' markdown-body wrapper -----------
