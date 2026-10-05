@@ -59,7 +59,8 @@ relative-output-dir() {
     [[ "${MD_PATH}" != "${PREFIX}"* ]] || REL="${MD_PATH#"${PREFIX}"}"
   fi
 
-  REL="$(dirname "${REL}")"
+  # Parameter expansion rather than 'dirname', so a name starting with '-' needs no '--'.
+  REL="$(md2x-parent-dir "${REL}")"
   [[ "${REL}" == '.' ]] || [[ "${REL}" == '/' ]] || printf '%s' "${REL}"
 }
 

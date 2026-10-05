@@ -57,6 +57,34 @@ teardown() {
   assert_stderr_contains "'no-such-file.md' is neither a file nor a directory"
 }
 
+@test "an unreadable input file exits 2 naming it, with no raw 'cat' error" {
+  (( $(id -u) != 0 )) || skip "running as root can read a mode-000 file; skip to avoid a vacuous result"
+
+  md2x_write_doc 'secret.md'
+  chmod 000 secret.md
+
+  md2x_run secret.md
+
+  chmod 644 secret.md
+  assert_failure 2
+  assert_stderr_contains "'secret.md' is not readable"
+  refute_stderr_contains 'cat:'
+  refute_stderr_contains 'Permission denied'
+}
+
+@test "an input whose name starts with '-' converts, with no raw basename/dirname error" {
+  md2x_write_doc './-weird.md'
+  mkdir -p tree/sub
+  md2x_write_doc 'tree/sub/-odd.md'
+
+  md2x_run --output-format html --output-path out ./-weird.md tree
+
+  assert_success
+  assert_file_exists 'out/-weird.html'
+  assert_file_exists 'out/sub/-odd.html'
+  [[ -z "${stderr}" ]] || md2x_fail "unexpected stderr: ${stderr}"
+}
+
 # --- unreadable search root: abort loudly, not silently (followup 8ZmD) --------------
 #
 # 'src/cli/md2x.sh's file-discovery pipe nests 'find "${ROOT_DIR}" -name "*.md" | while
@@ -84,7 +112,8 @@ teardown() {
   md2x_run --output-format html --output-path out unreadable-root good-root
 
   assert_failure 1
-  assert_stderr_contains 'Permission denied'
+  refute_stderr_contains 'Permission denied'
+  refute_stderr_contains 'find:'
   assert_stderr_contains 'unreadable-root'
   assert_file_not_exists 'out/report.html'
 
@@ -102,7 +131,8 @@ teardown() {
   md2x_run --output-format html --output-path out good-root unreadable-root
 
   assert_failure 1
-  assert_stderr_contains 'Permission denied'
+  refute_stderr_contains 'Permission denied'
+  refute_stderr_contains 'find:'
   assert_stderr_contains 'unreadable-root'
   # The good root's own conversion already completed before the later root's failure
   # was discovered; a healthy root's real output is not rolled back, only the run's

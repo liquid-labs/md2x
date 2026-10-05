@@ -227,12 +227,12 @@ md2x-parse-options() {
   done
 
   local _p_err_file _p_out='' _p_rc=0 _p_err_line=''
-  _p_err_file="$(mktemp "${TMPDIR:-/tmp}/md2x-getopt.XXXXXX")" \
+  _p_err_file="$(mktemp "${TMPDIR:-/tmp}/md2x-getopt.XXXXXX" 2>/dev/null)" \
     || md2x-die-runtime "Could not create a temporary file."
   _p_out="$("${MD2X_GETOPT_BIN}" -n md2x -o "${_p_shorts}" -l "${_p_longs}" -- "$@" 2>"${_p_err_file}")" \
     || _p_rc=$?
   IFS= read -r _p_err_line < "${_p_err_file}" || true
-  rm -f -- "${_p_err_file}"
+  rm -f -- "${_p_err_file}" 2>/dev/null
   (( _p_rc == 0 )) || md2x-getopt-usage-error "${_p_err_line}"
 
   # getopt's output is a safely quoted, normalized argument list: long options expanded
