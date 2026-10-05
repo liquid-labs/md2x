@@ -59,11 +59,13 @@ phases:
           slug: byte-exact-stdin
           title: Byte-Exact Stdin
           path: phase-01-correctness-and-regression-tests/005-byte-exact-stdin.md
-          done: false
+          done: true
           tier: sonnet-low
+          digest: Stdin is now captured byte-exact to a work-dir file via cat instead of a shell variable, fixing indentation, backslash and trailing-newline corruption; empty stdin is now a usage error (exit 2) instead of a silent exit. Regression cases fail on the old build; suite passes under bash 5 and 3.2.
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-01-005
+            commit:
+                - 10f9844
             merge: null
         - number: 6
           slug: inline-html-css
