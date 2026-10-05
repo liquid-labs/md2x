@@ -30,7 +30,7 @@ phases:
             branch: plan/golden-release-hardening-01-002
             commit:
                 - 1ff59af
-            merge: null
+            merge: 3210abe5a2e1eebd63a4e2f2c13ebe5b0a108349
         - number: 3
           slug: project-owned-option-parser
           title: Project-Owned Option Parser
