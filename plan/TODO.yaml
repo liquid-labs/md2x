@@ -392,7 +392,8 @@ phases:
             - z2v9
           git:
             branch: plan/golden-release-hardening-05-005
-            commit: []
+            commit:
+                - d349562
             merge: null
         - number: 6
           slug: harden-infer-version-git-calls
