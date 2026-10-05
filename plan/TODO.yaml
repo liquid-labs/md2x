@@ -76,6 +76,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 8
+          slug: node-staging-path
+          title: Node Staging Path
+          path: phase-01-correctness-and-regression-tests/008-node-staging-path.md
+          done: false
+          tier: sonnet-low
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 2
       slug: interface-contract
       title: Interface Contract
