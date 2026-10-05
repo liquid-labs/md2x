@@ -1,5 +1,35 @@
 #!/usr/bin/env bash
 
+# Interpreter guard. This block must stay first in the file: ahead of the strict-mode 'set'
+# lines and of every 'import'/'source', and it must use POSIX 'sh' syntax only (no '[[',
+# no arrays such as 'BASH_VERSINFO', no '<(...)'), so that a shell that is not bash --
+# dash, say, when someone runs 'sh md2x' on a system where sh is not bash -- can still
+# parse and run it, and reports the problem instead of dying on later bash-only syntax.
+# Bash and dash both read and execute a script one complete top-level command at a time,
+# so this runs before any later line they might fail to parse.
+#
+# Rejected, each with exit 3 (missing or unusable dependency; see 'lib/errors.sh', which
+# is not loaded yet, hence the plain 'printf'):
+#   * a shell that is not bash ('BASH_VERSION' empty);
+#   * bash older than 3.2 (the oldest supported, macOS /bin/bash is 3.2.57); version
+#     strings look like '3.2.57(1)-release', so a prefix match on 'BASH_VERSION' is exact;
+#   * bash running in POSIX mode (as when started as 'sh', or with '--posix'): process
+#     substitution, which this script needs, is unavailable there in bash 3.2.
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s\n' 'md2x: requires bash 3.2 or later; this shell is not bash. Run it with bash.' >&2
+  exit 3
+fi
+case "${BASH_VERSION}" in
+  0.*|1.*|2.*|3.0*|3.1*)
+    printf '%s\n' "md2x: requires bash 3.2 or later (found ${BASH_VERSION}). Run it with a newer bash." >&2
+    exit 3;;
+esac
+case "$(set +o 2>/dev/null)" in
+  *'set -o posix'*)
+    printf '%s\n' 'md2x: requires bash 3.2 or later not in POSIX mode (as when run via sh). Run it with bash.' >&2
+    exit 3;;
+esac
+
 # bash strict settings
 set -o errexit # exit on errors
 set -o nounset # exit on use of uninitialized variable
@@ -338,10 +368,23 @@ SEARCH_ROOT_ERROR_TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/md2x-search-root-error.XXX
 # any exit status outside the 0-3 contract (see 'lib/errors.sh') to 1, so a tool that
 # slips past the explicit '|| md2x-die-runtime' guards under 'errexit' (e.g. a stub or
 # real tool exiting 64) can never leak its own status as md2x's.
+#
+# Lost-status backstop (also keep): bash 3.2 -- but not bash 4.4 and later -- has a quirk
+# where a fatal 'nounset' expansion error (e.g. an unbound variable inside 'generate-page()'
+# or the conversion loop below) ends a non-interactive script with '$?' reading 0 inside
+# the 'EXIT' trap, and the script then exits with the trap's status, 0, silently reporting
+# success for a failed run. Without any 'EXIT' trap, 3.2 exits 1 correctly; the trap is
+# what masks it. Every legitimate success path reaches the 'MD2X_COMPLETED=true' line at the
+# very end of this script, so a trap that sees status 0 without it knows the run was cut
+# short and turns that into exit 1 (a runtime failure) on every supported bash.
 trap 'MD2X_EXIT_STATUS=$?
       [[ -n "${KEEP_INTERMEDIATE:-}" ]] \
         || rm -f "${CSS_TMP_FILE:-}" "${BODY_OPEN_TMP_FILE:-}" "${BODY_CLOSE_TMP_FILE:-}" "${PREPROCESSED_TMP_FILE:-}" "${SINGLE_PAGE_COMBINED_FILE:-}"
       rm -f "${SEARCH_ROOT_ERROR_TMP_FILE:-}"
+      if (( MD2X_EXIT_STATUS == 0 )) && [[ -z "${MD2X_COMPLETED:-}" ]]; then
+        md2x-emit "md2x:" "1;31" "run aborted before completion; see the error above."
+        exit 1
+      fi
       if (( MD2X_EXIT_STATUS < 0 || MD2X_EXIT_STATUS > 3 )); then exit 1; fi' EXIT
 
 # Unlike the Pandoc log and the PDF header/footer overlay -- both written into the user's own
@@ -362,6 +405,55 @@ trap 'MD2X_EXIT_STATUS=$?
 # 'SINGLE_PAGE' since 'SINGLE_PAGE_COMBINED_FILE' is only ever set in that mode.
 [[ -z "${SINGLE_PAGE}" || -z "${KEEP_INTERMEDIATE}" ]] \
   || echo "md2x: kept intermediate combined file: '${SINGLE_PAGE_COMBINED_FILE}'" >&2
+
+# md2x-list-inputs
+#
+# Prints one '<md-file><tab><search-root>' record per file to convert: directly-named
+# files first (with an empty search-root field), then the recursive '*.md' search results
+# sorted by path. Each record carries the search root the file was found under so the
+# conversion loop can place the output relative to it; the root is the second field so
+# that sorting still orders the stream by file path.
+#
+# This is a function, called from the '< <(...)' process substitution below, rather than
+# an inline body, because bash 3.2 mis-parses a process substitution (or '$(...)') body
+# that contains a comment with an apostrophe: it scans for the closing parenthesis while
+# treating that apostrophe as an unterminated quote and dies with 'bad substitution: no
+# closing )' (and, being a parse error, still exits 0). No comment containing an
+# apostrophe may sit inside a '$(...)' or '<(...)' body anywhere in 'src/cli/'.
+#
+# Empirically confirmed abort/continue behavior for a 'find' failure in the loop below
+# (e.g. an unreadable root), since it is not obvious from reading alone: under 'pipefail',
+# the pipe's exit status is the rightmost non-zero status among find and the while loop,
+# and the 'while read' loop always exits 0 (it just drains whatever 'find' emitted, or
+# nothing, then hits EOF), so a 'find' error becomes the pipe's exit status. Left
+# unguarded, that would trip 'errexit' right there, aborting the loop before
+# 'SEARCH_ROOT_ERROR_TMP_FILE' could be written: any root listed after the failing one in
+# 'SEARCH_DIRS' is never even attempted (silently dropped), while roots listed before it,
+# and files 'find' already emitted for the SAME root before erroring deeper in its tree,
+# are kept. Wrapping the pipe as an 'if !' condition exempts it from 'errexit' just long
+# enough to record the failure; the explicit 'exit 1' right after reproduces the same
+# abort-the-remaining-roots behavior 'errexit' would have produced on its own. Process
+# substitution failures are invisible to the parent's own 'errexit'/'pipefail' --
+# 'SEARCH_ROOT_ERROR_TMP_FILE' is what carries the failure out to the top-level script,
+# checked right after the conversion loop below. See 'exit-codes.bats' "unreadable search
+# root" cases and followup 8ZmD.
+md2x-list-inputs() {
+  local NAMED_FILE ROOT_DIR FOUND_FILE
+  while IFS= read -r NAMED_FILE; do
+    [[ -n "${NAMED_FILE}" ]] || continue
+    printf '%s\t\n' "${NAMED_FILE}"
+  done <<< "${MD_FILES}"
+  while IFS= read -r ROOT_DIR; do
+    [[ -n "${ROOT_DIR}" ]] || continue
+    if ! find "${ROOT_DIR}" -name "*.md" | while IFS= read -r FOUND_FILE; do
+          printf '%s\t%s\n' "${FOUND_FILE}" "${ROOT_DIR}"
+        done
+    then
+      printf '%s\n' "${ROOT_DIR}" > "${SEARCH_ROOT_ERROR_TMP_FILE}"
+      exit 1
+    fi
+  done <<< "${SEARCH_DIRS}" | sort
+}
 
 {
   if [[ -z "${INPUT}" ]]; then
@@ -405,44 +497,7 @@ trap 'MD2X_EXIT_STATUS=$?
     [[ -z "${SINGLE_PAGE}" ]] || MD_FILE="${SINGLE_PAGE_COMBINED_FILE}"
     generate-page
   fi
-} < <(
-  # Directly-named files first (with an empty search-root field), then the recursive
-  # '*.md' search results sorted by path, exactly as before -- except that each record
-  # now carries the search root the file was found under so the loop can place the
-  # output relative to it. The root is the second field so that sorting still orders
-  # the stream by file path.
-  while IFS= read -r NAMED_FILE; do
-    [[ -n "${NAMED_FILE}" ]] || continue
-    printf '%s\t\n' "${NAMED_FILE}"
-  done <<< "${MD_FILES}"
-  while IFS= read -r ROOT_DIR; do
-    [[ -n "${ROOT_DIR}" ]] || continue
-    # Empirically confirmed abort/continue behavior for a 'find' failure here (e.g. an
-    # unreadable ROOT_DIR), since it isn't obvious from reading alone: under 'pipefail',
-    # this pipe's exit status is the rightmost non-zero status among {find, while} --
-    # and the 'while read' loop always exits 0 (it just drains whatever 'find' emitted,
-    # or nothing, then hits EOF), so a 'find' error becomes THIS pipe's exit status.
-    # Left unguarded, that would trip 'errexit' right here, aborting this loop before
-    # 'SEARCH_ROOT_ERROR_TMP_FILE' below could be written: any root listed *after* the
-    # failing one in '${SEARCH_DIRS}' is never even attempted (silently dropped), while
-    # roots listed before it, and files 'find' already emitted for the SAME root before
-    # erroring deeper in its tree, are kept. Wrapping the pipe as an 'if !' condition
-    # exempts it from 'errexit' just long enough to record the failure; the explicit
-    # 'exit 1' right after reproduces the same abort-the-remaining-roots behavior
-    # 'errexit' would have produced on its own. '< <(...)' process-substitution failures
-    # are still invisible to the parent's own 'errexit'/'pipefail' -- 'SEARCH_ROOT_ERROR_TMP_FILE'
-    # is what carries the failure out to the top-level script, checked right after this
-    # process substitution closes below. See 'exit-codes.bats'' "unreadable search root"
-    # cases and followup 8ZmD.
-    if ! find "${ROOT_DIR}" -name "*.md" | while IFS= read -r FOUND_FILE; do
-          printf '%s\t%s\n' "${FOUND_FILE}" "${ROOT_DIR}"
-        done
-    then
-      printf '%s\n' "${ROOT_DIR}" > "${SEARCH_ROOT_ERROR_TMP_FILE}"
-      exit 1
-    fi
-  done <<< "${SEARCH_DIRS}" | sort
-)
+} < <(md2x-list-inputs)
 
 # The process substitution above can't propagate a failed search root's exit status to
 # this, the parent shell -- see the comment at the 'find' pipe inside it. Its inner loop
@@ -451,3 +506,7 @@ trap 'MD2X_EXIT_STATUS=$?
 # than let the run's partial results pass as a silent success. Followup 8ZmD.
 [[ ! -s "${SEARCH_ROOT_ERROR_TMP_FILE}" ]] \
   || md2x-die-runtime "could not fully search '$(cat "${SEARCH_ROOT_ERROR_TMP_FILE}")' for Markdown files. Bailing out."
+
+# Reached only when every step above succeeded; see the lost-status backstop on the 'EXIT'
+# trap.
+MD2X_COMPLETED=true

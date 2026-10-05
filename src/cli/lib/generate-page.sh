@@ -45,7 +45,8 @@ generate-page() {
   # unquoted command-substitution string (the pattern the other conditional flags below
   # still use): a mktemp-produced path built from a '${TMPDIR}' containing whitespace
   # would otherwise get IFS-word-split into extra, misaligned pandoc arguments instead
-  # of failing loudly.
+  # of failing loudly. It is empty for 'docx', and bash before 4.4 treats an empty array
+  # as unset under 'nounset', so its expansion below uses the '[@]+' guard form.
   INCLUDE_BODY_ARGS=()
   [[ "${OUTPUT_FORMAT}" == 'docx' ]] \
     || INCLUDE_BODY_ARGS=(--include-before-body "${BODY_OPEN_TMP_FILE}" --include-after-body "${BODY_CLOSE_TMP_FILE}")
@@ -71,7 +72,7 @@ generate-page() {
 
   pandoc \
     $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
-    "${INCLUDE_BODY_ARGS[@]}" \
+    ${INCLUDE_BODY_ARGS[@]+"${INCLUDE_BODY_ARGS[@]}"} \
     --quiet \
     --standalone \
     --from gfm \

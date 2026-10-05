@@ -91,3 +91,15 @@ architectural_impact: true
 - After the parse hazard and array fixes, when `/bin/bash bin/md2x` converts HTML and DOCX.
 - After the POSIX guard.
 - After the harness override and the new bats file.
+
+## Status
+
+Outcome: succeeded (2026-10-04).
+
+- Parse hazard removed by moving the file-discovery body into `md2x-list-inputs()` in `src/cli/md2x.sh`; the `< <(md2x-list-inputs)` body holds no comment.
+- `INCLUDE_BODY_ARGS` in `src/cli/lib/generate-page.sh` is expanded with the `[@]+` guard; it was the only array expansion under `src/cli/`.
+- Silent exit 0 under bash 3.2: a fatal `nounset` error reaches the `EXIT` trap with `$?` equal to 0 in 3.2, and the trap's own status then becomes the script's. Fixed with a `MD2X_COMPLETED=true` sentinel as the script's last line; the trap exits 1 when it sees status 0 without it. Explained in a comment above the trap.
+- POSIX `sh` guard added at the top of `src/cli/md2x.sh` (exit 3 for non-bash, bash older than 3.2, and bash in POSIX mode); it sits before `set` and all inlined toolkit code in `bin/md2x`.
+- `MD2X_TEST_BASH` override and a new `md2x_exec` helper in `src/cli/test/helpers/common.bash`; `weasyprint-bootstrap-locking.bats` now launches the CLI through `md2x_exec`. No Makefile change: `MD2X_TEST_BASH=/bin/bash make test-cli` works as is.
+- Tests: new `src/cli/test/bats/bash-compat.bats` (9 cases) and one override case in `harness-smoke.bats`.
+- Validation: `make qa` passes (159 bats cases); `MD2X_TEST_BASH=/bin/bash make test-cli` passes (159 cases, bash 3.2.57). Against the pre-change build, 8 of the 9 new cases fail under either interpreter setting; the ninth ("any bash: a failing pandoc exits 1") fails only under the 3.2 override.
