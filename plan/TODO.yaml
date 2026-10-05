@@ -448,7 +448,7 @@ phases:
           slug: harden-output-delivery-and-find-roots
           title: Harden Output Delivery Edge Cases And Find Root Handling
           path: phase-06-remediation-02/002-harden-output-delivery-and-find-roots.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Hardened delivery against directory and symlink-to-directory targets, a dash-leading relative output directory and a leftover temp file, and made find roots literal by prefixing every relative root with ./. Four bats cases (three fail on pre-change build) plus spec text. Symlink-to-dir case is a guard only.
           findings:
