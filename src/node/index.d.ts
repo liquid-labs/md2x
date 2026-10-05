@@ -7,15 +7,18 @@ export interface Md2xBaseOptions {
   format?: Md2xFormat
   /** Flatten the output directory structure (--flatten-dirs). */
   flattenDirs?: boolean
-  /** Infer the document title from the content (--infer-title). */
+  /** Embed the title (from 'title', or otherwise the filename) as document metadata (--infer-title). */
   inferTitle?: boolean
-  /** Infer the document version from the content (--infer-version). */
+  /**
+   * Add a version to the PDF footer: the package.json version of the git repository containing the first input (the
+   * current directory for 'markdown'), or 'working' when its tree is dirty (--infer-version). Needs 'git' and 'jq'.
+   */
   inferVersion?: boolean
   /** Force a table of contents (--toc). Mutually exclusive with 'noToc'. */
   toc?: boolean
   /** Suppress the table of contents (--no-toc). Mutually exclusive with 'toc'. */
   noToc?: boolean
-  /** Render a single page (--single-page). */
+  /** Concatenate all inputs into a single document before conversion (--single-page). */
   singlePage?: boolean
   /** Document title (--title). Must be a non-empty string. */
   title?: string

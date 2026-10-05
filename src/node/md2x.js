@@ -118,7 +118,9 @@ const buildInvocation = (options) => {
   if (output !== undefined) {
     args.push('-o', output)
   }
-  args.push(...(markdown !== undefined ? ['-'] : sources))
+  // '--' ends option parsing so a source such as '-weird.md' is a file, not an option; after it GNU getopt still passes
+  // a lone '-' through as a positional, which the CLI reads as stdin.
+  args.push('--', ...(markdown !== undefined ? ['-'] : sources))
 
   return { args, input : markdown, quiet : options.quiet === true }
 }
