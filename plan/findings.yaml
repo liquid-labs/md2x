@@ -72,6 +72,15 @@ items:
         - plan/phase:interface-contract
         - effort:unspecified
       text: 'The Lua filter src/cli/lib/md2x-links.lua recognizes the per-source marker by parsing any top-level ''<!-- md2x:source-dir=... source=... -->'' RawBlock, so a source document can contain a hand-written marker that redirects base_dir and source_name; later images and the warnings attributed to a source then resolve against an attacker-chosen directory (image existence checks and rewritten paths only, not code execution; relevant for --single-page over mixed-trust files). Make the marker unforgeable: a per-run random nonce passed with -M (generated in src/cli/md2x.sh, emitted by src/cli/lib/link-filter.sh) that the filter requires, or strip pre-existing markers from sources during concatenation. Add a regression test with a forged marker.'
+    - title: Image paths may escape source tree
+      id: nPPK
+      date: "2026-10-05"
+      tags:
+        - type:security
+        - priority:low
+        - plan/phase:interface-contract
+        - effort:unspecified
+      text: 'In src/cli/lib/md2x-links.lua (image path resolution) targets are percent-decoded and lexically resolved with ''..'' allowed to climb above the source directory, then rewritten to an absolute path for pdf/docx; pandoc runs without --sandbox and WeasyPrint fetches the file, so untrusted markdown can make the converter embed arbitrary local image files, and the ''could not find image'' warning acts as a filesystem oracle. Absolute and scheme: targets were already passed through, so this extends an existing exposure. Either confine resolved paths to the source tree/cwd (warn and leave unchanged when they escape) or document in the README/spec that markdown is trusted input.'
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
