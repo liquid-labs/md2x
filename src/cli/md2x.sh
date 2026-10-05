@@ -162,23 +162,23 @@ TOC_MODE='auto'
 [[ -z "${TOC}" ]] || TOC_MODE='on'
 [[ -z "${NO_TOC}" ]] || TOC_MODE='off'
 
-# Input-path processing (which of SEARCH_DIRS/MD_FILES/INPUT the invocation resolves
+# Input-path processing (which of SEARCH_DIRS/MD_FILES/STDIN_MODE the invocation resolves
 # to) is done here, ahead of 'ensure-weasyprint' below, rather than in its previous
 # position further down: the '--title' conflict gate that follows needs to know how
 # many files this invocation will convert, and 'ensure-weasyprint' can trigger a
 # minute-long network install on a cold machine that a doomed (conflicting) invocation
 # should never pay for. Neither this block nor the gate reads 'OUTPUT_PATH' or anything
 # 'ensure-weasyprint' sets, and 'OUTPUT_PATH's own default assignment and
-# 'ensure-weasyprint' do not read 'SEARCH_DIRS'/'MD_FILES'/'INPUT', so this reordering
+# 'ensure-weasyprint' do not read 'SEARCH_DIRS'/'MD_FILES'/'STDIN_MODE', so this reordering
 # is safe in both directions.
 SEARCH_DIRS=''
 MD_FILES=''
 # process args
-INPUT=''
+# 'STDIN_MODE' is non-empty when the sole argument is '-'; the document itself is copied
+# byte for byte into the work directory once that exists (see 'STDIN_FILE' below).
+STDIN_MODE=''
 if (( $# == 1 )) && [[ ${1} == '-' ]]; then
-  while read LINE; do
-    INPUT="${INPUT}${LINE}"$'\n'
-  done < /dev/stdin
+  STDIN_MODE='true'
 else
   while (( $# > 0 )); do
     TEST_PATH="${1}"; shift
@@ -208,7 +208,7 @@ fi
 # trailing '|| true' is required to keep this count-only pass from tripping the
 # top-level 'errexit' on a root the real pipe further below would otherwise just skip
 # with a stderr notice (see 'exit-codes.bats'' "unreadable search root" cases).
-if [[ -z "${SINGLE_PAGE}" ]] && [[ -z "${INPUT}" ]]; then
+if [[ -z "${SINGLE_PAGE}" ]] && [[ -z "${STDIN_MODE}" ]]; then
   TITLE_PRECEDENCE_FILE_COUNT=$(list-count MD_FILES)
   while IFS= read -r SEARCH_ROOT; do
     [[ -n "${SEARCH_ROOT}" ]] || continue
@@ -371,6 +371,16 @@ PREPROCESSED_FILE="${MD2X_WORK_DIR}/preprocessed.md"
 PANDOC_LOG_FILE="${MD2X_WORK_DIR}/pandoc.log"
 OVERLAY_FILE="${MD2X_WORK_DIR}/overlay.pdf"
 STAMPED_FILE="${MD2X_WORK_DIR}/combined.pdf"
+STDIN_FILE="${MD2X_WORK_DIR}/stdin.md"
+
+# Stdin mode: copy the document byte for byte (no 'read' loop, so no stripped indentation,
+# eaten backslashes, or dropped unterminated last line). A zero-byte capture is a usage
+# error; the trap above removes the work directory on that exit. Whitespace-only input is
+# not empty.
+if [[ -n "${STDIN_MODE}" ]]; then
+  cat > "${STDIN_FILE}" || md2x-die-runtime "could not read standard input."
+  [[ -s "${STDIN_FILE}" ]] || md2x-die-usage "no input on stdin."
+fi
 
 # A '< <(...)' process substitution's own failures never reach the parent shell's
 # 'errexit'/'pipefail' (see the file-discovery pipe below), so an unreadable search
@@ -437,7 +447,7 @@ md2x-list-inputs() {
 }
 
 {
-  if [[ -z "${INPUT}" ]]; then
+  if [[ -z "${STDIN_MODE}" ]]; then
     # Each record is '<md-file><tab><search-root>'; an empty root means the file was
     # named directly on the command line rather than found under a directory argument.
     while IFS=$'\t' read -r MD_FILE SEARCH_ROOT; do
@@ -471,11 +481,12 @@ md2x-list-inputs() {
     done
   fi
   
-  if [[ -n "${SINGLE_PAGE}" ]] || [[ -n "${INPUT}" ]]; then
+  if [[ -n "${SINGLE_PAGE}" ]] || [[ -n "${STDIN_MODE}" ]]; then
     TITLE="${TITLE:-output}"
     mkdir -p "${OUTPUT_PATH}"
     BASE_OUTPUT="${OUTPUT_PATH}/${TITLE:-output}.${OUTPUT_FORMAT}"
     [[ -z "${SINGLE_PAGE}" ]] || MD_FILE="${SINGLE_PAGE_FILE}"
+    [[ -z "${STDIN_MODE}" ]] || MD_FILE="${STDIN_FILE}"
     generate-page
   fi
 } < <(md2x-list-inputs)

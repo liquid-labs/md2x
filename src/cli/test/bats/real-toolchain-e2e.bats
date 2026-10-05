@@ -262,6 +262,17 @@ EOF
   assert_file_contains './combined.html' 'Beta Heading'
 }
 
+@test "e2e: indented code arriving on stdin renders as a pre/code block" {
+  e2e_require_pandoc
+
+  printf '# T\n\n    indented\n\n  two\\nslash\n' | md2x_run --output-format html --output-path . -
+
+  assert_success
+  assert_file_exists './output.html'
+  assert_file_contains './output.html' '<pre'
+  assert_file_contains './output.html' '<code>'
+}
+
 # --- TOC: slug agreement with real Pandoc -------------------------------------------
 
 @test "e2e: generated TOC anchors for the slug corpus all resolve against real Pandoc's minted identifiers" {

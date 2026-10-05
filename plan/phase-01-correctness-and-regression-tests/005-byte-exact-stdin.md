@@ -52,3 +52,7 @@ Out of scope:
 - [Design decisions: stdin](../notes/design-decisions.md#stdin).
 - `.flow/audit-interface.md` B2, under the project root: the reproduction commands used in Validation.
 - `src/cli/test/helpers/common.bash` `md2x_run`: it inherits stdin, so a redirect drives the `-` mode.
+
+## Status
+
+succeeded, 2026-10-04. `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` pass. New stdin regression cases fail on pre-change code (4 of 5; whitespace-only case passes both ways by design) and pass now. Real-toolchain checks produce `<pre>`, `two\nslash` and `last`. `toc-preprocess.py` keeps a missing final newline unchanged. Retired `INPUT` is gone; remaining `INPUT_LABEL` is the error-message label. Files: `src/cli/md2x.sh`, `src/cli/lib/generate-page.sh`, `src/cli/test/bats/single-page-and-stdin.bats`, `src/cli/test/bats/real-toolchain-e2e.bats`.
