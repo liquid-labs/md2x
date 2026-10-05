@@ -348,3 +348,43 @@ teardown() {
   css_arg="$(md2x_stub_last_call_args pandoc | grep '\.css$' || true)"
   [[ -n "${css_arg}" ]] || md2x_fail 'expected the pdf pandoc invocation to carry a .css argument'
 }
+
+# --- link and image Lua filter ------------------------------------------------------------
+#
+# Link and image handling is a Pandoc Lua filter; the stub does not run it (the gated
+# 'links-and-images.bats' does, against real pandoc). These cases pin what md2x hands pandoc.
+
+@test "pandoc gets the link/image Lua filter and its settings as -M arguments" {
+  md2x_write_doc 'sub/report.md'
+
+  md2x_run --output-format html --flatten-dirs --output-path out sub/report.md
+
+  assert_success
+  assert_last_call_contains pandoc '--lua-filter'
+  assert_last_call_has_arg pandoc 'md2x-format=html'
+  assert_last_call_has_arg pandoc "md2x-source-dir=$(cd sub && pwd -P)"
+  assert_last_call_has_arg pandoc "md2x-out-dir=$(mkdir -p out && cd out && pwd -P)"
+  assert_last_call_has_arg pandoc 'md2x-source=sub/report.md'
+}
+
+@test "the filter file handed to pandoc is the inlined md2x-links.lua" {
+  md2x_write_doc 'report.md'
+
+  md2x_run --output-format docx --flatten-dirs --output-path . report.md
+
+  assert_success
+  grep -q 'md2x:source' "${MD2X_TEST_STUB_CAPTURE_DIR}/pandoc-1-filter"
+  refute_last_call_contains pandoc 'md2x-out-dir='
+}
+
+@test "--single-page inserts one source marker before each source (and the harness provides no perl)" {
+  mkdir -p one two
+  md2x_write_doc 'one/a.md'
+  md2x_write_doc 'two/b.md'
+
+  md2x_run --single-page --flatten-dirs --output-path . one/a.md two/b.md
+
+  assert_success
+  [[ "$(grep -c '^<!-- md2x:source-dir=' "${MD2X_TEST_STUB_CAPTURE_DIR}/pandoc-1-input")" == 2 ]]
+  [[ ! -e "${MD2X_TEST_BIN_DIR}/perl" ]]
+}

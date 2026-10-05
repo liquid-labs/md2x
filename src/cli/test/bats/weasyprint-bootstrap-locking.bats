@@ -152,7 +152,7 @@ set -o nounset
 
 # A high-resolution timestamp. BSD/macOS 'date' has no '%N' for sub-second precision,
 # so this shells out to perl's Time::HiRes instead of relying on GNU-only 'date'
-# flags -- 'perl' is already a passthrough tool this suite's harness provides.
+# flags -- 'perl' is linked into this file's own PATH directory below.
 wpl_now() {
   perl -MTime::HiRes=time -e 'printf "%.6f\n", time'
 }

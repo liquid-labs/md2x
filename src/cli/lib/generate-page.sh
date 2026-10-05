@@ -1,8 +1,8 @@
 generate-page() {
   # Names the input in tool-failure messages; stdin mode has no file.
   local INPUT_LABEL="${MD_FILE:-}"
-  local LINK_CONVERTER
-  local -a INCLUDE_BODY_ARGS STYLE_ARGS
+  local -a INCLUDE_BODY_ARGS STYLE_ARGS LINK_ARGS
+  local FILTER_SOURCE_DIR FILTER_OUT_DIR
   local DOC_DATA PAGE_COUNT MEDIA_DIMENSIONS XPAGE YPAGE HF_FONT_SIZE PG_NUMBER_X_OFFSET
   local VERSION_X_OFFSET FOOTER_Y_OFFSET HEADER_Y_OFFSET TITLE_X_OFFSET FOOTER_STRING
   [[ -z "${STDIN_MODE:-}" ]] || INPUT_LABEL='stdin'
@@ -18,12 +18,6 @@ generate-page() {
 
 # TODO: support 'author' if known
   # echo "generate-page for ${MD_FILE}..."
-
-  # matches a linky thing; captures from '[...](' in $1, skips './' if present, and captures rest up but excluding '.md'
-  #                   [....]      link not abs or ext                       add './' back in place
-  #     link opening  vvvvvv       vvvvvvvvvvvvvvvv                           vv
-  # perl -pe 's/(\[[^\]]+\]\()(?!\/|https?:\/\/)(?:\.\/)?(.*)\.md\s*\)$/$1.\/$2.docx)/g'
-  LINK_CONVERTER='perl -pe '"'"'s/(\[[^\]]+\]\()(?!\/|https?:\/\/)(?:\.\/)?(.*)\.md\s*\)$/$1.\/$2.'${OUTPUT_FORMAT}")/g'"
 
   # Every intermediate file lives in the per-run work directory the caller (md2x.sh)
   # created and registered for cleanup: the CSS file, the body-open/body-close include
@@ -50,7 +44,33 @@ generate-page() {
     html) STYLE_ARGS=(--include-in-header "${STYLE_HEADER_FILE}");;
   esac
 
-  # Materialize the TOC-preprocessed, link-converted Markdown to a real temp file
+  # Link and image handling is the Lua filter 'md2x-links.lua' (written to the work
+  # directory by 'md2x.sh'); it is told its settings through '-M' metadata. Images resolve
+  # against the source file's directory (the cwd for stdin; under '--single-page' the
+  # per-source markers the concatenation inserted take over). For html the filter needs
+  # the output file's directory, to make image paths relative to it; '--to-stdout' has no
+  # output file, so those paths are relative to the cwd.
+  if [[ -n "${STDIN_MODE}" ]] || [[ -n "${SINGLE_PAGE:-}" ]]; then
+    FILTER_SOURCE_DIR="$(pwd -P)"
+  else
+    FILTER_SOURCE_DIR="$(md2x-abs-dir-of "${MD_FILE}")"
+  fi
+  LINK_ARGS=(--lua-filter "${LINK_FILTER_FILE}"
+    -M "md2x-format=${OUTPUT_FORMAT}"
+    -M "md2x-source-dir=${FILTER_SOURCE_DIR}"
+    -M "md2x-miss-file=${MISSING_IMAGES_FILE}")
+  [[ -n "${SINGLE_PAGE:-}" ]] || LINK_ARGS+=(-M "md2x-source=${INPUT_DISPLAY}")
+  if [[ "${OUTPUT_FORMAT}" == 'html' ]]; then
+    if [[ -n "${TO_STDOUT}" ]]; then
+      FILTER_OUT_DIR="$(pwd -P)"
+    else
+      FILTER_OUT_DIR="$(md2x-parent-dir "$(md2x-canonical-target "${FINAL_OUTPUT}")")"
+    fi
+    LINK_ARGS+=(-M "md2x-out-dir=${FILTER_OUT_DIR}")
+  fi
+  : > "${MISSING_IMAGES_FILE}"
+
+  # Materialize the TOC-preprocessed Markdown to a real temp file
   # rather than handing Pandoc a process substitution. A process substitution's exit
   # status is invisible to this script's 'errexit'/'pipefail', so a failing
   # preprocessor would otherwise hand Pandoc a truncated document and md2x would
@@ -58,13 +78,9 @@ generate-page() {
   # the conversion. '${TOC_PREPROCESSOR}' is the inlined 'toc-preprocess.py' source
   # (see 'md2x.sh'); running it via 'python3 -c' lets the document occupy stdin
   # without a fourth temp file. Stdin mode reads the captured copy in
-  # the work directory, byte for byte, via 'MD_FILE'. The
-  # preprocessor runs ahead of 'LINK_CONVERTER': the two do not interfere, since
-  # 'LINK_CONVERTER' only rewrites links whose target ends in '.md)', and generated
-  # TOC entries end in ')' directly after a '#anchor'.
+  # the work directory, byte for byte, via 'MD_FILE'.
   cat -- "${MD_FILE}" \
     | python3 -c "${TOC_PREPROCESSOR}" --mode "${TOC_MODE}" --source-name "${INPUT_DISPLAY}" \
-    | eval $LINK_CONVERTER \
     > "${PREPROCESSED_FILE}" \
     || {
       # Status 4 is the preprocessor's invalid-encoding signal; it has already printed an
@@ -74,6 +90,16 @@ generate-page() {
       md2x-die-runtime "TOC preprocessing failed for '${INPUT_DISPLAY}'."
     }
 
+  # Pandoc features the Lua filter relies on, with the earliest pandoc version that provides
+  # each (the version floor is set from this list):
+  #   --lua-filter and the 'Pandoc' filter function ........ pandoc 2.0 (Lua filters)
+  #   pandoc.utils.stringify (reads the '-M' settings) ..... pandoc 2.0
+  #   block:walk{Link=, Image=, RawBlock=} ................. pandoc 2.0 (element 'walk' method)
+  #   RawBlock 'format'/'text', Link 'target', Image 'src' . pandoc 2.0 field names, still
+  #                                                          accepted in 3.x
+  #   Not used: 'pandoc.path', 'PANDOC_VERSION', anything beyond Lua 5.1 syntax.
+  # Only pandoc 3.10.1 has been exercised; the versions above come from the Lua filter
+  # documentation, not from a test run on an older pandoc.
   pandoc \
     $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
     ${INCLUDE_BODY_ARGS[@]+"${INCLUDE_BODY_ARGS[@]}"} \
@@ -83,11 +109,13 @@ generate-page() {
     --to ${INTERMEDIDATE_FORMAT} \
     ${STYLE_ARGS[@]+"${STYLE_ARGS[@]}"} \
     ${METADATA_ARGS[@]+"${METADATA_ARGS[@]}"} \
+    "${LINK_ARGS[@]}" \
     "${PREPROCESSED_FILE}" \
     -o "${BASE_OUTPUT}" \
     --log "${PANDOC_LOG_FILE}" \
     1>/dev/null \
     || md2x-die-runtime "pandoc failed for '${INPUT_DISPLAY}'."
+  md2x-report-missing-images "${MISSING_IMAGES_FILE}"
   # Pandoc's own stdout is inert when '-o <file>' is given; the explicit redirect
   # guarantees stdout purity for '--to-stdout'/'--list-files' by construction rather
   # than by relying on that behavior. Stderr is left untouched: WeasyPrint runs as a
