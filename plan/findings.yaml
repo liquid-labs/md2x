@@ -99,15 +99,6 @@ items:
         - plan/phase:interface-contract
         - effort:unspecified
       text: md2x-infer-version in src/cli/lib/preflight.sh runs 'git -C <input dir> rev-parse' and 'git status --porcelain' in a directory taken from the inputs; in a repository with attacker-supplied .git/config (for example an extracted archive), core.fsmonitor or similar settings make git execute commands. Run git with '-c core.fsmonitor= -c core.hooksPath=/dev/null' (and GIT_CONFIG_NOSYSTEM=1, status --no-optional-locks), or document that --infer-version assumes a trusted repository.
-    - title: Drop bash-toolkit lists, harden heredoc
-      id: 32b8
-      date: "2026-10-05"
-      tags:
-        - type:optimization
-        - priority:low
-        - plan/phase:interface-contract
-        - effort:unspecified
-      text: 'Maintainability items in src/cli/md2x.sh (now ~690 lines): (1) ''import lists'' from @liquid-labs/bash-toolkit (line ~38) is used only for three list-add-item calls (lines ~272, 276, 325); replace with plain string appends and drop the devDependency and lock entries. (2) The Lua filter is embedded through a ''<<EOF'' heredoc filled by bash-rollup (line ~605); a bare EOF line in md2x-links.lua would silently truncate it, so use a unique terminator such as MD2X_LUA_EOF or add a bats guard that the extracted filter equals the source file. (3) Discovery/resolution could move to lib/input-discovery.sh. (4) Efficiency suggestions: md2x-percent-encode (src/cli/lib/link-filter.sh) forks per byte; md2x-lookup-record plan scan is O(n^2); md2xAsync output buffers in src/node/md2x.js are uncapped (sync path caps at 64MiB).'
     - title: Validate pandoc floor and RELEASING artifacts
       id: S0YR
       date: "2026-10-05"
@@ -132,4 +123,9 @@ closed:
       title: Harden getopt eval and cap title length
       disposition: promoted
       ref: ttPU
+      date: "2026-10-05"
+    - id: 32b8
+      title: Drop bash-toolkit lists, harden heredoc
+      disposition: promoted
+      ref: 32b8
       date: "2026-10-05"
