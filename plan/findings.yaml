@@ -9,15 +9,6 @@ items:
         - plan/phase:remediation-01
         - effort:unspecified
       text: 'MAJOR, reproduced. md2x-infer-git in src/cli/lib/preflight.sh (lines ~74-81, used at ~90 and ~100) neutralizes core.fsmonitor and core.hooksPath, but ''git status --porcelain'' in an untrusted input directory still executes repository-configured commands: with a tracked .gitattributes ''* filter=x'' and .git/config ''[filter "x"] clean = <cmd>'', running exactly the hardened command after touching a file executed the clean filter (marker file created). core.hooksPath is irrelevant to status/rev-parse. Only reachable with --infer-version, but an extracted archive is user-owned so safe.directory does not protect. Remediate for real, not just a comment: for example skip the dirty check (and the ''working'' version) when ''git config --local --list'' (which executes nothing) shows keys that can run commands (filter.*, core.fsmonitor, include/includeIf, diff.*.command/external, core.sshCommand, core.pager and similar), warning and omitting the version instead; also set GIT_CONFIG_GLOBAL=/dev/null if appropriate. Add a bats regression case with a hostile filter driver that must not create its sentinel file (verify it fails on the current code), and document that --infer-version only trusts repositories whose local config is free of command-bearing keys.'
-    - title: Always pass nonce; harden test-pack checks
-      id: xDG1
-      date: "2026-10-05"
-      tags:
-        - type:security
-        - priority:low
-        - plan/phase:remediation-01
-        - effort:unspecified
-      text: 'Two small hardening items. (1) The per-run marker nonce is passed with -M only in --single-page mode (src/cli/lib/generate-page.sh ~59-64; filter at src/cli/lib/md2x-links.lua ~207-212), so in multi-file mode a source''s own YAML front matter ''md2x-nonce: x'' plus a ''nonce=x'' marker comment would be honored; always pass a random nonce (or an unforgeable sentinel) so source metadata cannot supply it, and add a regression case. (2) scripts/test-pack.sh (~64-66, 83-89): the embedded-build-path check treats a grep error (exit 2, for example a missing bundle) as no match and passes; ROOT uses logical pwd so a symlinked checkout would not match a physical path embedded by bun; and the TypeScript step silently falls back to a grep of the .d.ts when node_modules/.bin/tsc is absent. Check file existence first, also grep ''pwd -P'', and make a missing pinned tsc a hard failure in the release target.'
     - title: infer-version status may recurse submodules
       id: JEAt
       date: "2026-10-05"
@@ -130,4 +121,9 @@ closed:
       title: Output overwrite check is advisory only
       disposition: dismissed
       reason: 'Fixed by remediation tasks 5.7 and 6.2: inode re-check and temp+mv delivery; symlinked *.md following and parent-dir trust assumption documented in docs/md2x-spec.md; round 2 reviews found delivery sound.'
+      date: "2026-10-05"
+    - id: xDG1
+      title: Always pass nonce; harden test-pack checks
+      disposition: dismissed
+      reason: 'Fixed by remediation task 6.3: nonce and all md2x-* filter settings always passed via -M (pandoc -M overrides front matter, verified by implementer and reviewers); test-pack fails closed. Round 2 reviews confirmed.'
       date: "2026-10-05"
