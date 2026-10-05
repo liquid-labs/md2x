@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: test-pack fetches unpinned typescript
-      id: tT72
-      date: "2026-10-05"
-      tags:
-        - type:security
-        - priority:low
-        - plan/phase:interface-contract
-        - effort:unspecified
-      text: scripts/test-pack.sh (TSC fallback, around lines 58-62) runs 'npx --yes -p typescript tsc' when tsc is not on PATH, fetching and executing an unpinned latest typescript at release time; the Makefile comments explicitly reject this pattern for dev tools. Use a lockfile-pinned typescript devDependency (node_modules/.bin/tsc) or a pinned version, or drop the network fallback and use the existing syntactic-check branch.
     - title: Single-page source marker is forgeable
       id: z2v9
       date: "2026-10-05"
@@ -123,4 +114,9 @@ closed:
       title: index.d.ts JSDoc misdescribes options
       disposition: dismissed
       reason: 'Fixed by remediation task 5.2: index.d.ts JSDoc for inferTitle, inferVersion and singlePage now matches the CLI.'
+      date: "2026-10-05"
+    - id: tT72
+      title: test-pack fetches unpinned typescript
+      disposition: dismissed
+      reason: 'Fixed by remediation task 5.1: test-pack uses lockfile-pinned node_modules/.bin/tsc, no npx; silent fallback tracked by xDG1.'
       date: "2026-10-05"
