@@ -56,7 +56,12 @@ generate-page() {
     -M "md2x-format=${OUTPUT_FORMAT}"
     -M "md2x-source-dir=${FILTER_SOURCE_DIR}"
     -M "md2x-miss-file=${MISSING_IMAGES_FILE}")
-  [[ -n "${SINGLE_PAGE:-}" ]] || LINK_ARGS+=(-M "md2x-source=${INPUT_DISPLAY}")
+  if [[ -n "${SINGLE_PAGE:-}" ]]; then
+    # Only a marker carrying this per-run token is honored (see 'md2x-links.lua').
+    LINK_ARGS+=(-M "md2x-nonce=${MD2X_MARKER_NONCE}")
+  else
+    LINK_ARGS+=(-M "md2x-source=${INPUT_DISPLAY}")
+  fi
   if [[ "${OUTPUT_FORMAT}" == 'html' ]]; then
     if [[ -n "${TO_STDOUT}" ]]; then
       FILTER_OUT_DIR="$(pwd -P)"

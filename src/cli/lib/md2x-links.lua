@@ -23,15 +23,19 @@
 --   md2x-source      name of that source, for messages
 --   md2x-out-dir     html only: absolute directory of the output file
 --   md2x-miss-file   file the missing-image records are appended to
+--   md2x-nonce       '--single-page' only: the per-run secret source markers must carry
 --
 -- '--single-page' concatenates several sources into one document, so before each source
 -- the CLI inserts a one-line marker block, surrounded by blank lines:
 --
---   <!-- md2x:source-dir=<ENC> source=<ENC> -->
+--   <!-- md2x:source-dir=<ENC> source=<ENC> nonce=<NONCE> -->
 --
 -- where <ENC> is the percent-encoded absolute directory and source name (so neither can
--- contain '-->', spaces or newlines). The filter tracks the current source from these
--- RawBlocks, in document order, and removes them from the output.
+-- contain '-->', spaces or newlines) and <NONCE> is the per-run random token also passed
+-- as 'md2x-nonce'. The filter tracks the current source from these RawBlocks, in document
+-- order, and removes them from the output. A comment that merely looks like a marker (no
+-- nonce, or the wrong one -- e.g. one written in a source document) is ordinary content:
+-- it is neither honored nor removed. With no 'md2x-nonce' no marker is recognized.
 --
 -- Plain Lua 5.1-compatible code; the only pandoc APIs used are the 'Pandoc' filter
 -- function, 'pandoc.utils.stringify', the 'walk' method on blocks, and the Link, Image
@@ -42,6 +46,7 @@ local base_dir = nil
 local source_name = 'stdin'
 local out_dir = nil
 local miss_file = nil
+local nonce = nil
 local misses = {}
 local seen_misses = {}
 
@@ -163,9 +168,10 @@ end
 
 local function marker_state(block)
   if block.t ~= 'RawBlock' or block.format ~= 'html' then return nil end
-  local dir, name = block.text:match(
-    '^%s*<!%-%-%s*md2x:source%-dir=(%S+)%s+source=(%S+)%s*%-%->%s*$')
-  if not dir then return nil end
+  if not nonce then return nil end
+  local dir, name, token = block.text:match(
+    '^%s*<!%-%-%s*md2x:source%-dir=(%S+)%s+source=(%S+)%s+nonce=(%S+)%s*%-%->%s*$')
+  if not dir or token ~= nonce then return nil end
   return decode(dir), decode(name)
 end
 
@@ -201,8 +207,9 @@ function Pandoc(doc)
   source_name = meta_string(meta, 'md2x-source') or 'single-page'
   out_dir = meta_string(meta, 'md2x-out-dir')
   miss_file = meta_string(meta, 'md2x-miss-file')
+  nonce = meta_string(meta, 'md2x-nonce')
   for _, key in ipairs({'md2x-format', 'md2x-source-dir', 'md2x-source', 'md2x-out-dir',
-                        'md2x-miss-file'}) do
+                        'md2x-miss-file', 'md2x-nonce'}) do
     meta[key] = nil
   end
 

@@ -22,3 +22,7 @@ Fixes finding z2v9 from the Phase 2 review. The work targets the plan branch `pl
 - Finding z2v9, in this plan's `plan/findings.yaml`.
 - Finding 32b8 (item 2 only), in the project backlog.
 - Files: `src/cli/lib/md2x-links.lua`, `src/cli/lib/link-filter.sh`, `src/cli/md2x.sh`, `src/cli/test/bats/`.
+
+## Status
+
+Outcome: succeeded (2026-10-05). Per-run nonce (32 hex from /dev/urandom via `md2x-new-nonce`) generated in `src/cli/md2x.sh`, emitted in the marker by `src/cli/lib/link-filter.sh`, passed to the filter as `-M md2x-nonce` in `src/cli/lib/generate-page.sh`; `src/cli/lib/md2x-links.lua` honors only markers carrying it (forged markers are left as ordinary content). Lua heredoc terminator is now `MD2X_LUA_EOF`. Added three bats cases in `src/cli/test/bats/links-and-images.bats` (forged marker, forged marker with a guessed nonce, embedded filter equals source). `make qa` green; `MD2X_TEST_BASH=/bin/bash make test-cli` green (exit 0).
