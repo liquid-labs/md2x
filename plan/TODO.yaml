@@ -11,11 +11,13 @@ phases:
           slug: error-helper-and-exit-codes
           title: Error Helper and Exit Codes
           path: phase-01-correctness-and-regression-tests/001-error-helper-and-exit-codes.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: Added errors.sh with the 0/1/2/3 exit-code contract and migrated every md2x-owned exit path to it. Tool failures now exit 1 with a named-tool message, backstopped by an EXIT-trap normalization of statuses outside 0-3. The bats suite now asserts specific codes, and error-output.bats adds regression cases that fail on the pre-change binary.
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-01-001
+            commit:
+                - "8903965"
             merge: null
         - number: 2
           slug: bash-3-2-compatibility
