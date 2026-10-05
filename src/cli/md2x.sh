@@ -311,10 +311,11 @@ if [[ -z "${STDIN_MODE}" ]]; then
     FIND_STATUS=0
     # 'find' errors (an unreadable directory) are not shown raw: the status is checked and
     # reported through 'md2x-die-runtime' below, naming the search root.
-    # A root starting with '-' would be read by 'find' as an option, so it is searched as
-    # './<root>' and the './' is stripped from each result to keep the names as the user gave them.
+    # A relative root could be read by 'find' as an option ('-x') or an expression token
+    # ('!', '(', ')', ','), so every non-absolute root is searched as './<root>' and the
+    # './' is stripped from each result to keep the names as the user gave them.
     FIND_ROOT="${ROOT_DIR}"
-    [[ "${ROOT_DIR}" != -* ]] || FIND_ROOT="./${ROOT_DIR}"
+    [[ "${ROOT_DIR}" == /* ]] || FIND_ROOT="./${ROOT_DIR}"
     FOUND="$(find "${FIND_ROOT}" \( -iname '*.md' -o -iname '*.markdown' \) ! -type d -print0 2>/dev/null \
       | tr '\012\000' '\001\012')" || FIND_STATUS=$?
     ROOT_FOUND=0
@@ -551,7 +552,8 @@ MD2X_WORK_DIR="$(mktemp -d "${MD2X_TMP_ROOT}/md2x.XXXXXX" 2>/dev/null)" \
 # empty) unless '--keep-intermediate' was given. bash runs an 'EXIT' trap on every exit
 # path -- normal completion, 'errexit', and every 'md2x-die-*' -- so nothing leaks however
 # the run ends. Bash keeps only one handler per signal, so any later need must be folded
-# into this trap rather than registered separately.
+# into this trap rather than registered separately. It also removes a pending delivery temp
+# file ('MD2X_DELIVERY_TEMP', set by 'md2x-deliver-output' between 'mktemp' and the rename).
 #
 # Exit-status backstop (keep this in any rewrite of this trap): the trap also normalizes
 # any exit status outside the 0-3 contract (see 'lib/errors.sh') to 1, so a tool that
@@ -569,6 +571,7 @@ MD2X_WORK_DIR="$(mktemp -d "${MD2X_TMP_ROOT}/md2x.XXXXXX" 2>/dev/null)" \
 trap 'MD2X_EXIT_STATUS=$?
       [[ -n "${KEEP_INTERMEDIATE:-}" ]] || [[ -z "${MD2X_WORK_DIR:-}" ]] \
         || rm -rf "${MD2X_WORK_DIR}" 2>/dev/null
+      [[ -z "${MD2X_DELIVERY_TEMP:-}" ]] || rm -f -- "${MD2X_DELIVERY_TEMP}" 2>/dev/null
       if (( MD2X_EXIT_STATUS == 0 )) && [[ -z "${MD2X_COMPLETED:-}" ]]; then
         md2x-emit "md2x:" "1;31" "run aborted before completion; see the error above."
         exit 1

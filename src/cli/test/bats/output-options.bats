@@ -429,3 +429,43 @@ assert_cwd_files() {
   assert_success
   [[ -z "$(find out -name '.md2x-out.*')" ]]
 }
+
+# --- delivery: directory targets, option-like directories, interrupted delivery --------------
+
+@test "-o through a symlink to an existing directory fails and writes nothing into it" {
+  md2x_write_doc 'a.md'
+  mkdir realdir
+  ln -s realdir dirlink
+
+  md2x_run -F html -o dirlink a.md
+
+  assert_failure
+  [[ -z "$(ls -A realdir)" ]]
+  [[ -L dirlink ]]
+  [[ -z "$(find . -name '.md2x-out.*')" ]]
+}
+
+@test "-o -d/out.html delivers into a relative directory whose name starts with a dash" {
+  md2x_write_doc 'a.md'
+  mkdir ./-d
+
+  md2x_run -F html -o -d/out.html a.md
+
+  assert_success
+  assert_file_contains './-d/out.html' 'to: html5'
+  [[ -z "$(find . -name '.md2x-out.*')" ]]
+}
+
+@test "an interrupted delivery leaves no temp file beside the output" {
+  md2x_write_doc 'a.md'
+  mkdir out
+  # A 'cp' that terminates the running md2x between 'mktemp' and the rename.
+  printf '#!/bin/sh\nkill -TERM "$PPID"\nsleep 5\n' > "${MD2X_TEST_BIN_DIR}/cp"
+  chmod +x "${MD2X_TEST_BIN_DIR}/cp"
+
+  md2x_run -F html -o out/x.html a.md
+
+  assert_failure
+  [[ -z "$(find out -name '.md2x-out.*')" ]]
+  [[ ! -e out/x.html ]]
+}
