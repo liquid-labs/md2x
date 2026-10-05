@@ -47,11 +47,13 @@ phases:
           slug: per-run-work-directory
           title: Per-Run Work Directory
           path: phase-01-correctness-and-regression-tests/004-per-run-work-directory.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: Every intermediate now lives in a per-run mktemp work directory removed by the EXIT trap (kept with --keep-intermediate). Fixes B1 single-page source deletion and keeps pandoc-log.log and other intermediates out of the cwd. generate-page no longer creates or removes files. 8 new regression cases; suite passes under bash 5 and 3.2.
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-01-004
+            commit:
+                - affc656
             merge: null
         - number: 5
           slug: byte-exact-stdin
