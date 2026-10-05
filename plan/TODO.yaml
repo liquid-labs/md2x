@@ -20,6 +20,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: harden-input-discovery-and-validation
+          title: Harden Input Discovery and Validation
+          path: phase-02-interface-contract/002-harden-input-discovery-and-validation.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 3
       slug: docs-ci-and-release-readiness
       title: Docs, CI, and Release Readiness
