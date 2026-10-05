@@ -221,16 +221,18 @@ generate-page() {
   # fixed name ('output.<format>'): pandoc picks its PDF writer from the extension of its
   # '-o' path, so a user-chosen '-o' name could not be handed to it directly, and a failed
   # conversion never leaves a partial file at the destination. '--to-stdout' streams that
-  # work-directory file and writes nothing else; otherwise it is copied to 'FINAL_OUTPUT',
-  # the planned target (see 'md2x.sh'), creating its parent directory first.
+  # work-directory file and writes nothing else; otherwise it is delivered to 'FINAL_OUTPUT',
+  # the planned target (see 'md2x.sh'), creating its parent directory first. Delivery
+  # ('md2x-deliver-output') never writes through the target path: it stages a copy beside the
+  # target and renames it over the target, so a symlink at the target is replaced rather than
+  # followed, and it refuses a target that is the same file as any input.
   if [[ -n "${TO_STDOUT}" ]]; then
     cat -- "${BASE_OUTPUT}" 2>/dev/null \
       || md2x-die-runtime "could not write '${INPUT_DISPLAY}' to standard output."
   else
     mkdir -p -- "$(md2x-parent-dir "${FINAL_OUTPUT}")" 2>/dev/null \
       || md2x-die-runtime "could not create the directory for '$(md2x-title-display "${FINAL_OUTPUT}")'."
-    cp -- "${BASE_OUTPUT}" "${FINAL_OUTPUT}" 2>/dev/null \
-      || md2x-die-runtime "could not write '$(md2x-title-display "${FINAL_OUTPUT}")'."
+    md2x-deliver-output "${BASE_OUTPUT}" "${FINAL_OUTPUT}" "${RESOLVED_INPUTS:-}"
   fi
 
   [[ -n "${QUIET}" ]] || {

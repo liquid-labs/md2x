@@ -158,3 +158,50 @@ md2x-lookup-record() {
   RECORDS="${RECORDS#*"${PATTERN}"}"
   printf '%s' "${RECORDS%%$'\n'*}"
 }
+
+# md2x-target-is-input <target> <inputs>
+# Succeeds when <target> is the same file as any input in <inputs> (the resolved-input list:
+# one '<file><tab><search-root>' record per line). 'test -ef' compares device and inode, so
+# it also catches a hard link, a symlink, or an alternate mount path to an input that the
+# plan-time string comparison cannot see. A target that does not exist yet is never an input.
+md2x-target-is-input() {
+  local TARGET="${1}" INPUTS="${2}" INPUT_FILE INPUT_ROOT
+  [[ -e "${TARGET}" ]] || return 1
+  while IFS=$'\t' read -r INPUT_FILE INPUT_ROOT; do
+    [[ -n "${INPUT_FILE}" ]] || continue
+    [[ ! "${TARGET}" -ef "${INPUT_FILE}" ]] || return 0
+  done <<< "${INPUTS}"
+  return 1
+}
+
+# md2x-deliver-output <staged-file> <target> <inputs>
+# Delivers the staged result to <target> without ever writing through the target path: the
+# copy goes to a temp file in the target's own directory, and 'mv' (an atomic 'rename' within
+# one directory) puts it in place. A symlink at <target> is therefore replaced, not followed,
+# and a hard link to an input keeps its other names untouched. Immediately before the rename
+# the target is re-checked against <inputs> (see 'md2x-target-is-input'). Dies (runtime error)
+# on any failure, removing the temp file first. Needs 'errors.sh' and 'title-safe.sh'.
+md2x-deliver-output() {
+  local STAGED="${1}" TARGET="${2}" INPUTS="${3}" TARGET_DIR TARGET_SHOWN TEMP_FILE MODE
+  TARGET_SHOWN="$(md2x-title-display "${TARGET}")"
+  TARGET_DIR="$(md2x-parent-dir "${TARGET}")"
+  # 'mv' onto a directory would move the file into it instead of replacing it.
+  [[ ! -d "${TARGET}" ]] || [[ -L "${TARGET}" ]] \
+    || md2x-die-runtime "could not write '${TARGET_SHOWN}': it is a directory."
+  TEMP_FILE="$(mktemp "${TARGET_DIR%/}/.md2x-out.XXXXXX" 2>/dev/null)" \
+    || md2x-die-runtime "could not write '${TARGET_SHOWN}'."
+  # 'mktemp' creates the file 0600; give it the mode a plain new file would get.
+  MODE="$(printf '%03o' $(( 0666 & ~$(umask) )))"
+  if ! { cp -- "${STAGED}" "${TEMP_FILE}" && chmod "${MODE}" "${TEMP_FILE}"; } 2>/dev/null; then
+    rm -f -- "${TEMP_FILE}"
+    md2x-die-runtime "could not write '${TARGET_SHOWN}'."
+  fi
+  if md2x-target-is-input "${TARGET}" "${INPUTS}"; then
+    rm -f -- "${TEMP_FILE}"
+    md2x-die-runtime "refusing to overwrite '${TARGET_SHOWN}': it is the same file as an input."
+  fi
+  if ! mv -f -- "${TEMP_FILE}" "${TARGET}" 2>/dev/null; then
+    rm -f -- "${TEMP_FILE}"
+    md2x-die-runtime "could not write '${TARGET_SHOWN}'."
+  fi
+}

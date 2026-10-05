@@ -20,3 +20,7 @@ Fixes finding m1SB from the Phase 2 review. The work targets the plan branch `pl
 
 - Finding m1SB, in this plan's `plan/findings.yaml`.
 - Files: `src/cli/lib/generate-page.sh`, `src/cli/lib/output-plan.sh`, `src/cli/md2x.sh`, `src/cli/test/bats/`.
+
+## Status
+
+succeeded (2026-10-05). `md2x-deliver-output` and `md2x-target-is-input` added to `src/cli/lib/output-plan.sh`; `src/cli/lib/generate-page.sh` delivers through them (temp file in the target directory, `-ef` re-check, `mv -f` rename). Three bats cases added to `src/cli/test/bats/output-options.bats`. `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` pass. Requirement 3: `find` discovery keeps following symlinked `*.md` files (inputs are only read; delivery no longer writes through any path), so no change; document for Phase 3.
