@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 1
-    tasks_added: 2
+    tasks_added: 3
 phases:
     - number: 1
       slug: correctness-and-regression-tests
@@ -343,6 +343,19 @@ phases:
           findings:
             - Xylz
             - YkUH
+          git:
+            branch: null
+            commit: []
+            merge: null
+        - number: 3
+          slug: reject-trailing-slash-output-and-dash-roots
+          title: Reject Trailing-Slash Output Paths And Protect Dash-Leading Search Roots
+          path: phase-05-remediation-01/003-reject-trailing-slash-output-and-dash-roots.md
+          done: false
+          tier: sonnet-med
+          findings:
+            - 3rV7
+            - yV1b
           git:
             branch: null
             commit: []
