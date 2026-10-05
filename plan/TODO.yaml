@@ -15,7 +15,7 @@ phases:
           tier: sonnet-med
           digest: Added errors.sh with the 0/1/2/3 exit-code contract and migrated every md2x-owned exit path to it. Tool failures now exit 1 with a named-tool message, backstopped by an EXIT-trap normalization of statuses outside 0-3. The bats suite now asserts specific codes, and error-output.bats adds regression cases that fail on the pre-change binary.
           git:
-            branch: null
+            branch: plan/golden-release-hardening-01-001
             commit: []
             merge: null
         - number: 2
