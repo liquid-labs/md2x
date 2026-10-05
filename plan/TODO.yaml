@@ -172,7 +172,7 @@ phases:
           slug: prune-weasyprint-unsupported-css
           title: Prune WeasyPrint Unsupported CSS
           path: phase-02-interface-contract/006-prune-weasyprint-unsupported-css.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: 'Pruned WeasyPrint-unsupported CSS from github.css (fill, word-wrap break-all, max-width auto, overflow-x/y, unprefixed user-select, spin-button rule, kbd box-shadow); PDFs rasterize byte-identical. One pandoc-template-owned ''user-select: none'' WARNING remains and is exempted in the new e2e regression test.'
           git:
