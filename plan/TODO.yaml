@@ -50,6 +50,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 5
+          slug: clean-up-version-inference-and-dependency-hygiene
+          title: Clean Up Version Inference and Dependency Hygiene
+          path: phase-02-interface-contract/005-clean-up-version-inference-and-dependency-hygiene.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 3
       slug: docs-ci-and-release-readiness
       title: Docs, CI, and Release Readiness
