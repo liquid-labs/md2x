@@ -18,4 +18,13 @@ items:
         - plan/phase:correctness-and-regression-tests
         - effort:unspecified
       text: Two hardening suggestions. (1) src/cli/lib/parse-options.sh evals getopt output; with GETOPT_COMPATIBLE set, util-linux getopt emits unquoted output while still passing --test, so unset GETOPT_COMPATIBLE before invoking getopt (or run getopt -T first) and document that MD2X_GETOPT names an executable that is run. (2) md2x-ps-string / md2x-validate-title in src/cli/lib/title-safe.sh do not bound title or version length before they go into the gs argv and pandoc -M argument; consider capping the title at 255 bytes, since the Node wrapper may forward untrusted titles.
+    - title: Docs still say missing dep exits 2
+      id: d7Tf
+      date: "2026-10-04"
+      tags:
+        - type:documentation
+        - priority:medium
+        - plan/phase:correctness-and-regression-tests
+        - effort:unspecified
+      text: The exit-code contract is now 0/1/2/3 (src/cli/lib/errors.sh) but docs/md2x-spec.md lines 60, 61, 95, README.md line 15, and docs/architecture.md lines 33, 36, 52, 53, 59, 77 still say a missing binary or WeasyPrint bootstrap failure exits 2. docs/architecture.md also still describes lib/parameters.sh as the flag parser (now lib/parse-options.sh), omits errors.sh, title-safe.sh, the bash 3.2 guard and stdin capture, says the stylesheet is passed via --css for every format (HTML now inlines via --include-in-header, DOCX gets none), and line 79 says the EXIT trap is for the CSS temp file (now the per-run work directory). These updates are already scheduled in the README, spec and architecture documentation tasks; verify those tasks close every listed line.
 closed: []
