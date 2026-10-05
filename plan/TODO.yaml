@@ -415,6 +415,7 @@ phases:
           path: phase-05-remediation-01/007-inode-safe-output-delivery.md
           done: false
           tier: sonnet-med
+          digest: Delivery stages a copy beside the target, re-checks it against every input with -ef, and renames it into place, so symlinks and hard links at the output path are never written through. Two of three new bats cases fail on old code; qa and bash 3.2 suite pass.
           findings:
             - m1SB
           git:
