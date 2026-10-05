@@ -429,3 +429,36 @@ ${bookmarks}"
       || md2x_fail "TOC anchor '#${anchor}' has no matching id=\"${anchor}\" in the same file"
   done <<< "${toc_anchors}"
 }
+
+# --- title-safe PostScript sink --------------------------------------------------------
+#
+# A title is interpolated into the Ghostscript header/footer program; an unescaped ')'
+# used to crash 'gs'. Each must convert and yield a PDF 'pdftk' can read.
+
+e2e_title_pdf_case() {
+  local title="$1"
+  e2e_require_pdf_engine
+  command -v gs >/dev/null 2>&1 || skip "real 'gs' not found on PATH"
+  command -v pdftk >/dev/null 2>&1 || skip "real 'pdftk' not found on PATH"
+
+  e2e_write_toc_nav_doc 'doc.md'
+
+  md2x_run --title "${title}" --flatten-dirs --output-path . doc.md
+
+  assert_success
+  e2e_assert_pdf_magic "./${title}.pdf"
+  pdftk "./${title}.pdf" dump_data > /dev/null \
+    || md2x_fail "pdftk could not read './${title}.pdf'"
+}
+
+@test "e2e: pdf with --title 'a)b' converts (unbalanced paren)" {
+  e2e_title_pdf_case 'a)b'
+}
+
+@test "e2e: pdf with --title 'x\y(z' converts (backslash and paren)" {
+  e2e_title_pdf_case 'x\y(z'
+}
+
+@test "e2e: pdf with a non-ASCII --title converts" {
+  e2e_title_pdf_case 'Ünïcødé 日本'
+}

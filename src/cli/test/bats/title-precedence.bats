@@ -40,10 +40,7 @@ teardown() {
 
   assert_success
   assert_file_exists './Foo.pdf'
-  local run_metadata
-  run_metadata="$(md2x_pandoc_capture metadata)"
-  [[ "${run_metadata}" == *"title: 'Foo'"* ]] \
-    || md2x_fail "expected captured metadata to carry the explicit title, got: ${run_metadata}"
+  assert_last_call_has_arg pandoc 'title=Foo'
 }
 
 # --- (b) a directory search resolving to exactly one file honors --title -------------

@@ -27,28 +27,24 @@ teardown() {
 
 # --- --infer-title ------------------------------------------------------------------
 
-@test "--infer-title embeds the title in the metadata file pandoc receives" {
+@test "--infer-title passes the title to pandoc as one -M argument" {
   md2x_write_doc 'report.md'
 
   md2x_run --infer-title --flatten-dirs --output-path . report.md
 
   assert_success
-  local run_metadata
-  run_metadata="$(md2x_pandoc_capture metadata)"
-  [[ "${run_metadata}" == *"title: 'report'"* ]] \
-    || md2x_fail "expected captured metadata to carry the title, got: ${run_metadata}"
+  assert_last_call_has_arg pandoc 'title=report'
+  refute_last_call_contains pandoc '--metadata-file'
 }
 
-@test "without --infer-title, the metadata file carries no title" {
+@test "without --infer-title, pandoc receives no title metadata" {
   md2x_write_doc 'report.md'
 
   md2x_run --flatten-dirs --output-path . report.md
 
   assert_success
-  local run_metadata
-  run_metadata="$(md2x_pandoc_capture metadata)"
-  [[ "${run_metadata}" != *'title:'* ]] \
-    || md2x_fail "expected captured metadata NOT to carry a title, got: ${run_metadata}"
+  refute_last_call_contains pandoc 'title='
+  refute_last_call_contains pandoc '--metadata-file'
 }
 
 # --- Pandoc's native --toc is retired -------------------------------------------------

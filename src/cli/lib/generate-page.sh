@@ -6,14 +6,12 @@ generate-page() {
   local DOC_DATA PAGE_COUNT MEDIA_DIMENSIONS XPAGE YPAGE HF_FONT_SIZE PG_NUMBER_X_OFFSET
   local VERSION_X_OFFSET FOOTER_Y_OFFSET HEADER_Y_OFFSET TITLE_X_OFFSET FOOTER_STRING
   [[ -z "${STDIN_MODE:-}" ]] || INPUT_LABEL='stdin'
-  local SETTINGS='---
-'
-  if [[ -n "${INFER_TITLE}" ]]; then
-    SETTINGS="${SETTINGS}title: '${TITLE}'
-"
-  fi
-  SETTINGS="${SETTINGS}...
-"
+  local PS_TITLE PS_VERSION
+  local -a METADATA_ARGS
+  # '--infer-title' passes the title as one '-M' argv element: pandoc keeps the value as a
+  # literal string (a metadata file would parse it as Markdown or YAML).
+  METADATA_ARGS=()
+  [[ -z "${INFER_TITLE}" ]] || METADATA_ARGS=(-M "title=${TITLE}")
 
 # TODO: support 'author' if known
   # echo "generate-page for ${MD_FILE}..."
@@ -75,7 +73,7 @@ generate-page() {
     --from gfm \
     --to ${INTERMEDIDATE_FORMAT} \
     ${STYLE_ARGS[@]+"${STYLE_ARGS[@]}"} \
-    --metadata-file <(echo "${SETTINGS}") \
+    ${METADATA_ARGS[@]+"${METADATA_ARGS[@]}"} \
     "${PREPROCESSED_FILE}" \
     -o "${BASE_OUTPUT}" \
     --log "${PANDOC_LOG_FILE}" \
@@ -123,6 +121,10 @@ generate-page() {
     # TODO: make the positioning relative to the margins, with proper justification; abstract into a 'top-left', 'top-
     # centered', 'top-right', 'bottom-right', 'bottom-centered', and 'bottom-left' abstraction
     # https://www.tek-tips.com/viewthread.cfm?qid=830058
+    # Both strings are untrusted text interpolated into a PostScript program: encode them.
+    PS_TITLE="$(md2x-ps-string "${TITLE}")"
+    PS_VERSION="$(md2x-ps-string "${VERSION:-}")"
+
     FOOTER_STRING="/Helvetica findfont \
       ${HF_FONT_SIZE} scalefont setfont \
       1 1  ${PAGE_COUNT} {      \
@@ -135,14 +137,14 @@ generate-page() {
 
     if [[ -n "${INFER_VERSION}" ]]; then
       FOOTER_STRING="${FOOTER_STRING}${VERSION_X_OFFSET} ${FOOTER_Y_OFFSET} moveto \
-      ( Version: ${VERSION} ) show "
+      ( Version: ${PS_VERSION} ) show "
     fi
 
     FOOTER_STRING="${FOOTER_STRING}PageNo 1 gt \
       { /Helvetica-Oblique findfont \
         ${HF_FONT_SIZE} scalefont setfont \
         ${TITLE_X_OFFSET} ${HEADER_Y_OFFSET} moveto \
-        ( "${TITLE}" ) show \
+        ( ${PS_TITLE} ) show \
         /Helvetica findfont \
         ${HF_FONT_SIZE} scalefont setfont \
       } if \

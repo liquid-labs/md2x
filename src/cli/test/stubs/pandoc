@@ -13,8 +13,12 @@
 # The invocation (argv[0] basename plus the full argument vector, tab separated) is
 # appended to "${MD2X_TEST_STUB_LOG}" when that variable is set.
 #
-# When "${MD2X_TEST_STUB_CAPTURE_DIR}" is set, the content behind the six
-# process-substitution/file arguments the CLI builds ('--metadata-file', '--css', the
+# '-M'/'--metadata' take a value (the CLI passes '-M title=<title>' for '--infer-title');
+# it is recorded in the argument log only, and tests assert on it there. The CLI no longer
+# passes '--metadata-file'; its capture below is kept only as a harmless legacy.
+#
+# When "${MD2X_TEST_STUB_CAPTURE_DIR}" is set, the content behind the
+# file arguments the CLI builds ('--metadata-file' if ever given, '--css', the
 # rewritten input document, '--include-before-body', '--include-after-body', and
 # '--include-in-header') is captured there as 'pandoc-<n>-metadata', 'pandoc-<n>-css',
 # 'pandoc-<n>-input', 'pandoc-<n>-body-open', 'pandoc-<n>-body-close' and
@@ -62,6 +66,8 @@ while (( I < ${#ARGS[@]} )); do
       OUTPUT_FILE="${ARGS[I + 1]:-}"; I=$(( I + 2 ));;
     --log)
       LOG_FILE="${ARGS[I + 1]:-}"; I=$(( I + 2 ));;
+    -M|--metadata)
+      I=$(( I + 2 ));;
     --metadata-file)
       METADATA_FILE="${ARGS[I + 1]:-}"; I=$(( I + 2 ));;
     --css)

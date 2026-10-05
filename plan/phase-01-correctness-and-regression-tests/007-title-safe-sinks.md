@@ -71,3 +71,10 @@ Out of scope:
 - [N4/N8 scope answer](../notes/n4-n8-scope-answer.md): the robustness part stays in scope, and the features are deferred.
 - `.flow/audit-interface.md` S7 and N8, under the project root: the reproductions.
 - `src/cli/test/stubs/gs`: it records the `-c` PostScript string in the stub log.
+
+## Status
+
+- Outcome: succeeded (2026-10-04).
+- Validation: `make qa` passes; `MD2X_TEST_BASH=/bin/bash make test-cli` passes (218 ok); real-toolchain title e2e cases pass; both greps return nothing. Pre-change build: the reject, `-M`, and gs-stub cases and the `a)b` / `x\y(z` e2e cases fail; the non-ASCII e2e and accepted-filename cases already passed (guards, not regressions).
+- Source: `src/cli/lib/title-safe.sh` (new), `src/cli/lib/generate-page.sh`, `src/cli/md2x.sh`, `src/cli/lib/index.sh`, `src/cli/test/stubs/pandoc`, `src/cli/test/bats/title-safe-sinks.bats`.
+- Known limitation: Helvetica glyph coverage for non-Latin titles (Phase 3 documents it).
