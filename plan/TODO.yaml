@@ -378,7 +378,8 @@ phases:
             - KhXI
           git:
             branch: plan/golden-release-hardening-05-004
-            commit: []
+            commit:
+                - 64b8280
             merge: null
         - number: 5
           slug: unforgeable-single-page-source-marker
