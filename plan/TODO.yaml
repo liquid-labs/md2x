@@ -75,7 +75,7 @@ phases:
           tier: sonnet-med
           digest: HTML output now embeds github.css inline via --include-in-header and no longer references the work directory. PDF keeps --css and DOCX gets no --css. Pandoc stub captures the header file; 4 new stub cases plus an extended e2e case guard the change; new HTML tests fail on pre-change code.
           git:
-            branch: null
+            branch: plan/golden-release-hardening-01-006
             commit: []
             merge: null
         - number: 7
