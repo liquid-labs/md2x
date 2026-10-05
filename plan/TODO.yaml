@@ -26,6 +26,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 3
+          slug: project-owned-option-parser
+          title: Project-Owned Option Parser
+          path: phase-01-correctness-and-regression-tests/003-project-owned-option-parser.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 2
       slug: interface-contract
       title: Interface Contract
