@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Single-page source marker is forgeable
-      id: z2v9
-      date: "2026-10-05"
-      tags:
-        - type:security
-        - priority:medium
-        - plan/phase:interface-contract
-        - effort:unspecified
-      text: 'The Lua filter src/cli/lib/md2x-links.lua recognizes the per-source marker by parsing any top-level ''<!-- md2x:source-dir=... source=... -->'' RawBlock, so a source document can contain a hand-written marker that redirects base_dir and source_name; later images and the warnings attributed to a source then resolve against an attacker-chosen directory (image existence checks and rewritten paths only, not code execution; relevant for --single-page over mixed-trust files). Make the marker unforgeable: a per-run random nonce passed with -M (generated in src/cli/md2x.sh, emitted by src/cli/lib/link-filter.sh) that the filter requires, or strip pre-existing markers from sources during concatenation. Add a regression test with a forged marker.'
     - title: Output overwrite check is advisory only
       id: m1SB
       date: "2026-10-05"
@@ -119,4 +110,9 @@ closed:
       title: test-pack fetches unpinned typescript
       disposition: dismissed
       reason: 'Fixed by remediation task 5.1: test-pack uses lockfile-pinned node_modules/.bin/tsc, no npx; silent fallback tracked by xDG1.'
+      date: "2026-10-05"
+    - id: z2v9
+      title: Single-page source marker is forgeable
+      disposition: dismissed
+      reason: 'Fixed by remediation task 5.5 for --single-page: per-run nonce required by the filter (md2x-links.lua:171-174), tests links-and-images.bats:234-250; multi-file front-matter gap tracked by xDG1.'
       date: "2026-10-05"
