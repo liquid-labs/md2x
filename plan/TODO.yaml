@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 1
-    tasks_added: 5
+    tasks_added: 6
 phases:
     - number: 1
       slug: correctness-and-regression-tests
@@ -380,6 +380,18 @@ phases:
           tier: sonnet-high
           findings:
             - z2v9
+          git:
+            branch: null
+            commit: []
+            merge: null
+        - number: 6
+          slug: harden-infer-version-git-calls
+          title: Neutralize Repository Git Config In Version Inference
+          path: phase-05-remediation-01/006-harden-infer-version-git-calls.md
+          done: false
+          tier: sonnet-med
+          findings:
+            - SmNy
           git:
             branch: null
             commit: []
