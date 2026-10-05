@@ -45,3 +45,7 @@ Out of scope:
 - [Design decisions: title handling, Node sink](../notes/design-decisions.md#title-handling): the Phase 1 minimal fix and the Phase 2 replacement.
 - [Audit coverage](../notes/audit-coverage.md): rows S7, S11 (P1 staging), and R2 (P1 minimal).
 - `src/node/md2x.js` around line 89: the current staging code.
+
+## Status
+
+Succeeded 2026-10-04. `src/node/md2x.js` now stages under `fs.mkdtempSync(os.tmpdir()/md2x-)` with fixed `input.md`; cleanup via `fs.rmSync`. Tests updated in `src/node/md2x.test.js`. `make qa` passes; coverage of `src/node/md2x.js` stays 100%. New tests fail on the pre-change code.

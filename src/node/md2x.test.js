@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, jest, mock, test } from 'bun:test'
 import fs from 'node:fs'
+import os from 'node:os'
 import fsPath from 'node:path'
 
 // Manual factory mock: shelljs is CommonJS, imported as a default import, and mutated at module load
@@ -10,9 +11,6 @@ mock.module('shelljs', () => ({
   default : {
     config      : {},
     exec        : jest.fn(),
-    tempdir     : jest.fn(),
-    mkdir       : jest.fn(),
-    rm          : jest.fn(),
     ShellString : jest.fn()
   }
 }))
@@ -22,6 +20,7 @@ const { md2x } = await import('./md2x')
 
 // The repo bin/md2x is a gitignored build output, so 'fs.existsSync' is stubbed to report only this path as present.
 const BIN_PATH = fsPath.join(import.meta.dir, '..', '..', 'bin', 'md2x')
+const STAGING_DIR = '/tmp/md2x-AbC123'
 const BIN = `'${BIN_PATH}'` // shellQuote(BIN_PATH); the path contains no single quotes
 
 // Builds a fake shelljs 'exec' result: 'code'/'stderr' as plain properties (md2x.js reads them directly) and
@@ -35,12 +34,15 @@ const mockExecResult = (code, stdout = '', stderr = '') => ({
 describe('md2x', () => {
   let shellStringTo
   let existsSpy
+  let mkdtempSpy
+  let rmSpy
 
   beforeEach(() => {
     jest.clearAllMocks()
     existsSpy = jest.spyOn(fs, 'existsSync').mockImplementation((path) => path === BIN_PATH)
     shell.exec.mockReturnValue(mockExecResult(0))
-    shell.tempdir.mockReturnValue('/tmp')
+    mkdtempSpy = jest.spyOn(fs, 'mkdtempSync').mockReturnValue(STAGING_DIR)
+    rmSpy = jest.spyOn(fs, 'rmSync').mockImplementation(() => {})
     shellStringTo = jest.fn()
     shell.ShellString.mockReturnValue({ to : shellStringTo })
   })
@@ -224,44 +226,45 @@ describe('md2x', () => {
 
       const files = md2x({ markdown : '# Hello', title : 'Title' })
 
-      expect(shell.tempdir).toHaveBeenCalledTimes(1)
-      expect(shell.mkdir).toHaveBeenCalledTimes(1)
-      const [mkdirFlag, stagingDir] = shell.mkdir.mock.calls[0]
-      expect(mkdirFlag).toBe('-p')
-      expect(stagingDir.startsWith(fsPath.join('/tmp', 'md2x') + fsPath.sep)).toBe(true)
+      expect(mkdtempSpy).toHaveBeenCalledTimes(1)
+      expect(mkdtempSpy).toHaveBeenCalledWith(fsPath.join(os.tmpdir(), 'md2x-'))
 
-      const stagingFile = fsPath.join(stagingDir, 'Title.md')
+      const stagingFile = fsPath.join(STAGING_DIR, 'input.md')
       expect(shell.ShellString).toHaveBeenCalledWith('# Hello')
       expect(shellStringTo).toHaveBeenCalledWith(stagingFile)
 
       const [command] = shell.exec.mock.calls[0]
-      // The command template always inserts a space before the (here empty, since 'sources' is not given)
-      // 'sourceSpec', and the staging-file append adds a second space, so two spaces separate the last flag from
-      // the (now single-quoted, per followup arUf) staging file path.
+      // Two spaces separate the last flag from the staging file: one from the empty 'sourceSpec', one from the append.
       expect(command).toBe(`${BIN} --list-files --output-format 'pdf' --title 'Title'  '${stagingFile}'`)
 
-      expect(shell.rm).toHaveBeenCalledTimes(1)
-      expect(shell.rm).toHaveBeenCalledWith('-r', stagingDir)
+      expect(rmSpy).toHaveBeenCalledTimes(1)
+      expect(rmSpy).toHaveBeenCalledWith(STAGING_DIR, { recursive : true, force : true })
       expect(files).toEqual(['/out/Title.pdf'])
     })
 
-    // followup arUf: 'title' feeds the trailing filename component of the staging path appended to the command,
-    // so an embedded single quote there is also part of the injection surface even though the containing
-    // directory is one this code controls. Confirms the appended staging-file argument is safely escaped.
-    test('escapes an embedded single quote in title within the appended staging file path', () => {
+    test('never derives the staging path from a path-traversal title', () => {
+      shell.exec.mockReturnValue(mockExecResult(0, '/out/esc.pdf\n'))
+
+      md2x({ markdown : '# Hello', title : '../esc' })
+
+      const stagingFile = fsPath.join(STAGING_DIR, 'input.md')
+      expect(shellStringTo).toHaveBeenCalledWith(stagingFile)
+      const [command] = shell.exec.mock.calls[0]
+      expect(command.endsWith(` '${stagingFile}'`)).toBe(true)
+      expect(command).toContain("--title '../esc'")
+      expect(command.replace("--title '../esc'", '')).not.toContain('esc')
+    })
+
+    test('keeps the staging file as input.md and escapes an embedded single quote in title', () => {
       shell.exec.mockReturnValue(mockExecResult(0, "/out/O'Brien.pdf\n"))
 
       const files = md2x({ markdown : '# Hello', title : "O'Brien" })
 
-      const [, stagingDir] = shell.mkdir.mock.calls[0]
-      const stagingFile = fsPath.join(stagingDir, "O'Brien.md")
+      const stagingFile = fsPath.join(STAGING_DIR, 'input.md')
       expect(shellStringTo).toHaveBeenCalledWith(stagingFile)
 
       const [command] = shell.exec.mock.calls[0]
-      const escapedStagingFile = `'${stagingFile.replace(/'/g, "'\\''")}'`
-      expect(command).toBe(
-        `${BIN} --list-files --output-format 'pdf' --title 'O'\\''Brien'  ${escapedStagingFile}`
-      )
+      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' --title 'O'\\''Brien'  '${stagingFile}'`)
 
       expect(files).toEqual(["/out/O'Brien.pdf"])
     })
@@ -271,20 +274,27 @@ describe('md2x', () => {
 
       expect(() => md2x({ markdown : '# Hello', title : 'Title' })).toThrow()
 
-      const [, stagingDir] = shell.mkdir.mock.calls[0]
-      expect(shell.rm).toHaveBeenCalledTimes(1)
-      expect(shell.rm).toHaveBeenCalledWith('-r', stagingDir)
+      expect(rmSpy).toHaveBeenCalledTimes(1)
+      expect(rmSpy).toHaveBeenCalledWith(STAGING_DIR, { recursive : true, force : true })
     })
 
-    // With no 'title' given for the markdown-string path, 'title' now defaults to 'Report' before the staging
-    // filename is built, so the staging file is named 'Report.md' rather than the literal 'undefined.md'.
-    test('defaults the staging filename to Report.md when no title is given (followup egcc, fixed)', () => {
+    test('still passes --title Report when no title is given, with the fixed staging file name', () => {
       shell.exec.mockReturnValue(mockExecResult(0, '/out/Report.pdf\n'))
 
       md2x({ markdown : '# Hello' })
 
-      const [, stagingDir] = shell.mkdir.mock.calls[0]
-      expect(shellStringTo).toHaveBeenCalledWith(fsPath.join(stagingDir, 'Report.md'))
+      expect(shellStringTo).toHaveBeenCalledWith(fsPath.join(STAGING_DIR, 'input.md'))
+      expect(shell.exec.mock.calls[0][0]).toContain("--title 'Report'")
+    })
+
+    test('does not use Math.random', () => {
+      const randomSpy = jest.spyOn(Math, 'random')
+      shell.exec.mockReturnValue(mockExecResult(0))
+
+      md2x({ markdown : '# Hello', title : 'T' })
+
+      expect(randomSpy).not.toHaveBeenCalled()
+      randomSpy.mockRestore()
     })
   })
 })

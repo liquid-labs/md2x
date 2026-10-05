@@ -4,6 +4,7 @@
 * pretty fast, even for substantial batch conversions, we just do it synchronously for now.
 */
 import fs from 'node:fs'
+import os from 'node:os'
 import fsPath from 'node:path'
 
 import shell from 'shelljs'
@@ -86,14 +87,14 @@ const md2x = ({
   else { // we have a string; initially tried to go straight from string to file, but that was causing problems:
     // shell.ShellString(markdown).exec(command, execOptions) was causing all leading spaces to be lost for some reason
     // testing with 'node -e 'const shell = require("shelljs"); console.log(shell.ShellString("  foo\n  bar").cat().toString())' looked OK, so the problem is with pandoc maybe?
-    const stagingDir = fsPath.join(shell.tempdir(), 'md2x', (Math.random() + '').slice(2))
-    shell.mkdir('-p', stagingDir)
-    const stagingFile = fsPath.join(stagingDir, `${title}.md`)
-    shell.ShellString(markdown).to(stagingFile)
+    // The staging file name is fixed and never derived from 'title' (which may contain path separators).
+    const stagingDir = fs.mkdtempSync(fsPath.join(os.tmpdir(), 'md2x-'))
+    const stagingFile = fsPath.join(stagingDir, 'input.md')
     try {
+      shell.ShellString(markdown).to(stagingFile)
       result = shell.exec(command + ' ' + shellQuote(stagingFile), execOptions)
     }
-    finally { shell.rm('-r', stagingDir) }// cleanup
+    finally { fs.rmSync(stagingDir, { recursive : true, force : true }) }// cleanup
   }
 
   if (result.code !== 0) {
