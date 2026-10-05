@@ -51,3 +51,11 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: HTML output from src/cli/lib/generate-page.sh is not self-contained. The 1.0 hardening inlines only the bundled CSS; relative images stay external, resolved relative to the output file. An opt-in mode (for example a flag mapped to pandoc --embed-resources, pandoc 2.19 or newer) would inline images and other local assets as data URIs, so a single .html file can be moved or emailed. This needs a decision on the pandoc version floor and on remote-resource fetching, which is SSRF-relevant per the WeasyPrint caveat in docs/md2x-spec.md. Excluded from the 1.0 hardening scope.
+    - title: 'Deferred: --jobs/progress, header/footer/font'
+      id: 1wy6
+      date: "2026-10-04"
+      tags:
+        - type:enhancement
+        - priority:low
+        - effort:unspecified
+      text: 'From 1.0 audit (audit-interface.md N4 and feature parts of N8), deferred by user decision during golden-release-hardening planning: (a) --jobs parallelism and progress output; (b) configurable header/footer, first-page header, font. Title safety for non-ASCII/PostScript-special characters is NOT deferred; it is in the plan.'
