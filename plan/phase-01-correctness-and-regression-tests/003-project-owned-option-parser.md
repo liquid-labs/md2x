@@ -110,3 +110,10 @@ architectural_impact: true
 - After the parser module and getopt probe exist, with the old call still in place.
 - After `md2x.sh` is switched over and the toolkit imports are removed.
 - After the harness change and `options.bats`.
+
+## Status
+
+- Outcome: succeeded (2026-10-04).
+- Validation: `make qa` passes; the full bats suite (185 cases) passes under `MD2X_TEST_BASH=/bin/bash`; `PATH=/usr/bin:/bin bin/md2x --help` exits 0; the only non-comment `perl` in `bin/md2x` is the link converter.
+- New: `src/cli/lib/parse-options.sh` (flag table `MD2X_OPTION_TABLE`, rows `short|long|flag|value|VARIABLE`, `-` for no short); `src/cli/test/bats/options.bats` (26 cases). Changed: `src/cli/md2x.sh`, `src/cli/lib/index.sh`, `src/cli/test/helpers/common.bash` (`brew` removed from passthrough), `README.md` and `AGENTS.md` (stale brew statements).
+- Note: the literal `grep -c "tput "` also matches the word "output " in pdftk/pandoc comments and code, so it cannot print 0; a `\btput ` check does print no matches.
