@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Directory arg starting with - read by find
-      id: yV1b
-      date: "2026-10-05"
-      tags:
-        - type:bug
-        - priority:medium
-        - plan/phase:interface-contract
-        - effort:unspecified
-      text: In src/cli/md2x.sh a search root whose name starts with '-' (for example a directory argument '-d') is passed to find unprefixed and is read as a find option instead of a path. Prefix such roots with './' (or pass them after an explicit path form) before calling find, and add a regression test.
     - title: Filter pandoc template user-select warning
       id: KhXI
       date: "2026-10-05"
@@ -147,4 +138,9 @@ closed:
       title: Image paths may escape source tree
       disposition: promoted
       ref: nPPK
+      date: "2026-10-05"
+    - id: yV1b
+      title: Directory arg starting with - read by find
+      disposition: dismissed
+      reason: 'Fixed by remediation task 5.3: dash-leading roots passed to find as ./root (md2x.sh:314-319), test input-discovery.bats:270; remaining find-token roots tracked by wgQ3.'
       date: "2026-10-05"
