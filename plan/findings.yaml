@@ -54,6 +54,15 @@ items:
         - plan/phase:interface-contract
         - effort:unspecified
       text: The JSDoc in src/node/index.d.ts (around lines 10-17) says inferTitle and inferVersion "infer ... from the content" and singlePage "Render a single page". The CLI actually embeds the --title or filename-derived title as metadata (inferTitle), takes the version from the first input's git repository package.json (inferVersion), and concatenates all inputs into one document (singlePage). Reword these shipped type docs to match the CLI help text.
+    - title: test-pack fetches unpinned typescript
+      id: tT72
+      date: "2026-10-05"
+      tags:
+        - type:security
+        - priority:low
+        - plan/phase:interface-contract
+        - effort:unspecified
+      text: scripts/test-pack.sh (TSC fallback, around lines 58-62) runs 'npx --yes -p typescript tsc' when tsc is not on PATH, fetching and executing an unpinned latest typescript at release time; the Makefile comments explicitly reject this pattern for dev tools. Use a lockfile-pinned typescript devDependency (node_modules/.bin/tsc) or a pinned version, or drop the network fallback and use the existing syntactic-check branch.
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
