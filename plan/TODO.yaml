@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 1
-    tasks_added: 3
+    tasks_added: 4
 phases:
     - number: 1
       slug: correctness-and-regression-tests
@@ -356,6 +356,18 @@ phases:
           findings:
             - 3rV7
             - yV1b
+          git:
+            branch: null
+            commit: []
+            merge: null
+        - number: 4
+          slug: filter-pandoc-user-select-warning
+          title: Filter Pandoc Template User-Select Warning From PDF Stderr
+          path: phase-05-remediation-01/004-filter-pandoc-user-select-warning.md
+          done: false
+          tier: sonnet-med
+          findings:
+            - KhXI
           git:
             branch: null
             commit: []
