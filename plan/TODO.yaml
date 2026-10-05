@@ -333,7 +333,7 @@ phases:
             - 8xEp
             - tT72
           git:
-            branch: null
+            branch: plan/golden-release-hardening-05-001
             commit: []
             merge: null
         - number: 2
