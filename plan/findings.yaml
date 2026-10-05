@@ -1,5 +1,14 @@
 version: 2
-items: []
+items:
+    - title: Directory arg starting with - read by find
+      id: yV1b
+      date: "2026-10-05"
+      tags:
+        - type:bug
+        - priority:medium
+        - plan/phase:interface-contract
+        - effort:unspecified
+      text: In src/cli/md2x.sh a search root whose name starts with '-' (for example a directory argument '-d') is passed to find unprefixed and is read as a find option instead of a path. Prefix such roots with './' (or pass them after an explicit path form) before calling find, and add a regression test.
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
