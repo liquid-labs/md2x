@@ -458,7 +458,7 @@ phases:
             branch: plan/golden-release-hardening-06-002
             commit:
                 - 82fb9b5
-            merge: null
+            merge: 38cfbf66a7fa146970170ee6e60e6bd9393e482d
         - number: 3
           slug: always-pass-filter-nonce-and-harden-test-pack
           title: Always Pass The Marker Nonce And Make Test-Pack Checks Fail Closed
