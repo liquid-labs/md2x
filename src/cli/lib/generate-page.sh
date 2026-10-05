@@ -6,6 +6,9 @@ generate-page() {
   local DOC_DATA PAGE_COUNT MEDIA_DIMENSIONS XPAGE YPAGE HF_FONT_SIZE PG_NUMBER_X_OFFSET
   local VERSION_X_OFFSET FOOTER_Y_OFFSET HEADER_Y_OFFSET TITLE_X_OFFSET FOOTER_STRING
   [[ -z "${STDIN_MODE:-}" ]] || INPUT_LABEL='stdin'
+  # The label reaches stderr messages; a file name is untrusted, so show it control-free.
+  local INPUT_DISPLAY PIPE_STATUS
+  INPUT_DISPLAY="$(md2x-title-display "${INPUT_LABEL}")"
   local PS_TITLE PS_VERSION
   local -a METADATA_ARGS
   # '--infer-title' passes the title as one '-M' argv element: pandoc keeps the value as a
@@ -59,11 +62,17 @@ generate-page() {
   # preprocessor runs ahead of 'LINK_CONVERTER': the two do not interfere, since
   # 'LINK_CONVERTER' only rewrites links whose target ends in '.md)', and generated
   # TOC entries end in ')' directly after a '#anchor'.
-  cat "${MD_FILE}" \
-    | python3 -c "${TOC_PREPROCESSOR}" --mode "${TOC_MODE}" \
+  cat -- "${MD_FILE}" \
+    | python3 -c "${TOC_PREPROCESSOR}" --mode "${TOC_MODE}" --source-name "${INPUT_DISPLAY}" \
     | eval $LINK_CONVERTER \
     > "${PREPROCESSED_FILE}" \
-    || md2x-die-runtime "TOC preprocessing failed for '${INPUT_LABEL}'."
+    || {
+      # Status 4 is the preprocessor's invalid-encoding signal; it has already printed an
+      # md2x-formatted message, so only the exit status remains to be set.
+      PIPE_STATUS=("${PIPESTATUS[@]}")
+      [[ "${PIPE_STATUS[1]:-}" != 4 ]] || exit 1
+      md2x-die-runtime "TOC preprocessing failed for '${INPUT_DISPLAY}'."
+    }
 
   pandoc \
     $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
@@ -78,7 +87,7 @@ generate-page() {
     -o "${BASE_OUTPUT}" \
     --log "${PANDOC_LOG_FILE}" \
     1>/dev/null \
-    || md2x-die-runtime "pandoc failed for '${INPUT_LABEL}'."
+    || md2x-die-runtime "pandoc failed for '${INPUT_DISPLAY}'."
   # Pandoc's own stdout is inert when '-o <file>' is given; the explicit redirect
   # guarantees stdout purity for '--to-stdout'/'--list-files' by construction rather
   # than by relying on that behavior. Stderr is left untouched: WeasyPrint runs as a
@@ -101,7 +110,7 @@ generate-page() {
     # footers as part of the first run.
 
     DOC_DATA="$(pdftk "${BASE_OUTPUT}" dump_data)" \
-      || md2x-die-runtime "pdftk failed for '${INPUT_LABEL}'."
+      || md2x-die-runtime "pdftk failed for '${INPUT_DISPLAY}'."
     PAGE_COUNT=$(echo "${DOC_DATA}" | grep NumberOfPages | cut -d: -f2)
     MEDIA_DIMENSIONS=$(echo "${DOC_DATA}" | grep PageMediaDimensions | head -n 1)
     XPAGE=$(echo "${MEDIA_DIMENSIONS}" | cut -d: -f2 | cut -d' ' -f 2)
@@ -155,10 +164,10 @@ generate-page() {
       -g${XPAGE}0x${YPAGE}0         \
       -c "${FOOTER_STRING}"         \
       -q > /dev/null \
-      || md2x-die-runtime "gs failed for '${INPUT_LABEL}'."
+      || md2x-die-runtime "gs failed for '${INPUT_DISPLAY}'."
 
     pdftk "${BASE_OUTPUT}" multistamp "${OVERLAY_FILE}" output "${STAMPED_FILE}" \
-      || md2x-die-runtime "pdftk failed for '${INPUT_LABEL}'."
+      || md2x-die-runtime "pdftk failed for '${INPUT_DISPLAY}'."
     mv "${STAMPED_FILE}" "${BASE_OUTPUT}"
   fi
 

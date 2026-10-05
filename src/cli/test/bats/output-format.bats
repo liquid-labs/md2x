@@ -67,7 +67,7 @@ teardown() {
   md2x_run --output-format bogus --flatten-dirs --output-path . report.md
 
   assert_failure 2
-  assert_stderr_contains "Unsupported output format 'bogus'"
+  assert_stderr_contains "unsupported output format 'bogus' (expected pdf|html|docx)"
   refute_stub_called pandoc
   assert_file_not_exists './report.pdf'
 }

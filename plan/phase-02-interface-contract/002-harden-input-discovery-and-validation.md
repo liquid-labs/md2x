@@ -94,3 +94,13 @@ Follow [Input discovery](../notes/design-decisions.md#input-discovery):
 - After the no-args, empty-directory, `-` mixing, and format validation.
 - After the N7 encoding check in `toc-preprocess.py`.
 - After the bats cases.
+
+## Status
+
+Outcome: succeeded (2026-10-05).
+
+- Resolved input list (`RESOLVED_INPUTS`/`RESOLVED_COUNT`, records `<file><tab><root>`) is built once in `src/cli/md2x.sh` before conversion with case-insensitive `.md`/`.markdown` discovery and canonical-path dedup (first occurrence wins); the `--title` gate and the conversion loop both consume it. `md2x-list-inputs` and the search-root error file are gone; an unreadable root is recorded in memory and still reported after the files found so far convert.
+- No-args, empty-dir, `-` mixing, case-insensitive `-F` validation, help text: `src/cli/md2x.sh`. Helpers `md2x-has-control-chars` and `md2x-strip-markdown-ext`: `src/cli/lib/title-safe.sh`.
+- N7: `src/cli/lib/toc-preprocess.py` gained `--source-name` and `--validate`, strict UTF-8/NUL check, exit status 4 mapped to md2x exit 1 in `src/cli/lib/generate-page.sh` (single-page validates each source separately).
+- Tests: `src/cli/test/bats/input-discovery.bats` (new, 25 cases); `output-format.bats` message updated.
+- Validation: `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` pass; new cases fail on pre-task code (BOM case is a positive guard and passes before and after).
