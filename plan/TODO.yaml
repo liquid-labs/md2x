@@ -391,7 +391,7 @@ phases:
           findings:
             - z2v9
           git:
-            branch: null
+            branch: plan/golden-release-hardening-05-005
             commit: []
             merge: null
         - number: 6
