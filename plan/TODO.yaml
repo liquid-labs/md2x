@@ -90,7 +90,7 @@ phases:
             branch: plan/golden-release-hardening-01-007
             commit:
                 - 22ba07d
-            merge: null
+            merge: 2aa7cfdda9ba4888423fda639cb7ad944ceed7e1
         - number: 8
           slug: node-staging-path
           title: Node Staging Path
