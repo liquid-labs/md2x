@@ -67,3 +67,7 @@ Out of scope: README, spec, and `AGENTS.md` edits, which belong to Phase 3. Help
 - After the `Makefile` injection works and `bin/md2x --version` prints the version.
 - After the help-text edits.
 - After the bats cases.
+
+## Status
+
+Succeeded, 2026-10-05. `--version` is registered long-only in `MD2X_OPTION_TABLE` (`src/cli/lib/parse-options.sh`), handled before the dependency preflight in `src/cli/md2x.sh` (also works with no GNU getopt via an exact-match argv scan; `--help` wins). The `Makefile` `CLI_BIN` recipe substitutes the `@MD2X_VERSION@` placeholder from `package.json` (sed extraction, build fails on an unreadable or odd version) and lists `package.json` as a prerequisite. Help text updated (formats, exit codes, homepage, `--version` row, prefix/`=` note). Tests: `src/cli/test/bats/version-and-help.bats`. Validation: `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` (226 ok, 0 not ok) passed.

@@ -41,9 +41,17 @@ $(NODE_DIST): package.json $(NODE_FILES)
 	mkdir -p $(dir $@)
 	bun build $(NODE_SRC)/index.js --target=node --format=cjs --packages=external --sourcemap=inline --outfile=$@
 
-$(CLI_BIN): $(CLI_SRC) | $(BASH_ROLLUP)
+# The package.json version is injected into the rolled-up script as a literal, replacing the
+# '@MD2X_VERSION@' placeholder in src/cli/md2x.sh. It is read without jq or node, and the
+# build fails rather than embed an empty or odd version. package.json is a prerequisite so a
+# version bump rebuilds bin/md2x.
+$(CLI_BIN): $(CLI_SRC) package.json | $(BASH_ROLLUP)
 	mkdir -p $(dir $@)
 	$(BASH_ROLLUP) $< $@
+	@v="$$(sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' package.json | head -n 1)"; \
+	case "$$v" in ''|*[!0-9A-Za-z.+-]*) echo "error: could not read a valid version from package.json (got '$$v')" >&2; exit 1;; esac; \
+	grep -q '@MD2X_VERSION@' $@ || { echo "error: version placeholder missing from $@" >&2; exit 1; }; \
+	sed "s/@MD2X_VERSION@/$$v/g" $@ > $@.tmp && cat $@.tmp > $@ && rm -f $@.tmp
 
 # test recipes
 #
