@@ -99,3 +99,13 @@ items:
         - plan/phase:interface-contract
         - plan/slug:golden-release-hardening
       text: 'Two items for the CI and release documentation tasks: (1) the pandoc >= 2.0 floor in src/cli/lib/preflight.sh is derived from changelogs only and only pandoc 3.10.1 has been exercised; add a CI job on an older pandoc to validate the claimed floor or raise the floor to the oldest tested release. (2) RELEASING.md line 7 still lists the published artifacts as bin/md2x and dist/md2x.js; the build now produces dist/md2x.mjs, dist/md2x.cjs and dist/index.d.ts (package.json files is bin/* and dist/*). Confirm the release-procedure task covers the artifact list.'
+    - title: Image paths may escape source tree
+      id: nPPK
+      date: "2026-10-05"
+      tags:
+        - type:security
+        - priority:low
+        - effort:unspecified
+        - plan/phase:interface-contract
+        - plan/slug:golden-release-hardening
+      text: 'In src/cli/lib/md2x-links.lua (image path resolution) targets are percent-decoded and lexically resolved with ''..'' allowed to climb above the source directory, then rewritten to an absolute path for pdf/docx; pandoc runs without --sandbox and WeasyPrint fetches the file, so untrusted markdown can make the converter embed arbitrary local image files, and the ''could not find image'' warning acts as a filesystem oracle. Absolute and scheme: targets were already passed through, so this extends an existing exposure. OPEN QUESTION (quoted data): what is md2x''s trust model for local files that Markdown image references point to? Option A (recommended): document only - state in SECURITY.md and the README that image references, including absolute and parent-relative paths, are read from the local filesystem and embedded and that the ''could not find image'' warning reveals file existence, and advise against converting untrusted Markdown on hosts with sensitive files; no behavior change. Option B: confine - in md2x-links.lua leave unchanged and warn on any image target resolving outside the source tree or cwd, and consider pandoc --sandbox; closes the exposure but breaks ../assets/x.png layouts and absolute paths, needs a test matrix and an escape-hatch flag.'
