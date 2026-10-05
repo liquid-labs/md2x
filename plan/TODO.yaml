@@ -2,7 +2,7 @@ slug: golden-release-hardening
 version: 1
 title: ""
 remediation:
-    rounds: 1
+    rounds: 2
     tasks_added: 7
 phases:
     - number: 1
@@ -423,3 +423,8 @@ phases:
             commit:
                 - c5acb94
             merge: fcd107359d1bb22c0ef8cfbd0377df1edd8fbfd3
+    - number: 6
+      slug: remediation-02
+      title: Remediation Round 2
+      kind: remediation
+      tasks: []
