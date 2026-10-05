@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: index.d.ts JSDoc misdescribes options
-      id: YkUH
-      date: "2026-10-05"
-      tags:
-        - type:documentation
-        - priority:low
-        - plan/phase:interface-contract
-        - effort:unspecified
-      text: The JSDoc in src/node/index.d.ts (around lines 10-17) says inferTitle and inferVersion "infer ... from the content" and singlePage "Render a single page". The CLI actually embeds the --title or filename-derived title as metadata (inferTitle), takes the version from the first input's git repository package.json (inferVersion), and concatenates all inputs into one document (singlePage). Reword these shipped type docs to match the CLI help text.
     - title: test-pack fetches unpinned typescript
       id: tT72
       date: "2026-10-05"
@@ -127,4 +118,9 @@ closed:
       title: -o with trailing slash fails after convert
       disposition: dismissed
       reason: 'Fixed by remediation task 5.3: trailing-slash -o rejected with exit 2 at plan time (md2x.sh:207-211), test output-options.bats:391.'
+      date: "2026-10-05"
+    - id: YkUH
+      title: index.d.ts JSDoc misdescribes options
+      disposition: dismissed
+      reason: 'Fixed by remediation task 5.2: index.d.ts JSDoc for inferTitle, inferVersion and singlePage now matches the CLI.'
       date: "2026-10-05"
