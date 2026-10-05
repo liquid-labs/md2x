@@ -5,7 +5,7 @@ generate-page() {
   local -a INCLUDE_BODY_ARGS
   local DOC_DATA PAGE_COUNT MEDIA_DIMENSIONS XPAGE YPAGE HF_FONT_SIZE PG_NUMBER_X_OFFSET
   local VERSION_X_OFFSET FOOTER_Y_OFFSET HEADER_Y_OFFSET TITLE_X_OFFSET FOOTER_STRING
-  [[ -z "${INPUT}" ]] || INPUT_LABEL='stdin'
+  [[ -z "${STDIN_MODE:-}" ]] || INPUT_LABEL='stdin'
   local SETTINGS='---
 '
   if [[ -n "${INFER_TITLE}" ]]; then
@@ -47,12 +47,12 @@ generate-page() {
   # report success; as a plain pipeline under 'pipefail', any stage's failure aborts
   # the conversion. '${TOC_PREPROCESSOR}' is the inlined 'toc-preprocess.py' source
   # (see 'md2x.sh'); running it via 'python3 -c' lets the document occupy stdin
-  # without a fourth temp file. 'printf '%s\n'' reproduces the stdin-accumulation
-  # path's previous 'echo "${INPUT}"' behavior (one trailing newline). The
+  # without a fourth temp file. Stdin mode reads the captured copy in
+  # the work directory, byte for byte, via 'MD_FILE'. The
   # preprocessor runs ahead of 'LINK_CONVERTER': the two do not interfere, since
   # 'LINK_CONVERTER' only rewrites links whose target ends in '.md)', and generated
   # TOC entries end in ')' directly after a '#anchor'.
-  if [[ -z "${INPUT}" ]]; then cat "${MD_FILE}"; else printf '%s\n' "${INPUT}"; fi \
+  cat "${MD_FILE}" \
     | python3 -c "${TOC_PREPROCESSOR}" --mode "${TOC_MODE}" \
     | eval $LINK_CONVERTER \
     > "${PREPROCESSED_FILE}" \
