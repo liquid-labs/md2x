@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: infer-version status may recurse submodules
-      id: JEAt
-      date: "2026-10-05"
-      tags:
-        - type:security
-        - plan/phase:remediation-02
-        - priority:unspecified
-        - effort:unspecified
-      text: md2x-infer-config-refusal in src/cli/lib/preflight.sh inspects only the top-level repository's own config before md2x-infer-version runs 'git status --porcelain'. Status can descend into submodule work trees (gitlinks whose directory carries its own .git), and those submodules' own configs (filter.*.clean, core.fsmonitor in a separate git dir) are not read by the pre-check. Consider passing --ignore-submodules=all to the status call, or checking submodule configs, and verify whether this is reachable with an untrusted input repository.
     - title: Config denylist bypassed; use allowlist
       id: U0Pj
       date: "2026-10-05"
@@ -122,4 +113,9 @@ closed:
       title: infer-version git status runs clean filters
       disposition: dismissed
       reason: 'Superseded: remediation task 6.1 fixed the reproduced clean-filter case, but the denylist was shown bypassable; the complete fix is tracked by U0Pj (allowlist) and Qbv2 (pipefail fail-open).'
+      date: "2026-10-05"
+    - id: JEAt
+      title: infer-version status may recurse submodules
+      disposition: dismissed
+      reason: 'Duplicate: the reachable submodule git status case is covered by U0Pj (allowlist plus --ignore-submodules=all).'
       date: "2026-10-05"
