@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 2
-    tasks_added: 9
+    tasks_added: 10
 phases:
     - number: 1
       slug: correctness-and-regression-tests
@@ -450,6 +450,18 @@ phases:
           findings:
             - wgQ3
             - m1SB
+          git:
+            branch: null
+            commit: []
+            merge: null
+        - number: 3
+          slug: always-pass-filter-nonce-and-harden-test-pack
+          title: Always Pass The Marker Nonce And Make Test-Pack Checks Fail Closed
+          path: phase-06-remediation-02/003-always-pass-filter-nonce-and-harden-test-pack.md
+          done: false
+          tier: sonnet-med
+          findings:
+            - xDG1
           git:
             branch: null
             commit: []
