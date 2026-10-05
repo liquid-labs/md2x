@@ -348,7 +348,7 @@ phases:
             - Xylz
             - YkUH
           git:
-            branch: null
+            branch: plan/golden-release-hardening-05-002
             commit: []
             merge: null
         - number: 3
