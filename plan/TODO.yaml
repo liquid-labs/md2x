@@ -394,7 +394,7 @@ phases:
             branch: plan/golden-release-hardening-05-005
             commit:
                 - d349562
-            merge: null
+            merge: d21be7b8943fd6636b450d6445d3967d37f1c63d
         - number: 6
           slug: harden-infer-version-git-calls
           title: Neutralize Repository Git Config In Version Inference
