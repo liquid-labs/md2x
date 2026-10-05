@@ -69,3 +69,13 @@ items:
         - plan/phase:correctness-and-regression-tests
         - plan/slug:golden-release-hardening
       text: A file name found by recursive directory search can contain ESC or other control characters and flows unescaped into stderr/stdout messages (pandoc failed for '${INPUT_LABEL}', Created ${BASE_OUTPUT}, --list-files output) in src/cli/lib/generate-page.sh and src/cli/md2x.sh, allowing terminal-escape injection; embedded newlines also break the line-oriented md2x-list-inputs records. md2x-title-display in src/cli/lib/title-safe.sh exists but is not applied to these sinks. Pass INPUT_LABEL and derived names through md2x-title-display, and optionally reject control characters in discovered file names.
+    - title: Harden getopt eval and cap title length
+      id: ttPU
+      date: "2026-10-04"
+      tags:
+        - type:security
+        - priority:high
+        - effort:small
+        - plan/phase:correctness-and-regression-tests
+        - plan/slug:golden-release-hardening
+      text: Two hardening suggestions. (1) src/cli/lib/parse-options.sh evals getopt output; with GETOPT_COMPATIBLE set, util-linux getopt emits unquoted output while still passing --test, so unset GETOPT_COMPATIBLE before invoking getopt (or run getopt -T first) and document that MD2X_GETOPT names an executable that is run. (2) md2x-ps-string / md2x-validate-title in src/cli/lib/title-safe.sh do not bound title or version length before they go into the gs argv and pandoc -M argument; consider capping the title at 255 bytes, since the Node wrapper may forward untrusted titles.
