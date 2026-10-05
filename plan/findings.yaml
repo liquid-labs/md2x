@@ -63,6 +63,15 @@ items:
         - plan/phase:interface-contract
         - effort:unspecified
       text: scripts/test-pack.sh (TSC fallback, around lines 58-62) runs 'npx --yes -p typescript tsc' when tsc is not on PATH, fetching and executing an unpinned latest typescript at release time; the Makefile comments explicitly reject this pattern for dev tools. Use a lockfile-pinned typescript devDependency (node_modules/.bin/tsc) or a pinned version, or drop the network fallback and use the existing syntactic-check branch.
+    - title: Single-page source marker is forgeable
+      id: z2v9
+      date: "2026-10-05"
+      tags:
+        - type:security
+        - priority:medium
+        - plan/phase:interface-contract
+        - effort:unspecified
+      text: 'The Lua filter src/cli/lib/md2x-links.lua recognizes the per-source marker by parsing any top-level ''<!-- md2x:source-dir=... source=... -->'' RawBlock, so a source document can contain a hand-written marker that redirects base_dir and source_name; later images and the warnings attributed to a source then resolve against an attacker-chosen directory (image existence checks and rewritten paths only, not code execution; relevant for --single-page over mixed-trust files). Make the marker unforgeable: a per-run random nonce passed with -M (generated in src/cli/md2x.sh, emitted by src/cli/lib/link-filter.sh) that the filter requires, or strip pre-existing markers from sources during concatenation. Add a regression test with a forged marker.'
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
