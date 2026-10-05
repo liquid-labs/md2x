@@ -462,3 +462,28 @@ e2e_title_pdf_case() {
 @test "e2e: pdf with a non-ASCII --title converts" {
   e2e_title_pdf_case 'Ünïcødé 日本'
 }
+
+@test "e2e: -o - streams a real PDF to stdout and leaves no .pdf in the cwd" {
+  e2e_require_pdf_engine
+
+  md2x_copy_fixture 'tiny-doc.md'
+
+  md2x_run -o - tiny-doc.md
+
+  assert_success
+  [[ "${output:0:4}" == '%PDF' ]] || md2x_fail "expected stdout to start with '%PDF', got: ${output:0:4}"
+  local pdfs
+  pdfs="$(find . -name '*.pdf')"
+  [[ -z "${pdfs}" ]] || md2x_fail "expected no .pdf file in the cwd, found: ${pdfs}"
+}
+
+@test "e2e: -o with an unrecognized extension writes a real PDF to the path as given" {
+  e2e_require_pdf_engine
+
+  md2x_copy_fixture 'tiny-doc.md'
+
+  md2x_run -o out/report tiny-doc.md
+
+  assert_success
+  e2e_assert_pdf_magic './out/report'
+}
