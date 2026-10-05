@@ -36,6 +36,15 @@ items:
         - plan/phase:remediation-01
         - effort:unspecified
       text: 'Two small hardening items. (1) The per-run marker nonce is passed with -M only in --single-page mode (src/cli/lib/generate-page.sh ~59-64; filter at src/cli/lib/md2x-links.lua ~207-212), so in multi-file mode a source''s own YAML front matter ''md2x-nonce: x'' plus a ''nonce=x'' marker comment would be honored; always pass a random nonce (or an unforgeable sentinel) so source metadata cannot supply it, and add a regression case. (2) scripts/test-pack.sh (~64-66, 83-89): the embedded-build-path check treats a grep error (exit 2, for example a missing bundle) as no match and passes; ROOT uses logical pwd so a symlinked checkout would not match a physical path embedded by bun; and the TypeScript step silently falls back to a grep of the .d.ts when node_modules/.bin/tsc is absent. Check file existence first, also grep ''pwd -P'', and make a missing pinned tsc a hard failure in the release target.'
+    - title: infer-version status may recurse submodules
+      id: JEAt
+      date: "2026-10-05"
+      tags:
+        - type:security
+        - plan/phase:remediation-02
+        - priority:unspecified
+        - effort:unspecified
+      text: md2x-infer-config-refusal in src/cli/lib/preflight.sh inspects only the top-level repository's own config before md2x-infer-version runs 'git status --porcelain'. Status can descend into submodule work trees (gitlinks whose directory carries its own .git), and those submodules' own configs (filter.*.clean, core.fsmonitor in a separate git dir) are not read by the pre-check. Consider passing --ignore-submodules=all to the status call, or checking submodule configs, and verify whether this is reachable with an untrusted input repository.
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
