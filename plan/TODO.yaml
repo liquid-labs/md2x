@@ -177,7 +177,8 @@ phases:
           digest: 'Pruned WeasyPrint-unsupported CSS from github.css (fill, word-wrap break-all, max-width auto, overflow-x/y, unprefixed user-select, spin-button rule, kbd box-shadow); PDFs rasterize byte-identical. One pandoc-template-owned ''user-select: none'' WARNING remains and is exempted in the new e2e regression test.'
           git:
             branch: plan/golden-release-hardening-02-006
-            commit: []
+            commit:
+                - a11e4c4
             merge: null
         - number: 7
           slug: rewrite-node-wrapper-on-child-process
