@@ -90,6 +90,15 @@ items:
         - plan/phase:interface-contract
         - effort:unspecified
       text: 'The collision and input-overwrite checks planned in src/cli/md2x.sh / src/cli/lib/output-plan.sh compare canonical path strings at plan time, but generate-page.sh delivers later with ''cp -- output FINAL_OUTPUT'': (a) a symlink swapped into the target or its parent after planning (for example during a long WeasyPrint install) defeats the check because cp follows a final-component symlink; (b) a hard link to an input, or another mount path to the same inode, is not detected. Also find lists symlinked *.md files (! -type d) so a symlink in a searched tree is read. Re-check inode equality (test -ef) against each input immediately before delivery, write via a temp file in the target directory then mv (or use no-follow semantics), and consider find -type f or document that symlinked sources are followed.'
+    - title: infer-version git may run repo config
+      id: SmNy
+      date: "2026-10-05"
+      tags:
+        - type:security
+        - priority:low
+        - plan/phase:interface-contract
+        - effort:unspecified
+      text: md2x-infer-version in src/cli/lib/preflight.sh runs 'git -C <input dir> rev-parse' and 'git status --porcelain' in a directory taken from the inputs; in a repository with attacker-supplied .git/config (for example an extracted archive), core.fsmonitor or similar settings make git execute commands. Run git with '-c core.fsmonitor= -c core.hooksPath=/dev/null' (and GIT_CONFIG_NOSYSTEM=1, status --no-optional-locks), or document that --infer-version assumes a trusted repository.
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
