@@ -81,3 +81,7 @@ Follow the Packaging and Validation bullets of [Node wrapper](../notes/design-de
 - After the dual build and ESM-safe bin resolution.
 - After `index.d.ts` and the `package.json` `exports`.
 - After the pack verification passes.
+
+## Status
+
+Outcome: succeeded (2026-10-05). `make clean && make all && make qa` and `make test-pack` pass. Changed: `Makefile`, `package.json`, `src/node/md2x.js`, `src/node/index.d.ts`, `scripts/test-pack.sh`, plus doc drift in `AGENTS.md` and `docs/project-structure.md`. Decisions: bundles are `dist/md2x.mjs`/`dist/md2x.cjs`, sourcemaps dropped, `dist/md2x.js` removed; `make test-pack` is a release-time check, not in `qa` (npm install plus a possible npx TypeScript fetch).

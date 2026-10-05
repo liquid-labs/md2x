@@ -8,6 +8,7 @@
 import { spawn, spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import fsPath from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // A first-run WeasyPrint install writes a lot to stderr; the 1 MiB default would turn a successful run into an error.
 const MAX_BUFFER = 64 * 1024 * 1024
@@ -18,13 +19,16 @@ const ALLOWED_KEYS = new Set(['markdown', 'sources', 'format', ...BOOLEAN_OPTION
 const FORMATS = ['pdf', 'html', 'docx']
 
 // Resolves md2x's own CLI executable by path, so the wrapper never goes through npx/bunx/PATH (which could fetch and
-// run an unpinned package). From the built bundle (dist/md2x.js) the bin is at '../bin/md2x'; from source
-// (src/node/md2x.js) it is at '../../bin/md2x'. Uses CJS '__dirname' (bun supports it in ESM source; the cjs bundle
-// keeps it).
+// run an unpinned package). From the built bundles (dist/md2x.{mjs,cjs}) the bin is at '../bin/md2x'; from source
+// (src/node/md2x.js) it is at '../../bin/md2x'. Native ESM has no '__dirname', so fall back to 'import.meta.url'.
+// Guarded by 'typeof' so the same source works in the CJS bundle, the ESM bundle, and 'bun test'.
+const moduleDir = () => typeof __dirname === 'string' ? __dirname : fsPath.dirname(fileURLToPath(import.meta.url))
+
 const resolveBin = () => {
+  const dir = moduleDir()
   const candidates = [
-    fsPath.join(__dirname, '..', 'bin', 'md2x'),
-    fsPath.join(__dirname, '..', '..', 'bin', 'md2x')
+    fsPath.join(dir, '..', 'bin', 'md2x'),
+    fsPath.join(dir, '..', '..', 'bin', 'md2x')
   ]
   const found = candidates.find((candidate) => fs.existsSync(candidate))
   if (found === undefined) {
