@@ -70,6 +70,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 7
+          slug: rewrite-node-wrapper-on-child-process
+          title: Rewrite Node Wrapper on Child Process
+          path: phase-02-interface-contract/007-rewrite-node-wrapper-on-child-process.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 3
       slug: docs-ci-and-release-readiness
       title: Docs, CI, and Release Readiness
