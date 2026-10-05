@@ -30,6 +30,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 3
+          slug: add-output-option-and-collision-checks
+          title: Add Output Option and Collision Checks
+          path: phase-02-interface-contract/003-add-output-option-and-collision-checks.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 3
       slug: docs-ci-and-release-readiness
       title: Docs, CI, and Release Readiness
