@@ -155,7 +155,7 @@ phases:
             branch: plan/golden-release-hardening-02-004
             commit:
                 - bc423f4
-            merge: null
+            merge: 99c130be9087e5f94be9e8c6f6e019dc557e590b
         - number: 5
           slug: clean-up-version-inference-and-dependency-hygiene
           title: Clean Up Version Inference and Dependency Hygiene
