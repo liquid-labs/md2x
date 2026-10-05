@@ -336,7 +336,7 @@ phases:
             branch: plan/golden-release-hardening-05-001
             commit:
                 - "3145e42"
-            merge: null
+            merge: 7ce6d7e3ffde8ba3f0bb1920dc6bacd5b28fd4fc
         - number: 2
           slug: node-end-of-options-and-type-docs
           title: Pass Sources After End-Of-Options And Correct Node Type Docs
