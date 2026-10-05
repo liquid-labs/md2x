@@ -263,13 +263,13 @@ weasyprint_lock_assert_no_overlap() {
 
   ( cd "${work_dir_a}" \
       && HOME="${WPL_HOME}" MD2X_TEST_WPL_LOG="${WPL_LOG}" MD2X_TEST_WPL_ID='proc-a' \
-         "${MD2X_BIN}" --flatten-dirs --output-path "${out_dir_a}" report.md \
+         md2x_exec --flatten-dirs --output-path "${out_dir_a}" report.md \
          > "${stdout_a}" 2> "${stderr_a}" ) &
   local pid_a=$!
 
   ( cd "${work_dir_b}" \
       && HOME="${WPL_HOME}" MD2X_TEST_WPL_LOG="${WPL_LOG}" MD2X_TEST_WPL_ID='proc-b' \
-         "${MD2X_BIN}" --flatten-dirs --output-path "${out_dir_b}" report.md \
+         md2x_exec --flatten-dirs --output-path "${out_dir_b}" report.md \
          > "${stdout_b}" 2> "${stderr_b}" ) &
   local pid_b=$!
 
@@ -327,7 +327,7 @@ weasyprint_lock_assert_no_overlap() {
   local start end elapsed status_val=0
   start="$(date +%s)"
   HOME="${WPL_HOME}" MD2X_TEST_WPL_LOG="${WPL_LOG}" MD2X_TEST_WPL_ID='mkdir-fail' \
-    "${MD2X_BIN}" --flatten-dirs --output-path "${WPL_TMPDIR}/out-mkdir-fail" report.md \
+    md2x_exec --flatten-dirs --output-path "${WPL_TMPDIR}/out-mkdir-fail" report.md \
     > "${WPL_TMPDIR}/stdout-mkdir-fail" 2> "${WPL_TMPDIR}/stderr-mkdir-fail" || status_val=$?
   end="$(date +%s)"
   elapsed=$(( end - start ))
@@ -353,7 +353,7 @@ weasyprint_lock_assert_no_overlap() {
 
   local status_val=0
   HOME="${WPL_HOME}" MD2X_TEST_WPL_LOG="${WPL_LOG}" MD2X_TEST_WPL_ID='pip-fail' MD2X_TEST_WPL_FAIL_PIP=1 \
-    "${MD2X_BIN}" --flatten-dirs --output-path "${WPL_TMPDIR}/out-pip-fail" report.md \
+    md2x_exec --flatten-dirs --output-path "${WPL_TMPDIR}/out-pip-fail" report.md \
     > "${WPL_TMPDIR}/stdout-pip-fail" 2> "${WPL_TMPDIR}/stderr-pip-fail" || status_val=$?
 
   local stderr_content
@@ -379,7 +379,7 @@ EOF
 
   local status=0
   HOME="${WPL_HOME}" MD2X_TEST_WPL_LOG="${WPL_LOG}" MD2X_TEST_WPL_ID='warm' \
-    "${MD2X_BIN}" --flatten-dirs --output-path "${WPL_TMPDIR}/out-warm" report.md \
+    md2x_exec --flatten-dirs --output-path "${WPL_TMPDIR}/out-warm" report.md \
     > "${WPL_TMPDIR}/stdout-warm" 2> "${WPL_TMPDIR}/stderr-warm" || status=$?
 
   [[ "${status}" -eq 0 ]] \

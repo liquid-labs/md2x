@@ -151,3 +151,30 @@ teardown() {
   assert_stderr_contains "Required executable 'pandoc' not found"
   refute_stub_called pandoc
 }
+
+@test "harness: MD2X_TEST_BASH makes md2x_run launch the CLI under that interpreter" {
+  local real_bash
+  real_bash="$(PATH="${MD2X_TEST_ORIGINAL_PATH}" command -v bash)"
+  local record_file="${MD2X_TEST_TMPDIR}/interpreter-invocations.log"
+  local wrapper="${MD2X_TEST_TMPDIR}/recording-bash"
+
+  # A recording stand-in for the interpreter: log the arguments it was given (the first
+  # one is the CLI path), then hand over to the real bash.
+  printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> %s\nexec %s "$@"\n' \
+    "'${record_file}'" "'${real_bash}'" > "${wrapper}"
+  chmod +x "${wrapper}"
+
+  # Without the override nothing goes through the wrapper.
+  unset MD2X_TEST_BASH
+  md2x_run --help
+  assert_success
+  [[ ! -s "${record_file}" ]] \
+    || md2x_fail "interpreter wrapper ran without MD2X_TEST_BASH set: $(cat "${record_file}")"
+
+  export MD2X_TEST_BASH="${wrapper}"
+  md2x_run --help
+
+  assert_success
+  assert_output_contains 'Usage:'
+  assert_file_contains "${record_file}" "${MD2X_BIN} --help"
+}

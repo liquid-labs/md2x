@@ -39,6 +39,19 @@
 #     not in 'MD2X_TEST_PASSTHROUGH_TOOLS') and take about a minute on a machine that
 #     has never run md2x before.
 #
+# Choosing the interpreter. By default the CLI runs the way a user's shell runs it, through
+# its '#!/usr/bin/env bash' line, so it gets whichever 'bash' is first on the case's PATH.
+# Set 'MD2X_TEST_BASH' to an interpreter path to run it as '"${MD2X_TEST_BASH}" bin/md2x
+# ...' instead, which is how the whole suite runs under macOS's bash 3.2:
+#
+#   MD2X_TEST_BASH=/bin/bash make test-cli
+#   MD2X_TEST_BASH=/bin/bash node_modules/.bin/bats src/cli/test/bats
+#
+# 'md2x_run' and 'md2x_exec' honor it; a case that launches the CLI some other way must
+# go through 'md2x_exec' to be covered. The override affects only the CLI under test:
+# bats, these helpers and the stubs keep running under the bash that started bats (the
+# stubs are written to run under 3.2 as well).
+#
 # Keep every fixture and temp path free of spaces: the CLI word-splits '$SEARCH_DIRS'
 # and 'find ${ROOT_DIR}' unquoted, so paths with spaces are already broken upstream.
 
@@ -207,6 +220,18 @@ md2x_filter_env_noise() {
   grep -v '^fatal: not a git repository' || true
 }
 
+# md2x_exec [args]...
+# Runs the built CLI with the given arguments, under "${MD2X_TEST_BASH}" when that is set
+# (see the header comment) and under its own shebang interpreter otherwise. Its exit status
+# is the CLI's; stdout, stderr and stdin are inherited.
+md2x_exec() {
+  if [[ -n "${MD2X_TEST_BASH:-}" ]]; then
+    "${MD2X_TEST_BASH}" "${MD2X_BIN}" "$@"
+  else
+    "${MD2X_BIN}" "$@"
+  fi
+}
+
 # md2x_run [args]...
 # Runs the built CLI with the given arguments and sets, like bats' own 'run':
 #   $status  exit status
@@ -221,7 +246,7 @@ md2x_run() {
         stderr_file="${MD2X_TEST_TMPDIR}/md2x-stderr"
 
   status=0
-  "${MD2X_BIN}" "$@" > "${stdout_file}" 2> "${stderr_file}" || status=$?
+  md2x_exec "$@" > "${stdout_file}" 2> "${stderr_file}" || status=$?
 
   output="$(cat -- "${stdout_file}")"
   stderr="$(md2x_filter_env_noise < "${stderr_file}")"
