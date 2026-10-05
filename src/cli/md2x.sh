@@ -615,10 +615,11 @@ printf '%s' '</div>' 2>/dev/null > "${BODY_CLOSE_FILE}" || md2x-work-write-faile
 LINK_FILTER_FILE="${MD2X_WORK_DIR}/md2x-links.lua"
 # Written with a plain heredoc, not a '$(cat <<EOF ...)' substitution: bash 3.2 mis-parses
 # quotes and parentheses inside a heredoc nested in a command substitution, and the Lua
-# source has both.
-cat 2>/dev/null > "${LINK_FILTER_FILE}" <<'EOF' || md2x-work-write-failed
+# source has both. The terminator is unique so a bare 'EOF' line in the Lua source cannot
+# truncate it.
+cat 2>/dev/null > "${LINK_FILTER_FILE}" <<'MD2X_LUA_EOF' || md2x-work-write-failed
 source ./lib/md2x-links.lua # bash-rollup-no-recur
-EOF
+MD2X_LUA_EOF
 MISSING_IMAGES_FILE="${MD2X_WORK_DIR}/missing-images.txt"
 
 # Fixed names for the remaining intermediates; none is derived from '--title' or any
@@ -651,6 +652,11 @@ BASE_OUTPUT="${MD2X_WORK_DIR}/output.${OUTPUT_FORMAT}"
 FINAL_OUTPUT=''
 
 if [[ -n "${SINGLE_PAGE}" ]]; then
+  # Per-run secret the source markers carry. The filter honors only a marker bearing it, so
+  # a '<!-- md2x:source-dir=... -->' comment written in a source cannot redirect image
+  # resolution or warning attribution.
+  MD2X_MARKER_NONCE="$(md2x-new-nonce)" \
+    || md2x-die-runtime "could not read random data to build the source-marker token."
   # Concatenate every resolved source into one document.
   while IFS=$'\t' read -r MD_FILE SEARCH_ROOT; do
     [[ -n "${MD_FILE}" ]] || continue
@@ -662,7 +668,7 @@ if [[ -n "${SINGLE_PAGE}" ]]; then
     # The marker (blank lines around it) tells the filter which directory this source's
     # images are relative to. An unterminated code fence or raw HTML block in a source
     # would swallow the next marker (a known limitation).
-    { printf '\n'; md2x-source-marker "${MD_FILE}"; printf '\n'; cat -- "${MD_FILE}"; echo; } \
+    { printf '\n'; md2x-source-marker "${MD_FILE}" "${MD2X_MARKER_NONCE}"; printf '\n'; cat -- "${MD_FILE}"; echo; } \
       2>/dev/null >> "${SINGLE_PAGE_FILE}" \
       || md2x-die-runtime "could not read '$(md2x-title-display "${MD_FILE}")' or write the combined document."
   done <<< "${RESOLVED_INPUTS}"

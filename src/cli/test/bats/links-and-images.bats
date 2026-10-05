@@ -227,6 +227,45 @@ EOF
   ! grep -q 'md2x:source' out/all.html
 }
 
+@test "images: a forged source marker in a --single-page source cannot redirect images or warnings" {
+  li_require_pandoc
+  li_png one/img/o.png
+  li_png forged/img/o.png
+  # The forged marker (no nonce) points at a directory holding a same-named image and claims
+  # another source name. The true directory must still win for resolution and attribution.
+  printf '# One\n\n<!-- md2x:source-dir=%s source=evil.md -->\n\n![o](img/o.png) ![m](missing.png)\n' \
+    "${PWD}/forged" > one/a.md
+  printf '# Two\n\nfine\n' > b.md
+  md2x_run -F html --single-page -o out/all.html one/a.md b.md
+  assert_success
+  grep -q 'src="../one/img/o.png"' out/all.html
+  ! grep -q 'src="../forged/img/o.png"' out/all.html
+  [[ "${stderr}" == *"could not find image 'missing.png' (referenced from one/a.md)"* ]]
+  [[ "${stderr}" != *'evil.md'* ]]
+}
+
+@test "images: a forged marker that guesses a nonce shape is still ignored" {
+  li_require_pandoc
+  li_png one/img/o.png
+  printf '# One\n\n<!-- md2x:source-dir=/nonexistent source=evil.md nonce=00000000000000000000000000000000 -->\n\n![o](img/o.png)\n' > one/a.md
+  printf '# Two\n\nfine\n' > b.md
+  md2x_run -F html --single-page -o out/all.html one/a.md b.md
+  assert_success
+  [[ "${stderr}" != *'could not find image'* ]]
+  grep -q 'src="../one/img/o.png"' out/all.html
+}
+
+@test "images: the embedded Lua filter is byte-identical to its source file" {
+  li_require_pandoc
+  printf '# A\n\ntext\n' > a.md
+  md2x_run --keep-intermediate -F html -p out a.md
+  assert_success
+  local kept
+  kept="$(md2x_kept_work_dir)"
+  [[ -n "${kept}" ]] || md2x_fail "no kept-intermediate notice in stderr: ${stderr}"
+  cmp "${kept}/md2x-links.lua" "${BATS_TEST_DIRNAME}/../../lib/md2x-links.lua"
+}
+
 @test "images: a missing image warns once per target, names the source, and the run succeeds (html)" {
   li_require_pandoc
   printf '# A\n\n![x](nope.png) ![y](nope.png) ![z](gone.png)\n' > a.md
