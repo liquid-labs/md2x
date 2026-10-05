@@ -71,11 +71,10 @@ MD2X_TEST_STUB_NAMES='pandoc gs pdftk'
 # Real tools md2x (or the bash it runs under) needs that are not in the system
 # directories below. Symlinked into the case's PATH directory from the ambient PATH.
 # 'brew' is deliberately NOT in the list: the CLI finds GNU getopt by probing known install
-# paths (and 'getopt' on PATH) without it, and cases rely on 'brew' being absent. 'perl' is
-# there for the link converter in 'generate-page.sh'; 'bash' so the CLI's
+# paths (and 'getopt' on PATH) without it, and cases rely on 'brew' being absent. 'bash' so the CLI's
 # '#!/usr/bin/env bash' finds the same interpreter a developer would, rather than
 # whatever older bash happens to sit in /bin.
-MD2X_TEST_PASSTHROUGH_TOOLS='bash git jq perl'
+MD2X_TEST_PASSTHROUGH_TOOLS='bash git jq'
 # Deliberately minimal: none of pandoc, gs or pdftk live here.
 MD2X_TEST_SYSTEM_PATH='/usr/bin:/bin:/usr/sbin:/sbin'
 

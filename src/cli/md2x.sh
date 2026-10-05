@@ -582,6 +582,17 @@ BODY_CLOSE_FILE="${MD2X_WORK_DIR}/body-close.html"
 printf '%s' '<div class="markdown-body">' > "${BODY_OPEN_FILE}"
 printf '%s' '</div>' > "${BODY_CLOSE_FILE}"
 
+# The link/image filter, and the file it records missing images in ('generate-page()'
+# reports them).
+LINK_FILTER_FILE="${MD2X_WORK_DIR}/md2x-links.lua"
+# Written with a plain heredoc, not a '$(cat <<EOF ...)' substitution: bash 3.2 mis-parses
+# quotes and parentheses inside a heredoc nested in a command substitution, and the Lua
+# source has both.
+cat > "${LINK_FILTER_FILE}" <<'EOF'
+source ./lib/md2x-links.lua # bash-rollup-no-recur
+EOF
+MISSING_IMAGES_FILE="${MD2X_WORK_DIR}/missing-images.txt"
+
 # Fixed names for the remaining intermediates; none is derived from '--title' or any
 # other user input.
 SINGLE_PAGE_FILE="${MD2X_WORK_DIR}/single-page.md"
@@ -619,7 +630,11 @@ if [[ -n "${SINGLE_PAGE}" ]]; then
     # combined work-directory file.
     python3 -c "${TOC_PREPROCESSOR}" --validate \
       --source-name "$(md2x-title-display "${MD_FILE}")" < "${MD_FILE}" || exit 1
-    { cat -- "${MD_FILE}"; echo; } >> "${SINGLE_PAGE_FILE}"
+    # The marker (blank lines around it) tells the filter which directory this source's
+    # images are relative to. An unterminated code fence or raw HTML block in a source
+    # would swallow the next marker (a known limitation).
+    { printf '\n'; md2x-source-marker "${MD_FILE}"; printf '\n'; cat -- "${MD_FILE}"; echo; } \
+      >> "${SINGLE_PAGE_FILE}"
   done <<< "${RESOLVED_INPUTS}"
 fi
 

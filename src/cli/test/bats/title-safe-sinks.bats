@@ -119,8 +119,9 @@ title_reject_case() {
   assert_last_call_has_arg pandoc "title=${title}"
   refute_last_call_contains pandoc '--metadata-file'
   local count
-  count="$(md2x_stub_last_call_args pandoc | grep -c '^-M$' || true)"
-  assert_equal "${count}" '1' '-M argument count'
+  # The link/image filter settings are '-M md2x-*=...' too; count only the title argument.
+  count="$(md2x_stub_last_call_args pandoc | grep -c '^title=' || true)"
+  assert_equal "${count}" '1' 'title -M argument count'
 }
 
 # --- PostScript sink -----------------------------------------------------------------

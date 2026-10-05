@@ -100,3 +100,13 @@ architectural_impact: true
 - After per-source image resolution, including single-page markers.
 - After missing-image warnings.
 - After the gated `links-and-images.bats`.
+
+## Status
+
+- Outcome: succeeded (2026-10-05).
+- Added `src/cli/lib/md2x-links.lua` (inlined by `bash-rollup`, written to the work directory, passed with `--lua-filter`) and `src/cli/lib/link-filter.sh` (percent-encoding, source markers, missing-image reporting). `generate-page.sh` and `md2x.sh` no longer use `perl` or `eval` for links; `perl` is gone from `MD2X_TEST_PASSTHROUGH_TOOLS`.
+- Missing images are detected by the filter itself (it already resolves every path), recorded in a work-directory file, and printed by the CLI as `md2x: warning: could not find image '<target>' (referenced from <source>)`, once per source and target, for all three formats. A residual WeasyPrint warning on PDF runs is possible.
+- `--to-stdout` HTML image paths are relative to the cwd (planner choice).
+- Known limitation: an unterminated code fence or raw HTML block in one `--single-page` source swallows the next source's marker. The remaining `eval set --` in `parse-options.sh` (getopt's quoted output, accepted in Phase 1) is the only `eval` left.
+- Pandoc features used (also in the code comment in `generate-page.sh`): `--lua-filter`, `Pandoc` filter function, `pandoc.utils.stringify`, block `:walk`; no `pandoc.path`, no `PANDOC_VERSION`. Only 3.10.1 was exercised.
+- Validation: `make qa`, the bash 3.2 override run, and `links-and-images.bats` (17 cases, none skipped); the new cases fail on the pre-task code (checked in a pre-task checkout).
