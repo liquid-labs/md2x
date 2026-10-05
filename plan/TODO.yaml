@@ -436,6 +436,7 @@ phases:
           path: phase-06-remediation-02/001-refuse-command-bearing-repo-config-in-infer-version.md
           done: false
           tier: sonnet-high
+          digest: md2x-infer-version now refuses repositories whose local (and per-worktree) git config has command-bearing keys. It warns once, omits the version, and never runs git status; it also fails closed on unreadable config. The filter-sentinel test was shown to fail on the pre-change build and passes now.
           findings:
             - r4Pu
           git:
