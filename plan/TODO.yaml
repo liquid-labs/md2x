@@ -167,7 +167,7 @@ phases:
             branch: plan/golden-release-hardening-02-005
             commit:
                 - 6dd07a4
-            merge: null
+            merge: ea60e174a2a695da562e55ae27d61ceb7ce5b82e
         - number: 6
           slug: prune-weasyprint-unsupported-css
           title: Prune WeasyPrint Unsupported CSS
