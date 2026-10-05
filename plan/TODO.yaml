@@ -371,13 +371,15 @@ phases:
           slug: filter-pandoc-user-select-warning
           title: Filter Pandoc Template User-Select Warning From PDF Stderr
           path: phase-05-remediation-01/004-filter-pandoc-user-select-warning.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: Pandoc stderr is captured and replayed with exactly the one user-select warning line dropped (exact whole-line match). Exemption removed from the PDF e2e case, plus a failure-passthrough test. qa and the bash 3.2 CLI suite are green.
           findings:
             - KhXI
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-05-004
+            commit:
+                - 64b8280
             merge: null
         - number: 5
           slug: unforgeable-single-page-source-marker
