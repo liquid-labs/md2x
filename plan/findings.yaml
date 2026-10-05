@@ -27,6 +27,15 @@ items:
         - plan/phase:interface-contract
         - effort:unspecified
       text: 'In src/node/md2x.js a sources entry that begins with ''-'' (other than the rejected ''-'') is passed to the CLI as an argument and parsed as a flag. The CLI parser (src/cli/lib/parse-options.sh) accepts ''--'' as end of options, so the wrapper should place ''--'' before the source arguments, or prefix relative paths with ''./''. Add a Node test for a source named like ''-weird.md''. Related CLI case: a directory argument starting with ''-'' read by find (see the finding about find option parsing).'
+    - title: Node bundles hardcode build-time __dirname
+      id: 8xEp
+      date: "2026-10-05"
+      tags:
+        - type:bug
+        - priority:high
+        - plan/phase:interface-contract
+        - effort:unspecified
+      text: 'CRITICAL. In src/node/md2x.js resolveBin()/moduleDir use a bare __dirname that bun build (Makefile NODE_DIST_ESM/NODE_DIST_CJS flags) inlines as a constant "var __dirname = <absolute build-time src/node path>" in both dist/md2x.mjs and dist/md2x.cjs, so the typeof __dirname === ''string'' guard always takes the first branch and the import.meta.url fallback is never reached. An installed package therefore looks for bin/md2x under the build tree, not under its own ../bin, and md2x()/md2xAsync() throw "Could not locate the md2x CLI executable" on any other machine. scripts/test-pack.sh cannot catch it on the build host because the build tree''s bin/md2x still exists, so the installed package silently runs the build tree CLI. Fix: avoid a bare __dirname identifier the bundler can inline (use import.meta.url in the ESM bundle and a CJS-only path or per-format shim/--define), and make scripts/test-pack.sh fail when the repo-local bin/ is used (for example run the consumer check with the repo bin/ moved away, and assert the resolved path is under node_modules/@liquid-labs/md2x/bin/md2x).'
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
