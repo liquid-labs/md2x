@@ -472,4 +472,4 @@ phases:
             branch: plan/golden-release-hardening-06-003
             commit:
                 - 9732bbb
-            merge: null
+            merge: 80736059a93a9d42438bc3cbb72f224047cfd992
