@@ -19,3 +19,7 @@ Fixes finding KhXI from the Phase 2 review. The work targets the plan branch `pl
 
 - Finding KhXI, in this plan's `plan/findings.yaml`.
 - Files: `src/cli/lib/generate-page.sh`, `src/cli/test/bats/real-toolchain-e2e.bats`.
+
+## Status
+
+Succeeded 2026-10-05. Pandoc stderr is captured to a work file and replayed with the exact `user-select` line dropped (`src/cli/lib/generate-page.sh`); exemption removed from `src/cli/test/bats/real-toolchain-e2e.bats`; new failure-passthrough case in `src/cli/test/bats/error-output.bats`. `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` green; e2e case verified to fail with the filter disabled.

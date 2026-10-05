@@ -517,13 +517,10 @@ MD
   assert_success
   e2e_assert_pdf_magic './rich.pdf'
 
-  # The one remaining 'Ignored' warning is pandoc's own default-template stylesheet
-  # ('user-select' in its line-number rule), not 'github.css', so it cannot be pruned
-  # there; it is exempted by its exact text until a stderr filter handles it. Any other
-  # 'WARNING: Ignored' line -- i.e. any rule in 'github.css' -- fails the case.
+  # Any 'WARNING: Ignored' line -- e.g. a rule in 'github.css' -- fails the case; pandoc's
+  # own known 'user-select' warning is dropped by generate-page.sh.
   local unexpected
   unexpected="$(printf '%s\n' "${stderr}" \
-    | grep -F 'WARNING: Ignored' \
-    | grep -vxF 'WARNING: Ignored `user-select: none` at 49:32, unknown property.' || true)"
+    | grep -F 'WARNING: Ignored' || true)"
   [[ -z "${unexpected}" ]] || md2x_fail "unexpected WeasyPrint 'Ignored' warning(s) on stderr" "${unexpected}"
 }
