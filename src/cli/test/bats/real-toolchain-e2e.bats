@@ -487,3 +487,43 @@ e2e_title_pdf_case() {
   assert_success
   e2e_assert_pdf_magic './out/report'
 }
+
+@test "e2e: pdf conversion of a representative document emits no WeasyPrint 'Ignored' warnings" {
+  e2e_require_pdf_engine
+
+  cat > rich.md <<'MD'
+# Heading One
+
+## Heading Two
+
+Press <kbd>Ctrl</kbd>+<kbd>C</kbd> and `inline code`.
+
+> A blockquote
+
+| a | b |
+|---|---|
+| 1 | 2 |
+
+- [x] done
+- [ ] todo
+
+```bash
+echo hi
+```
+MD
+
+  md2x_run rich.md
+
+  assert_success
+  e2e_assert_pdf_magic './rich.pdf'
+
+  # The one remaining 'Ignored' warning is pandoc's own default-template stylesheet
+  # ('user-select' in its line-number rule), not 'github.css', so it cannot be pruned
+  # there; it is exempted by its exact text until a stderr filter handles it. Any other
+  # 'WARNING: Ignored' line -- i.e. any rule in 'github.css' -- fails the case.
+  local unexpected
+  unexpected="$(printf '%s\n' "${stderr}" \
+    | grep -F 'WARNING: Ignored' \
+    | grep -vxF 'WARNING: Ignored `user-select: none` at 49:32, unknown property.' || true)"
+  [[ -z "${unexpected}" ]] || md2x_fail "unexpected WeasyPrint 'Ignored' warning(s) on stderr" "${unexpected}"
+}
