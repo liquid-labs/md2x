@@ -49,3 +49,9 @@ Out of scope: any visual redesign, custom CSS options (a filed followup), and HT
 - `src/cli/lib/ensure-weasyprint.sh`: the pinned WeasyPrint version.
 - `src/cli/test/bats/real-toolchain-e2e.bats`: the gating pattern.
 - `src/cli/test/manual/visual-smoke-test.sh`: the visual check.
+
+## Status
+
+Outcome: partial (2026-10-05). The rules in `src/cli/lib/github.css` are pruned (WeasyPrint 69.0, pandoc 3.10.1), but one `WARNING: Ignored` line remains and is not in `github.css`: `` Ignored `user-select: none` at 49:32, unknown property. `` comes from pandoc's own default-template `<style>` (the `pre.numberSource` line-number rule), so it needs a `generate-page.sh` change (stderr filter) that this task may not make. The manager should schedule that filter after 005. The new e2e case in `src/cli/test/bats/real-toolchain-e2e.bats` exempts that exact line; drop the exemption once the filter lands.
+
+Validation: `make qa` passes; `MD2X_TEST_BASH=/bin/bash make test-cli` passes (the new case runs, does not skip, and fails against the pre-task css). `bin/md2x -p o README.md 2>&1 >/dev/null | grep -c 'WARNING: Ignored'` prints 1 (the pandoc residual) rather than 0. Rasterized PDF pages (gs, 60 and 80 dpi) of README, tiny-doc and a table/kbd/task-list/blockquote/code document are byte-identical before and after.

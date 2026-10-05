@@ -7,7 +7,6 @@
 
 .markdown-body .octicon {
   display: inline-block;
-  fill: currentColor;
   vertical-align: text-bottom;
 }
 
@@ -197,7 +196,6 @@
   background-color: #fafbfc;
   border: 1px solid #d1d5da;
   border-radius: 3px;
-  box-shadow: inset 0 -1px 0 #d1d5da;
 }
 
 .markdown-body h1,
@@ -290,13 +288,6 @@
 .markdown-body pre {
   margin-top: 0;
   margin-bottom: 0;
-}
-
-.markdown-body input::-webkit-inner-spin-button,
-.markdown-body input::-webkit-outer-spin-button {
-  margin: 0;
-  -webkit-appearance: none;
-  appearance: none;
 }
 
 .markdown-body :checked+.radio-label {
@@ -609,7 +600,6 @@
   background-color: #fafbfc;
   border: 1px solid #d1d5da;
   border-radius: 3px;
-  box-shadow: inset 0 -1px 0 #d1d5da;
 }
 
 .markdown-body:after,
@@ -725,10 +715,6 @@
   margin-bottom: 0;
 }
 
-.markdown-body li {
-  word-wrap: break-all;
-}
-
 .markdown-body li>p {
   margin-top: 16px;
 }
@@ -836,7 +822,6 @@
 
 .markdown-body pre code {
   display: inline;
-  max-width: auto;
   padding: 0;
   margin: 0;
   overflow: visible;
@@ -858,14 +843,9 @@
   border-color: #005cc5;
 }
 
-.markdown-body .blob-wrapper {
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
 .markdown-body .blob-wrapper-embedded {
   max-height: 240px;
-  overflow-y: auto;
+  overflow: auto;
 }
 
 .markdown-body .blob-num {
@@ -884,7 +864,6 @@
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  user-select: none;
 }
 
 .markdown-body .blob-num:hover {
