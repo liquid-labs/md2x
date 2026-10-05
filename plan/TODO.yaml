@@ -198,6 +198,7 @@ phases:
           path: phase-02-interface-contract/008-package-node-library-for-esm-cjs-and-types.md
           done: false
           tier: sonnet-med
+          digest: Replaced the single CJS bundle with ESM and CJS bundles plus hand-written types and an exports map. The packed tarball passes native ESM named import, CJS require and a strict tsc check via make test-pack (scripts/test-pack.sh).
           git:
             branch: null
             commit: []
