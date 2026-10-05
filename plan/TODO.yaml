@@ -160,7 +160,7 @@ phases:
           slug: clean-up-version-inference-and-dependency-hygiene
           title: Clean Up Version Inference and Dependency Hygiene
           path: phase-02-interface-contract/005-clean-up-version-inference-and-dependency-hygiene.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Added lib/preflight.sh with pandoc >= 2.0 floor check, lazy unquoted --infer-version inference using the first input's repo, git/jq required only for --infer-version, and md2x-formatted errors instead of raw tool errors at audited leak sites. 19 new bats cases; validation passed under bash 5 and 3.2.
           git:
