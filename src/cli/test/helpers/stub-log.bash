@@ -179,7 +179,7 @@ md2x_pandoc_capture_count() {
   fi
 }
 
-# md2x_pandoc_capture <input|metadata|css> [invocation-number]
+# md2x_pandoc_capture <input|metadata|css|body-open|body-close|header> [invocation-number]
 # Prints the captured content; defaults to the most recent invocation.
 md2x_pandoc_capture() {
   local kind="$1" number="${2:-}"

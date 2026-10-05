@@ -196,7 +196,7 @@ EOF
   assert_file_exists './tiny-doc.html'
   e2e_assert_nonempty './tiny-doc.html'
   # 'Tiny Doc' is the fixture's own heading text; '<style>' is the bundled GitHub CSS
-  # 'generate-page.sh' embeds via '--css'. Neither marker exists in stub output, so this
+  # 'generate-page.sh' embeds inline via '--include-in-header'. Neither marker exists in stub output, so this
   # is proof a real Pandoc conversion happened.
   assert_file_contains './tiny-doc.html' 'Tiny Doc'
   assert_file_contains './tiny-doc.html' '<style>'
@@ -205,6 +205,18 @@ EOF
   # genuinely lands around the rendered body so 'github.css''s bare '.markdown-body'
   # selectors match.
   assert_file_contains './tiny-doc.html' 'class="markdown-body"'
+  # The stylesheet is inline, never a link to a work-directory file deleted at exit.
+  local ref_values html_content
+  html_content="$(cat -- './tiny-doc.html')"
+  [[ "${html_content}" != *'<link rel="stylesheet"'* ]] \
+    || md2x_fail 'expected the HTML output to contain no <link rel="stylesheet"'
+  ref_values="$(grep -oE '(href|src)="[^"]*"' './tiny-doc.html' || true)"
+  [[ "${ref_values}" != *"${TMPDIR:-/nonexistent-tmpdir}"* ]] \
+    || md2x_fail "expected no href/src value to contain TMPDIR, got: ${ref_values}"
+  [[ "${ref_values}" != *"${MD2X_TEST_TMPDIR}"* ]] \
+    || md2x_fail "expected no href/src value to contain the test tmp dir, got: ${ref_values}"
+  [[ "${ref_values}" != *'/md2x.'* ]] \
+    || md2x_fail "expected no href/src value to contain '/md2x.', got: ${ref_values}"
 }
 
 @test "e2e: tiny-doc.md converts to a real, non-empty DOCX" {

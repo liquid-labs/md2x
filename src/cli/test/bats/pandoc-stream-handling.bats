@@ -73,7 +73,7 @@ Done'
 @test "--css is a real path ending in '.css', never a '/dev/fd/*' process substitution" {
   md2x_write_doc 'report.md'
 
-  md2x_run --flatten-dirs --output-path . report.md
+  md2x_run --output-format pdf --flatten-dirs --output-path . report.md
 
   assert_success
   # '--metadata-file' and the (link-rewritten) input document are still legitimately

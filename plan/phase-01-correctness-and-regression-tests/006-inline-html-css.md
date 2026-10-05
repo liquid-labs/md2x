@@ -63,3 +63,7 @@ architectural_impact: true
 - [Design decisions: HTML styling](../notes/design-decisions.md#html-styling).
 - `.flow/audit-interface.md` B3, under the project root.
 - `docs/architecture.md`, "Bundled stylesheet": the current CSS data flow this changes. Phase 4 updates the doc; do not edit it here.
+
+## Status
+
+succeeded (2026-10-04). HTML now embeds github.css inline via `--include-in-header` (work-dir `style.html`); PDF keeps `--css`; DOCX no longer receives `--css`. Stub captures `pandoc-<n>-header`. `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` pass; new HTML stub/e2e cases fail on pre-change code. PDF left unchanged. Files: `src/cli/md2x.sh`, `src/cli/lib/generate-page.sh`, `src/cli/test/stubs/pandoc`, `src/cli/test/helpers/stub-log.bash`, `src/cli/test/bats/{pandoc-args,pandoc-stream-handling,real-toolchain-e2e}.bats`.

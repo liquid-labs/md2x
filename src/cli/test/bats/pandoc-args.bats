@@ -296,3 +296,59 @@ teardown() {
   refute_last_call_has_arg pandoc '--include-before-body'
   refute_last_call_has_arg pandoc '--include-after-body'
 }
+
+# --- HTML styling is inline, never a '--css' link ------------------------------------
+#
+# A '--css' link in HTML output points at a work-directory file deleted at exit. HTML
+# embeds the bundled stylesheet via '--include-in-header' instead; PDF keeps '--css'.
+
+@test "html output passes no --css argument to pandoc" {
+  md2x_write_doc 'report.md'
+
+  md2x_run --output-format html --flatten-dirs --output-path . report.md
+
+  assert_success
+  refute_last_call_has_arg pandoc '--css'
+  assert_last_call_has_arg pandoc '--include-in-header'
+}
+
+@test "html output embeds the bundled stylesheet in a <style> block via --include-in-header" {
+  md2x_write_doc 'report.md'
+
+  md2x_run --output-format html --flatten-dirs --output-path . report.md
+
+  assert_success
+  local header
+  header="$(md2x_pandoc_capture header)"
+  [[ "${header}" == '<style>'* ]] \
+    || md2x_fail "expected the header include to start with <style>, got: ${header}"
+  [[ "${header}" == *'</style>' ]] \
+    || md2x_fail "expected the header include to end with </style>, got: ${header}"
+  [[ "${header}" == *'.markdown-body'* ]] \
+    || md2x_fail "expected the header include to carry the bundled stylesheet, got: ${header}"
+}
+
+@test "html output never references the work directory in any pandoc argument" {
+  md2x_write_doc 'report.md'
+
+  md2x_run --keep-intermediate --output-format html --flatten-dirs --output-path . report.md
+
+  assert_success
+  refute_last_call_has_arg pandoc '--css'
+  local css_arg
+  css_arg="$(md2x_stub_last_call_args pandoc | grep '\.css$' || true)"
+  [[ -z "${css_arg}" ]] || md2x_fail "expected no .css argument for html, got: ${css_arg}"
+}
+
+@test "pdf output still passes a .css path to pandoc" {
+  md2x_write_doc 'report.md'
+
+  md2x_run --output-format pdf --flatten-dirs --output-path . report.md
+
+  assert_success
+  assert_last_call_has_arg pandoc '--css'
+  refute_last_call_has_arg pandoc '--include-in-header'
+  local css_arg
+  css_arg="$(md2x_stub_last_call_args pandoc | grep '\.css$' || true)"
+  [[ -n "${css_arg}" ]] || md2x_fail 'expected the pdf pandoc invocation to carry a .css argument'
+}
