@@ -18,6 +18,15 @@ items:
         - plan/phase:interface-contract
         - effort:unspecified
       text: 'Every PDF run still prints one WeasyPrint warning, "WARNING: Ignored `user-select: none` at 49:32, unknown property", which comes from pandoc''s own default-template style block (the pre.numberSource line-number rule), not from src/cli/lib/github.css. Add a narrow stderr filter in src/cli/lib/generate-page.sh that drops exactly that line, then remove the exemption for it in the PDF no-warnings case at the end of src/cli/test/bats/real-toolchain-e2e.bats so the test asserts zero ''WARNING: Ignored'' lines.'
+    - title: Dash-leading sources parsed as CLI flags
+      id: Xylz
+      date: "2026-10-05"
+      tags:
+        - type:bug
+        - priority:medium
+        - plan/phase:interface-contract
+        - effort:unspecified
+      text: 'In src/node/md2x.js a sources entry that begins with ''-'' (other than the rejected ''-'') is passed to the CLI as an argument and parsed as a flag. The CLI parser (src/cli/lib/parse-options.sh) accepts ''--'' as end of options, so the wrapper should place ''--'' before the source arguments, or prefix relative paths with ''./''. Add a Node test for a source named like ''-weird.md''. Related CLI case: a directory argument starting with ''-'' read by find (see the finding about find option parsing).'
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2

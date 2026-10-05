@@ -184,11 +184,13 @@ phases:
           slug: rewrite-node-wrapper-on-child-process
           title: Rewrite Node Wrapper on Child Process
           path: phase-02-interface-contract/007-rewrite-node-wrapper-on-child-process.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: 'Rewrote the Node wrapper on node:child_process with argv arrays: markdown goes on stdin as ''-'', no staging file or shelljs, options validated before spawning. Added md2xAsync, output (-o) and quiet, and errors carrying exitCode and stderr. Removed the shelljs dependency and rewrote tests with 100% coverage.'
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-02-007
+            commit:
+                - 9b14495
             merge: null
         - number: 8
           slug: package-node-library-for-esm-cjs-and-types
