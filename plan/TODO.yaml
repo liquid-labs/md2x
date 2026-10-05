@@ -148,7 +148,7 @@ phases:
           slug: resolve-links-and-images-with-lua-filter
           title: Resolve Links and Images With Lua Filter
           path: phase-02-interface-contract/004-resolve-links-and-images-with-lua-filter.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: Replaced the eval/perl LINK_CONVERTER with an inlined pandoc Lua filter that rewrites .md/.markdown links and resolves images relative to each source file, with per-source markers in --single-page. Missing images produce one md2x warning each and exit 0. Real-pandoc bats file covers every spike case; new cases fail on pre-task code. One bats case (weasyprint persistent mkdir failure) timed out under 3.2 under host load, passes in isolation.
           git:
