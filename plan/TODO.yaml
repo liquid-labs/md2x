@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 2
-    tasks_added: 7
+    tasks_added: 8
 phases:
     - number: 1
       slug: correctness-and-regression-tests
@@ -427,4 +427,17 @@ phases:
       slug: remediation-02
       title: Remediation Round 2
       kind: remediation
-      tasks: []
+      security_review: required
+      tasks:
+        - number: 1
+          slug: refuse-command-bearing-repo-config-in-infer-version
+          title: Refuse Command-Bearing Repository Config Before Git Status In Version Inference
+          path: phase-06-remediation-02/001-refuse-command-bearing-repo-config-in-infer-version.md
+          done: false
+          tier: sonnet-high
+          findings:
+            - r4Pu
+          git:
+            branch: null
+            commit: []
+            merge: null
