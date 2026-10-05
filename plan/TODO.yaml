@@ -25,6 +25,7 @@ phases:
           path: phase-01-correctness-and-regression-tests/002-bash-3-2-compatibility.md
           done: false
           tier: sonnet-high
+          digest: Fixed B4. Apostrophes in comments inside the file-discovery process substitution and the empty INCLUDE_BODY_ARGS array under nounset broke bash 3.2; both fixed. Silent exit 0 came from a 3.2 quirk where the EXIT trap sees $?=0 after a fatal nounset error; a completion sentinel fixes it on every bash. Added a POSIX-sh guard (exit 3), the MD2X_TEST_BASH harness override, and bash-compat.bats. Full suite passes under bash 5 and /bin/bash 3.2.57.
           git:
             branch: null
             commit: []
