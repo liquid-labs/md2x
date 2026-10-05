@@ -356,7 +356,7 @@ phases:
           slug: reject-trailing-slash-output-and-dash-roots
           title: Reject Trailing-Slash Output Paths And Protect Dash-Leading Search Roots
           path: phase-05-remediation-01/003-reject-trailing-slash-output-and-dash-roots.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Rejected -o <dir>/ at plan time with a usage error (exit 2), and made find treat dash-leading roots as paths via a ./ prefix stripped from results. Two regression bats cases fail on old code; make qa and the bash 3.2 suite pass.
           findings:
