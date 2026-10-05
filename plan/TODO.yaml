@@ -385,13 +385,15 @@ phases:
           slug: unforgeable-single-page-source-marker
           title: Make The Single-Page Source Marker Unforgeable
           path: phase-05-remediation-01/005-unforgeable-single-page-source-marker.md
-          done: false
+          done: true
           tier: sonnet-high
+          digest: Added a per-run /dev/urandom nonce that single-page source markers must carry for the Lua filter to honor them, so forged markers in a source are inert. Switched the Lua heredoc terminator to MD2X_LUA_EOF and added three bats regression cases. qa and the bash 3.2 suite pass.
           findings:
             - z2v9
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-05-005
+            commit:
+                - d349562
             merge: null
         - number: 6
           slug: harden-infer-version-git-calls
