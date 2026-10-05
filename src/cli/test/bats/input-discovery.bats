@@ -266,3 +266,12 @@ teardown() {
   assert_failure 2
   assert_stderr_contains 'contains control characters'
 }
+
+@test "a search root whose name starts with '-' is searched as a path, not read as a find option" {
+  md2x_write_doc './-d/a.md'
+
+  md2x_run --list-files -- -d
+
+  assert_success
+  assert_output_equals './a.pdf'
+}

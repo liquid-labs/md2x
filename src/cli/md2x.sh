@@ -204,6 +204,11 @@ if [[ -n "${OUTPUT_FILE_SET}" ]]; then
   else
     [[ -z "${TO_STDOUT}" ]] \
       || md2x-die-usage "'-o'/'--output' <file> cannot be combined with '--to-stdout'."
+    # A trailing '/' names a directory, which '-o' (a file) cannot be; refusing it here keeps
+    # delivery from failing after planning and leaving an empty directory behind.
+    [[ "${OUTPUT_FILE}" != */ ]] \
+      || md2x-die-usage "'-o'/'--output' '$(md2x-title-display "${OUTPUT_FILE}")' ends in '/' and names a directory;" \
+        "give a file name, or use '-p'/'--output-path' for a directory."
     OUTPUT_TARGET_FILE="${OUTPUT_FILE}"
     # Format inference: a recognized extension sets the format when '-F' is absent and must
     # agree with '-F' when it is given; an unrecognized one leaves the default format and
@@ -306,11 +311,16 @@ if [[ -z "${STDIN_MODE}" ]]; then
     FIND_STATUS=0
     # 'find' errors (an unreadable directory) are not shown raw: the status is checked and
     # reported through 'md2x-die-runtime' below, naming the search root.
-    FOUND="$(find "${ROOT_DIR}" \( -iname '*.md' -o -iname '*.markdown' \) ! -type d -print0 2>/dev/null \
+    # A root starting with '-' would be read by 'find' as an option, so it is searched as
+    # './<root>' and the './' is stripped from each result to keep the names as the user gave them.
+    FIND_ROOT="${ROOT_DIR}"
+    [[ "${ROOT_DIR}" != -* ]] || FIND_ROOT="./${ROOT_DIR}"
+    FOUND="$(find "${FIND_ROOT}" \( -iname '*.md' -o -iname '*.markdown' \) ! -type d -print0 2>/dev/null \
       | tr '\012\000' '\001\012')" || FIND_STATUS=$?
     ROOT_FOUND=0
     while IFS= read -r FOUND_FILE; do
       [[ -n "${FOUND_FILE}" ]] || continue
+      [[ "${FIND_ROOT}" == "${ROOT_DIR}" ]] || FOUND_FILE="${FOUND_FILE#./}"
       if md2x-has-control-chars "${FOUND_FILE}"; then
         md2x-die-usage "file name '$(md2x-title-display "${FOUND_FILE}")' found under" \
           "'$(md2x-title-display "${ROOT_DIR}")' contains control characters."

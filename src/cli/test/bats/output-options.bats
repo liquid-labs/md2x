@@ -381,3 +381,13 @@ assert_cwd_files() {
   assert_stderr_contains 'a.html'
   [[ "$(cat a.html)" == '# page' ]]
 }
+
+@test "-o with a trailing slash and an absent directory exits 2 and creates nothing" {
+  md2x_write_doc 'a.md'
+
+  md2x_run -o out/ a.md
+
+  assert_failure 2
+  assert_stderr_contains "ends in '/'"
+  [[ ! -e out ]]
+}
