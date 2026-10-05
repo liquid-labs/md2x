@@ -377,7 +377,7 @@ phases:
           findings:
             - KhXI
           git:
-            branch: null
+            branch: plan/golden-release-hardening-05-004
             commit: []
             merge: null
         - number: 5
