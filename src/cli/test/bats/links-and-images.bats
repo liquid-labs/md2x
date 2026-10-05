@@ -255,6 +255,23 @@ EOF
   grep -q 'src="../one/img/o.png"' out/all.html
 }
 
+@test "images: front matter md2x-nonce in multi-file mode cannot enable a forged marker" {
+  li_require_pandoc
+  li_png one/img/o.png
+  li_png forged/img/o.png
+  # Without a '-M md2x-nonce' in every mode, front matter could supply the nonce and the
+  # marker (nonce=x) would then redirect image resolution to the forged directory.
+  printf -- '---\nmd2x-nonce: x\n---\n# One\n\n<!-- md2x:source-dir=%s source=evil.md nonce=x -->\n\n![o](img/o.png)\n' \
+    "${PWD}/forged" > one/a.md
+  printf '# Two\n\nfine\n' > b.md
+  md2x_run -F html -p out one/a.md b.md
+  assert_success
+  [[ "${stderr}" != *'could not find image'* ]]
+  [[ "${stderr}" != *'evil.md'* ]]
+  grep -rq 'src="[^"]*one/img/o.png"' out
+  ! grep -rq 'forged/img/o.png' out
+}
+
 @test "images: the embedded Lua filter is byte-identical to its source file" {
   li_require_pandoc
   printf '# A\n\ntext\n' > a.md

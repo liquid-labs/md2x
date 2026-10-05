@@ -21,3 +21,7 @@ Fixes finding xDG1 from the Remediation Round 1 review. The work targets the pla
 
 - Finding xDG1, in this plan's `plan/findings.yaml`.
 - Files: `src/cli/md2x.sh`, `src/cli/lib/generate-page.sh`, `src/cli/lib/md2x-links.lua`, `src/cli/test/bats/links-and-images.bats`, `scripts/test-pack.sh`.
+
+## Status
+
+Succeeded, 2026-10-05. The nonce and every other filter setting are now always passed by `-M` (`src/cli/lib/generate-page.sh`, `src/cli/md2x.sh`; empty values where unused; verified with real pandoc that `-M` overrides front matter and that an empty `-M` reads as unset). `scripts/test-pack.sh` now checks both bundles exist and are readable, treats grep status 2 or higher as a failure, checks both `pwd` and `pwd -P` forms of the root, and fails hard when `tsc` is absent. New bats case in `links-and-images.bats` fails on the pre-change build and passes now. `pandoc-args.bats` was updated for the always-passed settings. `make qa`, `make test-pack` and `MD2X_TEST_BASH=/bin/bash make test-cli` pass. `test-pack` with `tsc` removed in a scratch copy fails with the "run 'bun install'" message.

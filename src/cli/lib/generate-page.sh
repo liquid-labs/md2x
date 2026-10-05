@@ -52,24 +52,26 @@ generate-page() {
   else
     FILTER_SOURCE_DIR="$(md2x-abs-dir-of "${MD_FILE}")"
   fi
-  LINK_ARGS=(--lua-filter "${LINK_FILTER_FILE}"
-    -M "md2x-format=${OUTPUT_FORMAT}"
-    -M "md2x-source-dir=${FILTER_SOURCE_DIR}"
-    -M "md2x-miss-file=${MISSING_IMAGES_FILE}")
-  if [[ -n "${SINGLE_PAGE:-}" ]]; then
-    # Only a marker carrying this per-run token is honored (see 'md2x-links.lua').
-    LINK_ARGS+=(-M "md2x-nonce=${MD2X_MARKER_NONCE}")
-  else
-    LINK_ARGS+=(-M "md2x-source=${INPUT_DISPLAY}")
-  fi
+  # Every filter setting is ALWAYS supplied by '-M', with an empty value where unused (the
+  # filter treats an empty value as unset): pandoc gives a '-M' value precedence over a
+  # same-named key in the source's YAML front matter, so nothing a source's front matter
+  # sets can supply or change any 'md2x-*' setting. The per-run nonce is passed in every
+  # mode, so a forged 'md2x-nonce' front-matter key cannot switch marker recognition on.
+  FILTER_OUT_DIR=''
   if [[ "${OUTPUT_FORMAT}" == 'html' ]]; then
     if [[ -n "${TO_STDOUT}" ]]; then
       FILTER_OUT_DIR="$(pwd -P)"
     else
       FILTER_OUT_DIR="$(md2x-parent-dir "$(md2x-canonical-target "${FINAL_OUTPUT}")")"
     fi
-    LINK_ARGS+=(-M "md2x-out-dir=${FILTER_OUT_DIR}")
   fi
+  LINK_ARGS=(--lua-filter "${LINK_FILTER_FILE}"
+    -M "md2x-format=${OUTPUT_FORMAT}"
+    -M "md2x-source-dir=${FILTER_SOURCE_DIR}"
+    -M "md2x-source=${INPUT_DISPLAY}"
+    -M "md2x-out-dir=${FILTER_OUT_DIR}"
+    -M "md2x-miss-file=${MISSING_IMAGES_FILE}"
+    -M "md2x-nonce=${MD2X_MARKER_NONCE}")
   { : > "${MISSING_IMAGES_FILE}"; } 2>/dev/null || md2x-work-write-failed
 
   # Materialize the TOC-preprocessed Markdown to a real temp file

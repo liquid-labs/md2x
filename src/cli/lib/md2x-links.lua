@@ -15,7 +15,10 @@
 --      it is written). Every relative image whose file does not exist is recorded, once
 --      per source and target, in the miss file for the CLI to report as a warning.
 --
--- The CLI hands the filter its settings as pandoc metadata ('-M name=value'):
+-- The CLI hands the filter ALL its settings as pandoc metadata ('-M name=value'), always,
+-- with an empty value where a setting is unused (empty reads as unset). Pandoc gives '-M'
+-- precedence over a same-named key in a source's YAML front matter, so nothing a source
+-- sets can supply or change a setting:
 --
 --   md2x-format      output format: pdf, html or docx
 --   md2x-source-dir  absolute directory images are resolved against, until a marker says
@@ -23,7 +26,8 @@
 --   md2x-source      name of that source, for messages
 --   md2x-out-dir     html only: absolute directory of the output file
 --   md2x-miss-file   file the missing-image records are appended to
---   md2x-nonce       '--single-page' only: the per-run secret source markers must carry
+--   md2x-nonce       per-run secret source markers must carry (always passed;
+--                    only '--single-page' inserts markers)
 --
 -- '--single-page' concatenates several sources into one document, so before each source
 -- the CLI inserts a one-line marker block, surrounded by blank lines:
