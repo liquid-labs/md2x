@@ -90,6 +90,15 @@ items:
         - plan/phase:interface-contract
         - effort:unspecified
       text: md2x-infer-version in src/cli/lib/preflight.sh runs 'git -C <input dir> rev-parse' and 'git status --porcelain' in a directory taken from the inputs; in a repository with attacker-supplied .git/config (for example an extracted archive), core.fsmonitor or similar settings make git execute commands. Run git with '-c core.fsmonitor= -c core.hooksPath=/dev/null' (and GIT_CONFIG_NOSYSTEM=1, status --no-optional-locks), or document that --infer-version assumes a trusted repository.
+    - title: infer-version git status runs clean filters
+      id: r4Pu
+      date: "2026-10-05"
+      tags:
+        - type:security
+        - priority:high
+        - plan/phase:remediation-01
+        - effort:unspecified
+      text: 'MAJOR, reproduced. md2x-infer-git in src/cli/lib/preflight.sh (lines ~74-81, used at ~90 and ~100) neutralizes core.fsmonitor and core.hooksPath, but ''git status --porcelain'' in an untrusted input directory still executes repository-configured commands: with a tracked .gitattributes ''* filter=x'' and .git/config ''[filter "x"] clean = <cmd>'', running exactly the hardened command after touching a file executed the clean filter (marker file created). core.hooksPath is irrelevant to status/rev-parse. Only reachable with --infer-version, but an extracted archive is user-owned so safe.directory does not protect. Remediate for real, not just a comment: for example skip the dirty check (and the ''working'' version) when ''git config --local --list'' (which executes nothing) shows keys that can run commands (filter.*, core.fsmonitor, include/includeIf, diff.*.command/external, core.sshCommand, core.pager and similar), warning and omitting the version instead; also set GIT_CONFIG_GLOBAL=/dev/null if appropriate. Add a bats regression case with a hostile filter driver that must not create its sentinel file (verify it fails on the current code), and document that --infer-version only trusts repositories whose local config is free of command-bearing keys.'
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
