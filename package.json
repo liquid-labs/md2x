@@ -37,8 +37,5 @@
     "eslint": "^9",
     "eslint-plugin-import-x": "^4.17.1",
     "neostandard": "^0.13.0"
-  },
-  "dependencies": {
-    "shelljs": "^0.8.5"
   }
 }

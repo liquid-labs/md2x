@@ -1,90 +1,93 @@
 import { afterEach, beforeEach, describe, expect, jest, mock, test } from 'bun:test'
+import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
-import os from 'node:os'
 import fsPath from 'node:path'
 
-// Manual factory mock: shelljs is CommonJS, imported as a default import, and mutated at module load
-// (`shell.config.silent = true` in md2x.js). Bun does not hoist `mock.module` above static imports, so the mock is
-// registered first and both `shelljs` and the module under test are loaded afterward with top-level dynamic
-// `import()`. The factory nests the mock surface under `default` to satisfy the default-import interop.
-mock.module('shelljs', () => ({
-  default : {
-    config      : {},
-    exec        : jest.fn(),
-    ShellString : jest.fn()
-  }
+// Bun does not hoist 'mock.module' above static imports, so the mock is registered first and the module under test is
+// loaded afterward with a top-level dynamic 'import()'.
+mock.module('node:child_process', () => ({
+  spawn     : jest.fn(),
+  spawnSync : jest.fn()
 }))
 
-const { default : shell } = await import('shelljs')
-const { md2x } = await import('./md2x')
+const { spawn, spawnSync } = await import('node:child_process')
+const { md2x, md2xAsync } = await import('./md2x')
+const index = await import('./index')
 
 // The repo bin/md2x is a gitignored build output, so 'fs.existsSync' is stubbed to report only this path as present.
 const BIN_PATH = fsPath.join(import.meta.dir, '..', '..', 'bin', 'md2x')
-const STAGING_DIR = '/tmp/md2x-AbC123'
-const BIN = `'${BIN_PATH}'` // shellQuote(BIN_PATH); the path contains no single quotes
 
-// Builds a fake shelljs 'exec' result: 'code'/'stderr' as plain properties (md2x.js reads them directly) and
-// 'toString()' standing in for shelljs' ShellString-like stdout accessor.
-const mockExecResult = (code, stdout = '', stderr = '') => ({
-  code,
-  stderr,
-  toString : () => stdout
-})
+const syncResult = (status, stdout = '', stderr = '', extra = {}) => ({ status, stdout, stderr, ...extra })
+
+// A fake child process for the async path.
+const fakeChild = () => {
+  const child = new EventEmitter()
+  child.stdout = Object.assign(new EventEmitter(), { setEncoding : jest.fn() })
+  child.stderr = Object.assign(new EventEmitter(), { setEncoding : jest.fn() })
+  child.stdin = Object.assign(new EventEmitter(), { end : jest.fn() })
+  return child
+}
+
+const argsOf = () => spawnSync.mock.calls[0][1]
 
 describe('md2x', () => {
-  let shellStringTo
   let existsSpy
-  let mkdtempSpy
-  let rmSpy
+  let errorSpy
 
   beforeEach(() => {
     jest.clearAllMocks()
     existsSpy = jest.spyOn(fs, 'existsSync').mockImplementation((path) => path === BIN_PATH)
-    shell.exec.mockReturnValue(mockExecResult(0))
-    mkdtempSpy = jest.spyOn(fs, 'mkdtempSync').mockReturnValue(STAGING_DIR)
-    rmSpy = jest.spyOn(fs, 'rmSync').mockImplementation(() => {})
-    shellStringTo = jest.fn()
-    shell.ShellString.mockReturnValue({ to : shellStringTo })
-  })
-
-  test('is exported as a function', () => {
-    expect(typeof md2x).toBe('function')
+    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    spawnSync.mockReturnValue(syncResult(0))
   })
 
   afterEach(() => {
     existsSpy.mockRestore()
+    errorSpy.mockRestore()
+  })
+
+  test('index exports md2x and md2xAsync', () => {
+    expect(index.md2x).toBe(md2x)
+    expect(index.md2xAsync).toBe(md2xAsync)
   })
 
   describe('bin resolution', () => {
-    test('invokes the resolved bin path directly, never via npx/bunx', () => {
+    test('invokes the resolved bin path directly, never via a shell or npx/bunx', () => {
       md2x({ sources : ['a.md'] })
 
-      const [command] = shell.exec.mock.calls[0]
-      expect(command.startsWith(`${BIN} `)).toBe(true)
-      expect(command).not.toMatch(/\b(npx|bunx)\b/)
+      const [bin, , opts] = spawnSync.mock.calls[0]
+      expect(bin).toBe(BIN_PATH)
+      expect(opts.shell).toBeUndefined()
     })
 
-    test('throws a clear error, without executing anything, when no bin can be found', () => {
+    test('throws a clear error, without spawning, when no bin can be found', () => {
       existsSpy.mockImplementation(() => false)
 
       expect(() => md2x({ sources : ['a.md'] })).toThrow(/Could not locate the md2x CLI executable/)
-      expect(shell.exec).not.toHaveBeenCalled()
+      expect(spawnSync).not.toHaveBeenCalled()
+    })
+
+    test('falls back to the second candidate (bundle layout)', () => {
+      const bundleBin = fsPath.join(import.meta.dir, '..', 'bin', 'md2x')
+      existsSpy.mockImplementation((path) => path === bundleBin)
+
+      md2x({ sources : ['a.md'] })
+
+      expect(spawnSync.mock.calls[0][0]).toBe(bundleBin)
     })
   })
 
-  describe('argument marshaling', () => {
-    test('applies only the always-on flags and the default output format when no options are set', () => {
+  describe('argv marshaling', () => {
+    test('applies only the always-on flags and the default format when no options are set', () => {
       md2x({ sources : ['a.md'] })
 
-      const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' 'a.md'`)
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', 'a.md'])
     })
 
-    test('honors a non-default output format', () => {
-      md2x({ sources : ['a.md'], format : 'html' })
+    test('passes the format lowercased', () => {
+      md2x({ sources : ['a.md'], format : 'HTML' })
 
-      const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(`${BIN} --list-files --output-format 'html' 'a.md'`)
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'html', 'a.md'])
     })
 
     test.each([
@@ -94,207 +97,293 @@ describe('md2x', () => {
       ['noToc', '--no-toc'],
       ['toc', '--toc'],
       ['singlePage', '--single-page']
-    ])('adds %s as %s, and only that flag, when set', (option, flag) => {
+    ])('adds %s as %s, and only that flag, when true', (option, flag) => {
       md2x({ sources : ['a.md'], [option] : true })
 
-      const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' ${flag} 'a.md'`)
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', flag, 'a.md'])
     })
 
-    test('single-quotes title and output path and places them in source order', () => {
-      md2x({ sources : ['a.md'], title : 'My Report', outputPath : './out dir' })
+    test('omits a flag set to false', () => {
+      md2x({ sources : ['a.md'], toc : false, singlePage : false })
 
-      const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(
-        `${BIN} --list-files --output-format 'pdf' --title 'My Report' --output-path './out dir' 'a.md'`
-      )
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', 'a.md'])
     })
 
-    test('space-joins and single-quotes each of multiple sources', () => {
-      md2x({ sources : ['a.md', 'b.md', 'c dir/d.md'] })
+    test('maps outputPath to --output-path and output to -o', () => {
+      md2x({ sources : ['a.md'], outputPath : './out dir' })
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', '--output-path', './out dir', 'a.md'])
 
-      const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' 'a.md' 'b.md' 'c dir/d.md'`)
+      jest.clearAllMocks()
+      md2x({ sources : ['a.md'], output : 'o/final.pdf' })
+      expect(argsOf()).toEqual(['--list-files', '--output-format', 'pdf', '-o', 'o/final.pdf', 'a.md'])
     })
 
-    // followup GuQR: '[]' is truthy, so 'sources: []' still takes the truthy branch of
-    // 'sources ? sources.map(shellQuote).join(' ') : ''', but '[].map(shellQuote).join(' ')' itself evaluates to
-    // '', the same empty sourceSpec the falsy branch would produce. So no positional source argument is emitted at
-    // all -- not a single empty-quoted "''" argument. Confirms the command ends with a bare trailing space and
-    // carries zero positional source args.
-    test('emits zero positional source args for an empty sources array (followup GuQR, locked in)', () => {
-      md2x({ sources : [] })
+    test('passes title, output, and sources verbatim, with no quoting', () => {
+      const title = 'It\'s a "quoted" $HOME `x` $(y) title'
+      md2x({ sources : ['c dir/d.md', "it's.md"], title, output : "o'dir/$x.pdf" })
 
-      const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' `)
-      expect(command.endsWith("''")).toBe(false)
+      expect(argsOf()).toEqual([
+        '--list-files', '--output-format', 'pdf', '--title', title, '-o', "o'dir/$x.pdf", 'c dir/d.md', "it's.md"
+      ])
     })
 
-    // 'sourceSpec' is built by escaping and single-quoting each source individually and space-joining the result,
-    // so a lone '-' source becomes the quoted string "'-'". The default-title check compares against that quoted
-    // form, so the 'Report' default applies for a lone '-' (stdin) source.
-    test('applies the default title for a lone "-" source (followup udVi, fixed)', () => {
-      md2x({ sources : ['-'] })
+    test('omits --title unless given (no Report default)', () => {
+      md2x({ markdown : '# x' })
 
-      const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' --title 'Report' '-'`)
-    })
-
-    // followup arUf: title/outputPath/sources are caller-supplied and were previously interpolated into raw
-    // single quotes with no escaping, so an embedded single quote could break out of the quoted span and inject
-    // arbitrary shell syntax. These cases assert the escaping helper closes that off: an embedded quote is
-    // rendered as the standard POSIX escape "'\''", which keeps the value safely inside its own quoted span and
-    // cannot terminate it early.
-    test('escapes an embedded single quote in title so it cannot break out of its quoted span', () => {
-      md2x({ sources : ['a.md'], title : "O'Brien's Report" })
-
-      const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(
-        `${BIN} --list-files --output-format 'pdf' --title 'O'\\''Brien'\\''s Report' 'a.md'`
-      )
-    })
-
-    test('escapes an embedded single quote in format so it cannot break out of its quoted span', () => {
-      md2x({ sources : ['a.md'], format : "pdf'; touch /tmp/pwned; '" })
-
-      const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(
-        `${BIN} --list-files --output-format 'pdf'\\''; touch /tmp/pwned; '\\''' 'a.md'`
-      )
-    })
-
-    test('escapes an embedded single quote in outputPath so it cannot break out of its quoted span', () => {
-      md2x({ sources : ['a.md'], outputPath : "./out'; touch /tmp/pwned; '" })
-
-      const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(
-        `${BIN} --list-files --output-format 'pdf' --output-path './out'\\''; touch /tmp/pwned; '\\''' 'a.md'`
-      )
-    })
-
-    test('escapes an embedded single quote in one sources entry without affecting adjacent entries', () => {
-      md2x({ sources : ["a'.md", 'b.md'] })
-
-      const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' 'a'\\''.md' 'b.md'`)
+      expect(argsOf()).not.toContain('--title')
+      expect(JSON.stringify(argsOf())).not.toContain('Report')
     })
   })
 
-  describe('return value', () => {
-    test('splits stdout on newlines and drops empty entries', () => {
-      shell.exec.mockReturnValue(mockExecResult(0, '/out/a.pdf\n\n/out/b.pdf\n'))
+  describe('stdin handling', () => {
+    test('sends markdown as input byte-exact, with "-" as the only positional argument', () => {
+      const markdown = '  # Hi\n    indented\nno trailing newline'
+      md2x({ markdown, format : 'html' })
 
-      const files = md2x({ sources : ['a.md'] })
+      const [, args, opts] = spawnSync.mock.calls[0]
+      expect(args).toEqual(['--list-files', '--output-format', 'html', '-'])
+      expect(opts.input).toBe(markdown)
+      expect(opts.stdio[0]).toBe('pipe')
+    })
 
-      expect(files).toEqual(['/out/a.pdf', '/out/b.pdf'])
+    test('does not stage anything on disk', () => {
+      const mkdtemp = jest.spyOn(fs, 'mkdtempSync')
+      md2x({ markdown : 'x' })
+      expect(mkdtemp).not.toHaveBeenCalled()
+      mkdtemp.mockRestore()
+    })
+
+    test('ignores stdin for sources so the CLI can never block on an inherited stdin', () => {
+      md2x({ sources : ['a.md'] })
+
+      const opts = spawnSync.mock.calls[0][2]
+      expect(opts.stdio).toEqual(['ignore', 'pipe', 'pipe'])
+      expect(opts.input).toBeUndefined()
+    })
+
+    test('sets a generous maxBuffer and utf8 encoding', () => {
+      md2x({ sources : ['a.md'] })
+
+      const opts = spawnSync.mock.calls[0][2]
+      expect(opts.maxBuffer).toBeGreaterThanOrEqual(64 * 1024 * 1024)
+      expect(opts.encoding).toBe('utf8')
     })
   })
 
-  describe('error propagation', () => {
-    test('throws an Error carrying the exit code and stderr on non-zero exit', () => {
-      shell.exec.mockReturnValue(mockExecResult(1, '', 'pandoc: missing binary'))
+  describe('validation', () => {
+    test.each([
+      ['non-object options', undefined, /'options' must be an object/],
+      ['null options', null, /'options' must be an object/],
+      ['array options', [], /'options' must be an object/],
+      ['unknown key', { sources : ['a.md'], keepIntermediate : true }, /unknown option 'keepIntermediate'/],
+      ['non-boolean flag', { sources : ['a.md'], toc : 'yes' }, /'toc' must be a boolean/],
+      ['non-boolean quiet', { sources : ['a.md'], quiet : 1 }, /'quiet' must be a boolean/],
+      ['empty title', { sources : ['a.md'], title : '' }, /'title' must be a non-empty string/],
+      ['non-string output', { sources : ['a.md'], output : 3 }, /'output' must be a non-empty string/],
+      ['empty outputPath', { sources : ['a.md'], outputPath : '' }, /'outputPath' must be a non-empty string/],
+      ['bad format', { sources : ['a.md'], format : 'epub' }, /'format' must be one of/],
+      ['non-string format', { sources : ['a.md'], format : 5 }, /'format' must be one of/],
+      ['toc with noToc', { sources : ['a.md'], toc : true, noToc : true }, /'toc' and 'noToc'/],
+      ['output with outputPath', { sources : ['a.md'], output : 'a', outputPath : 'b' }, /'output' and 'outputPath'/],
+      ['output "-"', { sources : ['a.md'], output : '-' }, /'output' cannot be '-'/],
+      ['markdown with sources', { markdown : 'x', sources : ['a.md'] }, /'markdown' and 'sources'/],
+      ['non-string markdown', { markdown : 5 }, /'markdown' must be a string/],
+      ['neither markdown nor sources', {}, /'markdown' or 'sources' is required/],
+      ['empty sources', { sources : [] }, /'sources' must be a non-empty array/],
+      ['non-array sources', { sources : 'a.md' }, /'sources' must be a non-empty array/],
+      ['empty-string source', { sources : ['a.md', ''] }, /'sources' must be a non-empty array/],
+      ['stdin source', { sources : ['-'] }, /cannot contain '-'.*'markdown'/],
+      ['stdin source among others', { sources : ['a.md', '-'] }, /cannot contain '-'/]
+    ])('throws TypeError for %s, without spawning', (_name, options, message) => {
+      let error
+      try { md2x(options) }
+      catch (err) { error = err }
 
-      expect(() => md2x({ sources : ['a.md'] }))
-        .toThrow("Could not covert file to 'pdf': (1) pandoc: missing binary")
+      expect(error).toBeInstanceOf(TypeError)
+      expect(error.message).toMatch(message)
+      expect(spawnSync).not.toHaveBeenCalled()
+    })
+
+    test('accepts a markdown-only call and an empty markdown string', () => {
+      expect(() => md2x({ markdown : '' })).not.toThrow()
     })
   })
 
-  describe('non-fatal stderr', () => {
-    let errorSpy
+  describe('results and errors', () => {
+    test('returns the --list-files stdout lines as an array, dropping blanks', () => {
+      spawnSync.mockReturnValue(syncResult(0, 'out/a.pdf\n\nout/b.pdf\n'))
 
-    beforeEach(() => {
-      errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      expect(md2x({ sources : ['a.md', 'b.md'] })).toEqual(['out/a.pdf', 'out/b.pdf'])
     })
 
-    afterEach(() => {
-      errorSpy.mockRestore()
-    })
+    test('forwards stderr to console.error on success', () => {
+      spawnSync.mockReturnValue(syncResult(0, 'a.pdf\n', 'a warning'))
 
-    test('returns normally and forwards stderr to console.error when the exit code is 0', () => {
-      shell.exec.mockReturnValue(mockExecResult(0, '/out/a.pdf\n', 'a warning'))
+      md2x({ sources : ['a.md'] })
 
-      const files = md2x({ sources : ['a.md'] })
-
-      expect(files).toEqual(['/out/a.pdf'])
       expect(errorSpy).toHaveBeenCalledWith('a warning')
     })
+
+    test('quiet suppresses the stderr forwarding', () => {
+      spawnSync.mockReturnValue(syncResult(0, 'a.pdf\n', 'a warning'))
+
+      md2x({ sources : ['a.md'], quiet : true })
+
+      expect(errorSpy).not.toHaveBeenCalled()
+      expect(argsOf()).not.toContain('quiet')
+    })
+
+    test('does not call console.error when stderr is empty', () => {
+      md2x({ sources : ['a.md'] })
+
+      expect(errorSpy).not.toHaveBeenCalled()
+    })
+
+    test('tolerates missing stdout/stderr on the result', () => {
+      spawnSync.mockReturnValue({ status : 0 })
+
+      expect(md2x({ sources : ['a.md'] })).toEqual([])
+    })
+
+    test('a non-zero exit throws an Error carrying exitCode and stderr, spelled correctly', () => {
+      spawnSync.mockReturnValue(syncResult(2, '', 'bad usage'))
+
+      let error
+      try { md2x({ sources : ['a.md'] }) }
+      catch (err) { error = err }
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error.message).toBe('md2x failed (exit 2): bad usage')
+      expect(error.exitCode).toBe(2)
+      expect(error.stderr).toBe('bad usage')
+      expect(error.message).not.toMatch(/co(v)ert/)
+    })
+
+    test('a spawn failure throws with the cause preserved and exitCode undefined', () => {
+      const cause = Object.assign(new Error('spawn ENOENT'), { code : 'ENOENT' })
+      spawnSync.mockReturnValue({ status : null, error : cause, stdout : null, stderr : null })
+
+      let error
+      try { md2x({ sources : ['a.md'] }) }
+      catch (err) { error = err }
+
+      expect(error.cause).toBe(cause)
+      expect(error.exitCode).toBeUndefined()
+      expect(error.message).toMatch(/could not run: spawn ENOENT/)
+    })
+
+    test('a signal-terminated child is reported as a failure with no exitCode', () => {
+      spawnSync.mockReturnValue({ status : null, signal : 'SIGKILL', stdout : '', stderr : 'x' })
+
+      let error
+      try { md2x({ sources : ['a.md'] }) }
+      catch (err) { error = err }
+
+      expect(error.exitCode).toBeUndefined()
+      expect(error.stderr).toBe('x')
+      expect(error.cause.message).toMatch(/SIGKILL/)
+    })
+  })
+})
+
+describe('md2xAsync', () => {
+  let existsSpy
+  let errorSpy
+  let child
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    existsSpy = jest.spyOn(fs, 'existsSync').mockImplementation((path) => path === BIN_PATH)
+    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    child = fakeChild()
+    spawn.mockReturnValue(child)
   })
 
-  describe('markdown staging path', () => {
-    test('stages the markdown string, appends the staging file to the command, and cleans up on success', () => {
-      shell.exec.mockReturnValue(mockExecResult(0, '/out/Title.pdf\n'))
+  afterEach(() => {
+    existsSpy.mockRestore()
+    errorSpy.mockRestore()
+  })
 
-      const files = md2x({ markdown : '# Hello', title : 'Title' })
+  test('resolves with the file list, writing markdown to stdin and ending it', async() => {
+    const markdown = '  # Hi\n'
+    const promise = md2xAsync({ markdown, format : 'html' })
+    child.stdout.emit('data', 'out/')
+    child.stdout.emit('data', 'output.html\n')
+    child.stderr.emit('data', 'note')
+    child.emit('close', 0, null)
 
-      expect(mkdtempSpy).toHaveBeenCalledTimes(1)
-      expect(mkdtempSpy).toHaveBeenCalledWith(fsPath.join(os.tmpdir(), 'md2x-'))
+    expect(await promise).toEqual(['out/output.html'])
+    const [bin, args, opts] = spawn.mock.calls[0]
+    expect(bin).toBe(BIN_PATH)
+    expect(args).toEqual(['--list-files', '--output-format', 'html', '-'])
+    expect(opts.stdio).toEqual(['pipe', 'pipe', 'pipe'])
+    expect(child.stdin.end).toHaveBeenCalledWith(markdown)
+    expect(errorSpy).toHaveBeenCalledWith('note')
+  })
 
-      const stagingFile = fsPath.join(STAGING_DIR, 'input.md')
-      expect(shell.ShellString).toHaveBeenCalledWith('# Hello')
-      expect(shellStringTo).toHaveBeenCalledWith(stagingFile)
+  test('ignores stdin for sources and does not write to it', async() => {
+    const promise = md2xAsync({ sources : ['a.md'], quiet : true })
+    child.stderr.emit('data', 'note')
+    child.emit('close', 0, null)
 
-      const [command] = shell.exec.mock.calls[0]
-      // Two spaces separate the last flag from the staging file: one from the empty 'sourceSpec', one from the append.
-      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' --title 'Title'  '${stagingFile}'`)
+    await promise
+    expect(spawn.mock.calls[0][2].stdio[0]).toBe('ignore')
+    expect(child.stdin.end).not.toHaveBeenCalled()
+    expect(errorSpy).not.toHaveBeenCalled()
+  })
 
-      expect(rmSpy).toHaveBeenCalledTimes(1)
-      expect(rmSpy).toHaveBeenCalledWith(STAGING_DIR, { recursive : true, force : true })
-      expect(files).toEqual(['/out/Title.pdf'])
-    })
+  test('swallows an EPIPE on stdin; the exit code is what is reported', async() => {
+    const promise = md2xAsync({ markdown : 'x' })
+    expect(() => child.stdin.emit('error', Object.assign(new Error('EPIPE'), { code : 'EPIPE' }))).not.toThrow()
+    child.stderr.emit('data', 'died early')
+    child.emit('close', 1, null)
 
-    test('never derives the staging path from a path-traversal title', () => {
-      shell.exec.mockReturnValue(mockExecResult(0, '/out/esc.pdf\n'))
+    await expect(promise).rejects.toMatchObject({ exitCode : 1, stderr : 'died early' })
+  })
 
-      md2x({ markdown : '# Hello', title : '../esc' })
+  test('rejects with exitCode and stderr on a non-zero exit', async() => {
+    const promise = md2xAsync({ sources : ['a.md'] })
+    child.stderr.emit('data', 'bad usage')
+    child.emit('close', 2, null)
 
-      const stagingFile = fsPath.join(STAGING_DIR, 'input.md')
-      expect(shellStringTo).toHaveBeenCalledWith(stagingFile)
-      const [command] = shell.exec.mock.calls[0]
-      expect(command.endsWith(` '${stagingFile}'`)).toBe(true)
-      expect(command).toContain("--title '../esc'")
-      expect(command.replace("--title '../esc'", '')).not.toContain('esc')
-    })
+    const error = await promise.catch((err) => err)
+    expect(error.message).toBe('md2x failed (exit 2): bad usage')
+    expect(error.exitCode).toBe(2)
+    expect(error.stderr).toBe('bad usage')
+  })
 
-    test('keeps the staging file as input.md and escapes an embedded single quote in title', () => {
-      shell.exec.mockReturnValue(mockExecResult(0, "/out/O'Brien.pdf\n"))
+  test('rejects with the cause preserved on a spawn error, and ignores a following close', async() => {
+    const promise = md2xAsync({ sources : ['a.md'] })
+    const cause = new Error('spawn ENOENT')
+    child.emit('error', cause)
+    child.emit('close', -2, null)
 
-      const files = md2x({ markdown : '# Hello', title : "O'Brien" })
+    const error = await promise.catch((err) => err)
+    expect(error.cause).toBe(cause)
+    expect(error.exitCode).toBeUndefined()
+  })
 
-      const stagingFile = fsPath.join(STAGING_DIR, 'input.md')
-      expect(shellStringTo).toHaveBeenCalledWith(stagingFile)
+  test('rejects when the child is killed by a signal', async() => {
+    const promise = md2xAsync({ sources : ['a.md'] })
+    child.emit('close', null, 'SIGTERM')
 
-      const [command] = shell.exec.mock.calls[0]
-      expect(command).toBe(`${BIN} --list-files --output-format 'pdf' --title 'O'\\''Brien'  '${stagingFile}'`)
+    const error = await promise.catch((err) => err)
+    expect(error.exitCode).toBeUndefined()
+    expect(error.cause.message).toMatch(/SIGTERM/)
+  })
 
-      expect(files).toEqual(["/out/O'Brien.pdf"])
-    })
+  test('rejects (never throws synchronously) on invalid options, without spawning', async() => {
+    let promise
+    expect(() => { promise = md2xAsync({ sources : ['-'] }) }).not.toThrow()
 
-    test('cleans up the staging directory even when the command fails (finally)', () => {
-      shell.exec.mockReturnValue(mockExecResult(1, '', 'boom'))
+    await expect(promise).rejects.toBeInstanceOf(TypeError)
+    expect(spawn).not.toHaveBeenCalled()
+  })
 
-      expect(() => md2x({ markdown : '# Hello', title : 'Title' })).toThrow()
+  test('rejects when the bin cannot be located', async() => {
+    existsSpy.mockImplementation(() => false)
 
-      expect(rmSpy).toHaveBeenCalledTimes(1)
-      expect(rmSpy).toHaveBeenCalledWith(STAGING_DIR, { recursive : true, force : true })
-    })
-
-    test('still passes --title Report when no title is given, with the fixed staging file name', () => {
-      shell.exec.mockReturnValue(mockExecResult(0, '/out/Report.pdf\n'))
-
-      md2x({ markdown : '# Hello' })
-
-      expect(shellStringTo).toHaveBeenCalledWith(fsPath.join(STAGING_DIR, 'input.md'))
-      expect(shell.exec.mock.calls[0][0]).toContain("--title 'Report'")
-    })
-
-    test('does not use Math.random', () => {
-      const randomSpy = jest.spyOn(Math, 'random')
-      shell.exec.mockReturnValue(mockExecResult(0))
-
-      md2x({ markdown : '# Hello', title : 'T' })
-
-      expect(randomSpy).not.toHaveBeenCalled()
-      randomSpy.mockRestore()
-    })
+    await expect(md2xAsync({ sources : ['a.md'] })).rejects.toThrow(/Could not locate the md2x CLI executable/)
+    expect(spawn).not.toHaveBeenCalled()
   })
 })

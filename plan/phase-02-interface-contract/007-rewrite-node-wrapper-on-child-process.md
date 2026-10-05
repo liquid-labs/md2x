@@ -104,3 +104,10 @@ Follow [Node wrapper](../notes/design-decisions.md#node-wrapper).
 - After the synchronous `md2x()` rewrite with validation and the shelljs removal.
 - After `md2xAsync()`.
 - After the test rewrite and the coverage check.
+
+## Status
+
+- Outcome: succeeded (2026-10-05). `make qa` passes; coverage for `src/node/md2x.js` and `src/node/index.js` is 100% funcs/lines (was 100% before).
+- Files: `src/node/md2x.js`, `src/node/index.js`, `src/node/md2x.test.js`, `package.json`, `bun.lock`.
+- Decision: used `spawnSync` rather than `execFileSync`, because `execFileSync` cannot return stderr on success, which the `quiet`/`console.error` forwarding requires.
+- Changelog note: the default `--title` is no longer `Report`; the wrapper omits `--title` so the CLI default (`output`) applies.
