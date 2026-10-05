@@ -124,11 +124,13 @@ phases:
           slug: harden-input-discovery-and-validation
           title: Harden Input Discovery and Validation
           path: phase-02-interface-contract/002-harden-input-discovery-and-validation.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: Input discovery builds one deduplicated, case-insensitive (*.md, *.markdown) resolved list feeding both the --title gate and conversion; adds usage error for no args, error for all-empty dirs, warning for a lone empty dir, '-' mixing error, case-insensitive -F validation, UTF-8/NUL rejection, and rejects control-character file names (x2X1). 25 new bats cases; validation passed under bash 5 and 3.2.
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-02-002
+            commit:
+                - 99b3244
             merge: null
         - number: 3
           slug: add-output-option-and-collision-checks
