@@ -363,7 +363,7 @@ phases:
             - 3rV7
             - yV1b
           git:
-            branch: null
+            branch: plan/golden-release-hardening-05-003
             commit: []
             merge: null
         - number: 4
