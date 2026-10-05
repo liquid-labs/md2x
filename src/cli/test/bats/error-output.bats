@@ -58,3 +58,20 @@ teardown() {
   assert_failure 1
   assert_stderr_contains "md2x: pandoc failed for 'report.md'"
 }
+
+@test "a failing pandoc surfaces its stderr, minus only the known user-select warning, and exits 1" {
+  md2x_write_doc 'report.md'
+  export MD2X_TEST_STUB_EXIT_CODE=64
+  export MD2X_TEST_STUB_STDERR='WARNING: Ignored `user-select: none` at 49:32, unknown property.
+WeasyPrint boom: real failure
+WARNING: Ignored `user-select: none` at 49:33, unknown property.'
+
+  md2x_run --flatten-dirs --output-path . report.md
+
+  assert_failure 1
+  assert_stderr_contains 'WeasyPrint boom: real failure'
+  assert_stderr_contains 'at 49:33, unknown property.'
+  [[ "${stderr}" != *'at 49:32, unknown property.'* ]] \
+    || md2x_fail "the exact known warning line should have been dropped" "${stderr}"
+  assert_stderr_contains "md2x: pandoc failed for 'report.md'"
+}

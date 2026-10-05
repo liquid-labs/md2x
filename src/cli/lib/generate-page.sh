@@ -100,6 +100,15 @@ generate-page() {
   #   Not used: 'pandoc.path', 'PANDOC_VERSION', anything beyond Lua 5.1 syntax.
   # Only pandoc 3.10.1 has been exercised; the versions above come from the Lua filter
   # documentation, not from a test run on an older pandoc.
+  # Pandoc's stderr (which WeasyPrint inherits) is captured to a work file and replayed
+  # afterwards with exactly one known line dropped: pandoc's own default template carries
+  # a 'user-select' rule WeasyPrint reports on every PDF run. The drop is an exact whole-line
+  # match, so every other line passes through unchanged; the capture does not touch pandoc's
+  # exit status, which the '||' below still sees directly.
+  local PANDOC_STDERR_FILE="${MD2X_WORK_DIR}/pandoc.stderr"
+  md2x-replay-pandoc-stderr() {
+    grep -vxF 'WARNING: Ignored `user-select: none` at 49:32, unknown property.' -- "$1" >&2 || true
+  }
   pandoc \
     $( [[ "${OUTPUT_FORMAT}" != 'pdf' ]] || echo "--pdf-engine=${WEASYPRINT_BIN}" ) \
     ${INCLUDE_BODY_ARGS[@]+"${INCLUDE_BODY_ARGS[@]}"} \
@@ -113,15 +122,18 @@ generate-page() {
     "${PREPROCESSED_FILE}" \
     -o "${BASE_OUTPUT}" \
     --log "${PANDOC_LOG_FILE}" \
-    1>/dev/null \
-    || md2x-die-runtime "pandoc failed for '${INPUT_DISPLAY}'."
+    1>/dev/null 2>"${PANDOC_STDERR_FILE}" \
+    || {
+      md2x-replay-pandoc-stderr "${PANDOC_STDERR_FILE}"
+      md2x-die-runtime "pandoc failed for '${INPUT_DISPLAY}'."
+    }
+  md2x-replay-pandoc-stderr "${PANDOC_STDERR_FILE}"
   md2x-report-missing-images "${MISSING_IMAGES_FILE}"
   # Pandoc's own stdout is inert when '-o <file>' is given; the explicit redirect
   # guarantees stdout purity for '--to-stdout'/'--list-files' by construction rather
-  # than by relying on that behavior. Stderr is left untouched: WeasyPrint runs as a
-  # Pandoc subprocess and inherits Pandoc's stderr fd, so its warning/progress chatter
-  # (and any real fatal error) flows straight to the CLI's own real stderr, where
-  # 'errexit' still catches a non-zero Pandoc exit since nothing pipes or masks it.
+  # than by relying on that behavior. Stderr is captured and replayed above, so
+  # WeasyPrint's warning/progress chatter and any real fatal error still reach the CLI's
+  # own stderr, and 'errexit' still catches a non-zero Pandoc exit.
   #
   # Pandoc's own native table-of-contents flag is retired for every format: md2x now
   # generates the TOC itself, ahead of Pandoc, as ordinary Markdown content in
