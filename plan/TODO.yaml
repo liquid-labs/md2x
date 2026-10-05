@@ -456,7 +456,8 @@ phases:
             - m1SB
           git:
             branch: plan/golden-release-hardening-06-002
-            commit: []
+            commit:
+                - 82fb9b5
             merge: null
         - number: 3
           slug: always-pass-filter-nonce-and-harden-test-pack
