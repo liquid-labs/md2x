@@ -45,6 +45,15 @@ items:
         - plan/phase:interface-contract
         - effort:unspecified
       text: In src/cli/md2x.sh (target planning, around the -o validation) and src/cli/lib/generate-page.sh (delivery), '-o out/ a.md' where out/ does not yet exist passes planning (md2x-check-output-location only rejects an existing directory); delivery then runs mkdir -p out and cp output.pdf out/, which fails with a runtime error (exit 1) after conversion work and leaves an empty out/ directory. The contract is that an unusable output path is a usage error (exit 2) before any conversion. Reject an OUTPUT_FILE ending in '/' with md2x-die-usage at plan time and add a bats regression case.
+    - title: index.d.ts JSDoc misdescribes options
+      id: YkUH
+      date: "2026-10-05"
+      tags:
+        - type:documentation
+        - priority:low
+        - plan/phase:interface-contract
+        - effort:unspecified
+      text: The JSDoc in src/node/index.d.ts (around lines 10-17) says inferTitle and inferVersion "infer ... from the content" and singlePage "Render a single page". The CLI actually embeds the --title or filename-derived title as metadata (inferTitle), takes the version from the first input's git repository package.json (inferVersion), and concatenates all inputs into one document (singlePage). Reword these shipped type docs to match the CLI help text.
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
