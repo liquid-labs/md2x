@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 2
-    tasks_added: 8
+    tasks_added: 9
 phases:
     - number: 1
       slug: correctness-and-regression-tests
@@ -437,6 +437,19 @@ phases:
           tier: sonnet-high
           findings:
             - r4Pu
+          git:
+            branch: null
+            commit: []
+            merge: null
+        - number: 2
+          slug: harden-output-delivery-and-find-roots
+          title: Harden Output Delivery Edge Cases And Find Root Handling
+          path: phase-06-remediation-02/002-harden-output-delivery-and-find-roots.md
+          done: false
+          tier: sonnet-med
+          findings:
+            - wgQ3
+            - m1SB
           git:
             branch: null
             commit: []
