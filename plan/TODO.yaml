@@ -188,7 +188,7 @@ phases:
           tier: sonnet-med
           digest: 'Rewrote the Node wrapper on node:child_process with argv arrays: markdown goes on stdin as ''-'', no staging file or shelljs, options validated before spawning. Added md2xAsync, output (-o) and quiet, and errors carrying exitCode and stderr. Removed the shelljs dependency and rewrote tests with 100% coverage.'
           git:
-            branch: null
+            branch: plan/golden-release-hardening-02-007
             commit: []
             merge: null
         - number: 8
