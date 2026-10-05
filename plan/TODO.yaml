@@ -164,7 +164,7 @@ phases:
           tier: sonnet-med
           digest: Added lib/preflight.sh with pandoc >= 2.0 floor check, lazy unquoted --infer-version inference using the first input's repo, git/jq required only for --infer-version, and md2x-formatted errors instead of raw tool errors at audited leak sites. 19 new bats cases; validation passed under bash 5 and 3.2.
           git:
-            branch: null
+            branch: plan/golden-release-hardening-02-005
             commit: []
             merge: null
         - number: 6
