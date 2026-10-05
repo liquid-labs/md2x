@@ -19,3 +19,7 @@ Fixes finding SmNy from the Phase 2 review. The work targets the plan branch `pl
 
 - Finding SmNy, in this plan's `plan/findings.yaml`.
 - Files: `src/cli/lib/preflight.sh`, `src/cli/test/bats/`.
+
+## Status
+
+Succeeded, 2026-10-05. Added `md2x-infer-git` in `src/cli/lib/preflight.sh` (`GIT_CONFIG_NOSYSTEM=1 git --no-optional-locks -c core.fsmonitor= -c core.hooksPath=/dev/null`), used for both git calls. `--no-optional-locks` is a git global option (it precedes the subcommand; `status --no-optional-locks` is rejected). Added a sentinel bats case in `src/cli/test/bats/version-inference.bats`; confirmed it fails on the old build and passes now. `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` are green.
