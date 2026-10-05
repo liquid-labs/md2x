@@ -64,7 +64,7 @@ Done'
 
   md2x_run --flatten-dirs --output-path . report.md
 
-  assert_failure
+  assert_failure 1
   assert_stderr_contains 'ERROR: fatal WeasyPrint failure'
 }
 

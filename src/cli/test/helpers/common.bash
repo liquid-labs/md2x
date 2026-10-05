@@ -182,7 +182,7 @@ md2x_use_stub_path() {
 
 # md2x_path_without <binary>...
 # Rebuilds PATH so the named binaries are not resolvable at all -- the case md2x's
-# preflight reports with exit status 2. Fails loudly if one is still reachable, since
+# preflight reports with exit status 3. Fails loudly if one is still reachable, since
 # a silently-satisfied preflight would make such a test vacuously pass.
 md2x_path_without() {
   md2x_use_stub_path "$@"
