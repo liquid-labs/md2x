@@ -259,7 +259,7 @@ phases:
             branch: plan/golden-release-hardening-03-004
             commit:
                 - baa2400
-            merge: null
+            merge: 3ce00333bf601851df0a4b78a755b43076452448
         - number: 5
           slug: package-metadata-and-pack-verification
           title: Correct Package Metadata and Verify Pack Contents
