@@ -256,7 +256,7 @@ phases:
           tier: sonnet-med
           digest: Fixed the 20 key-spacing errors in eslint.config.mjs, widened make lint and lint-fix to the whole repo, and widened the ignores. ESLint 10 is blocked by the neostandard peer range, so the dependencies are unchanged. qa, test-pack and the bash 3.2 suite pass.
           git:
-            branch: null
+            branch: plan/golden-release-hardening-03-004
             commit: []
             merge: null
         - number: 5
