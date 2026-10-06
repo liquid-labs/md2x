@@ -334,7 +334,8 @@ phases:
           digest: Brought docs/architecture.md into conformance with the final code (exit-code contract, new components, Node wrapper process model and dual build, stylesheet and stderr handling, version inference trust model, dependency set, CI) with 18 added Key decisions; reviewed the spec and left it unchanged apart from one pointer bullet. make qa and the drift test pass.
           git:
             branch: plan/golden-release-hardening-04-001
-            commit: []
+            commit:
+                - f5b76b6
             merge: null
     - number: 5
       slug: remediation-01
