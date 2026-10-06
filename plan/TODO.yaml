@@ -486,6 +486,7 @@ phases:
           path: phase-07-remediation-03/001-allowlist-repo-config-for-infer-version.md
           done: false
           tier: sonnet-high
+          digest: Replaced the config denylist with an allowlist, hardened the git status call (no submodule recursion, no lazy fetch, protocol.allow=never, no global config), and removed the pipefail fail-open. Nine new bats cases; the four execution cases and the refusal cases fail on the pre-change build. Implementer tried to defeat the fix in a scratch dir without success.
           findings:
             - U0Pj
             - Qbv2
