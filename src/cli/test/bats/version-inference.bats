@@ -266,7 +266,8 @@ make_repo() {
 # --- repository config that can run commands --------------------------------------------
 #
 # A repository's own config is untrusted input: before any 'git status', 'md2x-infer-version'
-# reads the config key names and, on a command-bearing key, warns once and omits the version.
+# reads the config key names and, on any key outside a short allowlist of harmless ones,
+# warns once and omits the version. 'git status' itself also runs with submodules ignored.
 
 # assert_version_omitted: the last 'md2x_run' warned about the refusal, still succeeded, and
 # the footer carries no 'Version'.
@@ -374,4 +375,191 @@ assert_version_omitted() {
   md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out2 repo/doc.md
   assert_success
   assert_any_call_contains gs 'Version: working'
+}
+
+# --- the allowlist: keys that can make git run something ----------------------------------
+
+# add_config_keys <repo> <raw config text>: appends the text to the repository's own config
+# file, bypassing 'git config' so any key and ordering can be written.
+add_config_keys() {
+  printf '%s\n' "${2}" >> "${1}/.git/config"
+}
+
+# make_promisor_repo <repo> <sentinel> [<url>]: a repository whose 'old.md' blob is missing
+# locally, with a staged similar 'new.md', so a rename-detecting 'git status' must fetch the
+# blob from the promisor remote. The remote's 'uploadpack' command writes the sentinel. The
+# remote is only ever a local path or an 'ext::' command: nothing touches the network.
+make_promisor_repo() {
+  local repo="${1}" sentinel="${2}" url="${3:-${PWD}/no-such-remote}" oid
+  mkdir -p "${repo}"
+  seq 1 400 > "${repo}/old.md"
+  md2x_write_doc "${repo}/doc.md"
+  printf '%s\n' '{"name":"x","version":"2.3.4"}' > "${repo}/package.json"
+  (
+    cd "${repo}"
+    git init -q .
+    git add -A
+    git -c user.name=t -c user.email=t@example.com -c commit.gpgsign=false commit -q -m init
+    oid="$(git rev-parse HEAD:old.md)"
+    git config core.repositoryformatversion 1
+    git config remote.origin.url "${url}"
+    git config remote.origin.uploadpack "touch '${sentinel}'; false #"
+    git config remote.origin.promisor true
+    git config remote.origin.partialclonefilter blob:none
+    git config extensions.partialclone origin
+    seq 1 399 > new.md
+    git add new.md
+    git rm -q old.md
+    rm -f ".git/objects/${oid:0:2}/${oid:2}"
+  )
+}
+
+@test "--infer-version does not run a partial-clone remote's uploadpack command to fetch a missing blob" {
+  require_git_and_jq
+  local sentinel="${PWD}/uploadpack-ran"
+  rm -f "${sentinel}"
+  make_promisor_repo repo "${sentinel}"
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  [[ ! -e "${sentinel}" ]] || md2x_fail "the remote's uploadpack command ran"
+  assert_version_omitted
+}
+
+@test "--infer-version does not run an ext:: remote URL command, even with protocol.ext.allow=always" {
+  require_git_and_jq
+  local sentinel="${PWD}/ext-ran"
+  rm -f "${sentinel}"
+  printf '#!/bin/sh\ntouch "%s"\nexit 1\n' "${sentinel}" > ext-command.sh
+  chmod +x ext-command.sh
+  make_promisor_repo repo "${PWD}/uploadpack-ran" "ext::${PWD}/ext-command.sh"
+  git -C repo config protocol.ext.allow always
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  [[ ! -e "${sentinel}" ]] || md2x_fail "the ext:: remote command ran"
+  [[ ! -e "${PWD}/uploadpack-ran" ]] || md2x_fail "the remote's uploadpack command ran"
+  assert_version_omitted
+}
+
+@test "--infer-version does not run a clean filter from a submodule's own config" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  local sentinel="${PWD}/submodule-filter-ran" sha
+  rm -f "${sentinel}"
+  # A committed gitlink with a checked-out submodule, but nothing about it in the outer config.
+  mkdir -p repo/sub
+  (
+    cd repo/sub
+    git init -q .
+    printf 'a\n' > f.txt
+    printf '* filter=x\n' > .gitattributes
+    git add -A
+    git -c user.name=t -c user.email=t@example.com -c commit.gpgsign=false commit -q -m sub
+  )
+  sha="$(git -C repo/sub rev-parse HEAD)"
+  git -C repo update-index --add --cacheinfo "160000,${sha},sub"
+  printf '[submodule "sub"]\n\tpath = sub\n\turl = ./sub\n' > repo/.gitmodules
+  git -C repo add .gitmodules
+  git -C repo -c user.name=t -c user.email=t@example.com -c commit.gpgsign=false commit -q -m gitlink
+  git -C repo/sub config filter.x.clean "touch '${sentinel}'; cat"
+  touch -t 200001010000 repo/sub/f.txt
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  [[ ! -e "${sentinel}" ]] || md2x_fail "the submodule's clean filter ran"
+  assert_success
+}
+
+@test "--infer-version still refuses the per-worktree config after more than 64 KB of ordinary keys" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  local sentinel="${PWD}/worktree-filter-ran"
+  rm -f "${sentinel}"
+  printf '* filter=x\n' > repo/.gitattributes
+  git -C repo add .gitattributes
+  git -C repo -c user.name=t -c user.email=t@example.com -c commit.gpgsign=false commit -q -m attrs
+  # 'extensions.worktreeConfig' comes first, then a key list larger than a pipe buffer.
+  add_config_keys repo "$(printf '[extensions]\n\tworktreeConfig = true\n[user]\n'
+    awk 'BEGIN { for (i = 0; i < 1200; i++) printf "\tpad-%04d-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx = 1\n", i }')"
+  printf '[filter "x"]\n\tclean = touch '"'%s'"'; cat\n' "${sentinel}" > repo/.git/config.worktree
+  touch -t 200001010000 repo/package.json repo/doc.md
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  [[ ! -e "${sentinel}" ]] || md2x_fail "the per-worktree clean filter ran"
+  assert_version_omitted
+  assert_stderr_contains "'filter.x.clean'"
+}
+
+# assert_key_refused <config key> <value>: a repository with that one extra key is refused.
+assert_key_refused() {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  git -C repo config "${1}" "${2}"
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_version_omitted
+}
+
+@test "--infer-version refuses remote.<n>.uploadpack" {
+  assert_key_refused remote.origin.uploadpack 'true'
+  assert_stderr_contains "'remote.origin.uploadpack'"
+}
+
+@test "--infer-version refuses remote.<n>.receivepack, vcs, proxy, promisor and partialclonefilter" {
+  assert_key_refused remote.origin.receivepack 'true'
+  local key
+  for key in vcs proxy promisor partialclonefilter; do
+    git -C repo config --unset-all remote.origin.receivepack || true
+    git -C repo config "remote.origin.${key}" x
+    md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+    assert_version_omitted
+    git -C repo config --unset "remote.origin.${key}"
+  done
+}
+
+@test "--infer-version refuses protocol.*, url.<base>.insteadOf and every extensions.* but worktreeConfig" {
+  assert_key_refused protocol.ext.allow always
+  git -C repo config --unset protocol.ext.allow
+  git -C repo config 'url.https://example.com/.insteadOf' 'x:'
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+  assert_version_omitted
+  git -C repo config --unset 'url.https://example.com/.insteadOf'
+  git -C repo config extensions.partialClone origin
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+  assert_version_omitted
+  git -C repo config --unset extensions.partialClone
+  git -C repo config submodule.sub.url ./sub
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+  assert_version_omitted
+}
+
+@test "--infer-version matches the allowlist case-insensitively, so odd casing cannot slip a key through" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  add_config_keys repo '[ReMoTe "origin"]
+	UploadPack = true'
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_version_omitted
+  assert_stderr_contains "'remote.origin.uploadpack'"
+}
+
+@test "--infer-version allows a remote with only url, pushurl and fetch" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  git -C repo remote add origin https://example.com/x.git
+  git -C repo config remote.origin.pushurl https://example.com/push.git
+  git -C repo config --add remote.origin.fetch '+refs/pull/*/head:refs/remotes/origin/pr/*'
+  git -C repo config user.email someone@example.com
+  git -C repo config branch.main.merge refs/heads/main
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_success
+  [[ -z "${stderr}" ]] || md2x_fail "unexpected stderr: ${stderr}"
+  assert_any_call_contains gs 'Version: 2.3.4'
 }

@@ -34,3 +34,12 @@ Version inference only runs git with `--infer-version`. The goal is that md2x ne
 - Finding U0Pj, in this plan's `plan/findings.yaml`.
 - Finding Qbv2, in this plan's `plan/findings.yaml`.
 - Files: `src/cli/lib/preflight.sh`, `src/cli/lib/output-plan.sh`, `src/cli/test/bats/version-inference.bats`, `docs/md2x-spec.md`.
+
+## Status
+
+- Outcome: succeeded (2026-10-05).
+- `src/cli/lib/preflight.sh`: denylist replaced by an allowlist (`md2x-infer-key-allowed`, `md2x-infer-scan-keys`); case-insensitive via a single `LC_ALL=C tr`; no pipe anywhere in the path (here-string plus `case`); `md2x-infer-git` now adds `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_NO_LAZY_FETCH=1`, `-c protocol.allow=never`; status runs with `--ignore-submodules=all --no-renames`.
+- Plain `remote.<n>.url`, `pushurl`, `fetch` are allowed; `uploadpack`, `receivepack`, `vcs`, `proxy`, `promisor`, `partialclonefilter` and the rest of `remote.*` are refused.
+- `src/cli/lib/output-plan.sh`: dead post-`mv` symlink check dropped. `docs/md2x-spec.md`: trust text updated.
+- `src/cli/test/bats/version-inference.bats`: 9 new cases. Against a pre-change build, 8 fail (uploadpack, ext::, submodule filter, >64 KB worktree config, and four allowlist-refusal cases) and the plain-remote guard passes.
+- `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` green.

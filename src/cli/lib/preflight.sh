@@ -73,24 +73,33 @@ md2x-require-infer-version-tools() {
 
 # md2x-infer-git <git args...>
 # Runs 'git' with the repository-local configuration partly neutralized: the directory comes
-# from the inputs, and a '.git/config' there (core.fsmonitor, core.hooksPath) can otherwise
-# make git execute commands. The two '-c' overrides cover only those two keys; other keys
-# (a 'filter.<name>.clean', a 'diff.<name>.textconv', an 'include.path', ...) still run
-# commands or pull in more config. 'md2x-infer-version' therefore refuses, via
-# 'md2x-infer-config-refusal', any repository whose local config carries a command-bearing
-# key before it runs 'git status' through this wrapper.
+# from the inputs, and its '.git/config' is untrusted (a core.fsmonitor, a 'filter.<name>.clean',
+# a 'remote.<name>.uploadpack', a 'protocol.ext.allow', ... can all make git run a command).
+# The wrapper drops the system and global config, switches off fsmonitor and hooks, forbids
+# every transport (protocol.allow=never) and lazy fetching, and takes the optional locks
+# away. That is only the second line of defence: 'md2x-infer-version' first refuses, via
+# 'md2x-infer-config-refusal', every repository whose local config holds a key outside a
+# short allowlist, and it never runs 'git status' in one. 'GIT_NO_LAZY_FETCH' and
+# 'GIT_CONFIG_GLOBAL' are ignored by a git too old to know them.
 md2x-infer-git() {
-  GIT_CONFIG_NOSYSTEM=1 git --no-optional-locks -c core.fsmonitor= -c core.hooksPath=/dev/null "$@"
+  GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_NO_LAZY_FETCH=1 \
+    git --no-optional-locks -c core.fsmonitor= -c core.hooksPath=/dev/null \
+      -c protocol.allow=never "$@"
 }
 
-# md2x-infer-key-refusal <lowercased config key>
-# Returns 0 when the key could run a command or pull in other configuration (the key's last
-# dotted component is the variable name; any earlier part is the section and subsection).
-md2x-infer-key-refusal() {
+# md2x-infer-key-allowed <lowercased config key>
+# Returns 0 only for a key known to be benign: plain repository settings, 'user.*',
+# 'branch.*', and the 'url', 'pushurl' and 'fetch' variables of a remote. Everything else
+# ('remote.<n>.uploadpack', 'protocol.*', 'url.*', 'filter.*', 'submodule.*', every other
+# 'extensions.*', ...) is outside the allowlist. The key's last dotted component is the
+# variable name; any earlier part is the section and subsection.
+md2x-infer-key-allowed() {
   case "${1}" in
-    filter.*|include.*|includeif.*|credential.*|core.fsmonitor|core.worktree) return 0;;
-    *.command|*.program|*.driver|*.textconv|*.external|*.pager|*.editor|*.askpass) return 0;;
-    *.sshcommand|*.gitproxy|*.process|*.clean|*.smudge) return 0;;
+    core.repositoryformatversion|core.filemode|core.bare|core.logallrefupdates) return 0;;
+    core.ignorecase|core.precomposeunicode|core.symlinks) return 0;;
+    extensions.worktreeconfig) return 0;;
+    user.*|branch.*) return 0;;
+    remote.*.url|remote.*.pushurl|remote.*.fetch) return 0;;
   esac
   return 1
 }
@@ -103,19 +112,48 @@ md2x-infer-config-keys() {
   md2x-infer-git -C "${1}" config "${2}" --list --name-only 2>/dev/null
 }
 
+# md2x-infer-scan-keys <key list, one per line>
+# Checks every key against 'md2x-infer-key-allowed', case-insensitively: the list is
+# lowercased once, so a warning names the lowercased key. Returns 0 when every key is
+# allowed; returns 1 after setting 'REASON' in the caller's scope (the caller declares it
+# 'local'). Sets the caller's 'WORKTREE_CONFIG' to 1 when 'extensions.worktreeConfig' is
+# present. Uses only a here-string and a 'case', never a pipe, so a long list cannot take a
+# SIGPIPE under 'pipefail' and slip through.
+md2x-infer-scan-keys() {
+  local LKEYS LKEY
+  LKEYS="$(LC_ALL=C tr '[:upper:]' '[:lower:]' <<< "${1}")"
+  while IFS= read -r LKEY; do
+    [[ -n "${LKEY}" ]] || continue
+    case "${LKEY}" in
+      *.*) ;;
+      *) REASON='its local git config could not be parsed'; return 1;;
+    esac
+    if ! md2x-infer-key-allowed "${LKEY}"; then
+      REASON="its local git config has the key '$(md2x-title-display "${LKEY}")', which is not on the list of keys known to be harmless"
+      return 1
+    fi
+    [[ "${LKEY}" != extensions.worktreeconfig ]] || WORKTREE_CONFIG=1
+  done <<< "${LKEYS}"
+  return 0
+}
+
 # md2x-infer-config-refusal <toplevel>
 # Reads the repository's own config (and the per-worktree config when
 # 'extensions.worktreeConfig' is set) without running anything. Returns 0 after printing a
-# one-line reason on stdout when the config holds a command-bearing key or cannot be read or
-# parsed (fail closed); returns 1 when every key is ordinary.
+# one-line reason on stdout when the config holds a key outside the allowlist or cannot be
+# read or parsed (fail closed); returns 1 when every key is on the allowlist.
 md2x-infer-config-refusal() {
-  local TOP="${1}" KEYS WKEYS='' KEY LKEY WFILE
+  local TOP="${1}" KEYS WKEYS WFILE REASON='' WORKTREE_CONFIG=0
   KEYS="$(md2x-infer-config-keys "${TOP}" --local)" || KEYS=''
   if [[ -z "${KEYS}" ]]; then
     printf 'its local git config could not be read (git >= 2.22 is needed)'
     return 0
   fi
-  if printf '%s\n' "${KEYS}" | grep -qixF 'extensions.worktreeconfig'; then
+  if ! md2x-infer-scan-keys "${KEYS}"; then
+    printf '%s' "${REASON}"
+    return 0
+  fi
+  if [[ "${WORKTREE_CONFIG}" == 1 ]]; then
     WFILE="$(md2x-infer-git -C "${TOP}" rev-parse --git-path config.worktree 2>/dev/null)" || WFILE=''
     if [[ -z "${WFILE}" ]]; then
       printf 'its per-worktree git config could not be located'
@@ -129,20 +167,12 @@ md2x-infer-config-refusal() {
         printf 'its per-worktree git config could not be read'
         return 0
       fi
+      if ! md2x-infer-scan-keys "${WKEYS}"; then
+        printf '%s' "${REASON}"
+        return 0
+      fi
     fi
   fi
-  while IFS= read -r KEY; do
-    [[ -n "${KEY}" ]] || continue
-    LKEY="$(printf '%s' "${KEY}" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-    case "${LKEY}" in
-      *.*) ;;
-      *) printf 'its local git config could not be parsed'; return 0;;
-    esac
-    if md2x-infer-key-refusal "${LKEY}"; then
-      printf "its local git config has the command-bearing key '%s'" "$(md2x-title-display "${KEY}")"
-      return 0
-    fi
-  done <<< "${KEYS}"$'\n'"${WKEYS}"
   return 1
 }
 
@@ -151,7 +181,7 @@ md2x-infer-config-refusal() {
 # <dir>: the 'version' of '<toplevel>/package.json', or 'working' when the work tree has
 # uncommitted changes. Prints nothing, after one warning on stderr, when <dir> is not in a
 # git work tree, the package.json is missing, unreadable, or has no version, or the
-# repository's local config holds a command-bearing key (or cannot be read; no 'git status'
+# repository's local config holds a key outside the allowlist (or cannot be read; no 'git status'
 # runs then); the caller omits the version from the footer and carries on. Needs 'git' and
 # 'jq' (see above).
 md2x-infer-version() {
@@ -170,7 +200,10 @@ md2x-infer-version() {
     md2x-warn "--infer-version: not running git in '$(md2x-title-display "${TOP}")': ${REASON}; no version in the footer."
     return 0
   fi
-  STATUS="$(md2x-infer-git -C "${TOP}" status --porcelain 2>/dev/null)" || STATUS='?'
+  # '--ignore-submodules=all' (the flag beats any config) keeps git out of submodules, whose
+  # own config could run a filter; '--no-renames' skips the rename detection that can read, and
+  # so lazily fetch, blobs.
+  STATUS="$(md2x-infer-git -C "${TOP}" status --porcelain --ignore-submodules=all --no-renames 2>/dev/null)" || STATUS='?'
   if [[ -n "${STATUS}" ]]; then
     printf 'working'
     return 0
