@@ -36,3 +36,7 @@ architectural_impact: true
 - [Design decisions, flag table single source](../notes/design-decisions.md#flag-table-single-source)
 - [Short-flag answer](../notes/short-flag-set-answer.md)
 - [Audit coverage](../notes/audit-coverage.md): D20.
+
+## Status
+
+succeeded, 2026-10-05. Added `src/cli/test/bats/flag-table-drift.bats` and `src/cli/test/helpers/flag-table.bash`. The test compares the `(short, long)` pairs from `MD2X_OPTION_TABLE`, `md2x --help`, and the README CLI reference table, checks the spec links to the README table with no flag-table rows, and runs drift variants against temp copies. `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` (bash 3.2.57) pass.
