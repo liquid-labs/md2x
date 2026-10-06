@@ -95,8 +95,14 @@ def slugify(raw_text):
     return '-'.join(filtered_tokens)
 
 
-def allocate_slug(base, used):
+def allocate_slug(base, used, next_probe=None):
     """Allocates a deduplicated identifier for 'base', recording it into 'used'.
+
+    'next_probe' (optional dict) maps a base to the first suffix not yet tried for
+    it. 'used' only ever grows, so every suffix below that index is already taken
+    and need not be re-probed; this makes d duplicates O(d) rather than O(d^2)
+    while producing identical output. Each probe still checks 'used', because a
+    literal heading such as 'foo-1' can occupy a candidate.
 
     Mirrors Pandoc: on collision, try 'base-1', 'base-2', ... skipping any
     candidate already in 'used'. Works uniformly for empty and non-empty bases --
@@ -106,11 +112,13 @@ def allocate_slug(base, used):
     if base not in used:
         used.add(base)
         return base
-    n = 1
+    n = 1 if next_probe is None else next_probe.get(base, 1)
     while True:
         candidate = f'{base}-{n}'
         if candidate not in used:
             used.add(candidate)
+            if next_probe is not None:
+                next_probe[base] = n + 1
             return candidate
         n += 1
 
@@ -406,7 +414,8 @@ def build_output(contents, eols, headings, marker_indices, in_fence_for_line, mo
     else:
         title_index = compute_title_index(headings)
         used_slugs = set()
-        slugs = [allocate_slug(slugify(h['text']), used_slugs) for h in headings]
+        next_probe = {}
+        slugs = [allocate_slug(slugify(h['text']), used_slugs, next_probe) for h in headings]
 
         if mode == 'auto':
             section_count = compute_top_level_sections(headings, title_index)
