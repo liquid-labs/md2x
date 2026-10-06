@@ -233,7 +233,8 @@ phases:
           digest: Created CHANGELOG.md (Keep a Changelog Unreleased 1.0.0 with breaking changes, Added, Changed, Fixed, Removed), CONTRIBUTING.md (setup, make targets, bash 3.2 override, regression-test rule) and SECURITY.md (private reporting, untrusted-Markdown caveats). No code touched.
           git:
             branch: plan/golden-release-hardening-03-002
-            commit: []
+            commit:
+                - 41a5203
             merge: null
         - number: 3
           slug: psgq-slug-probe-optimization
