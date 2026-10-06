@@ -42,3 +42,10 @@ architectural_impact: true
 - [Design decisions, CI](../notes/design-decisions.md#ci)
 - [Audit coverage](../notes/audit-coverage.md): rows R1, R6.
 - [Design decisions, bash version support](../notes/design-decisions.md#bash-version-support)
+
+## Status
+
+- Outcome: succeeded (2026-10-05). Workflow written at `.github/workflows/ci.yml`; NOT proven green: it cannot run until the branch is pushed (a user action).
+- Jobs: `qa` matrix (ubuntu-latest, macos-latest) running `make qa`, plus a macOS step running the bats suite under `/bin/bash` 3.2 via `MD2X_TEST_BASH=/bin/bash make test-cli`; and `legacy-pandoc` (ubuntu) running `make test-cli` against pandoc 2.0.6 installed from the jgm/pandoc release `.deb`, to validate the `MD2X_PANDOC_MIN_VERSION='2.0'` floor.
+- Validation: actionlint and a YAML parse pass; the exact bash 3.2 command passes locally; `make qa` passes.
+- Unproven until pushed: the pandoc 2.0.6 `.deb` URL/asset name, whether the suite actually passes on pandoc 2.0.6 (a failure there means the floor claim is wrong and should be raised, not hidden), and the macOS brew package names. The legacy job targets the oldest release believed to ship a Linux `.deb`; if it cannot be installed, the floor remains unvalidated and must be treated as a documented follow-up rather than lowered silently.
