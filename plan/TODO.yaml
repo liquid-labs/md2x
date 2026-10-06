@@ -240,7 +240,7 @@ phases:
           slug: psgq-slug-probe-optimization
           title: Optimize TOC Slug Probe
           path: phase-03-docs-ci-and-release-readiness/003-psgq-slug-probe-optimization.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Replaced the restart-from-1 slug probe with a per-base resume index. Output is byte-identical on every corpus checked (cmp), real-pandoc e2e parity cases pass, and the 2000-duplicate case dropped from 0.17s to 0.02s.
           git:
