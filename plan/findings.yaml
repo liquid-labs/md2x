@@ -1,14 +1,5 @@
 version: 2
-items:
-    - title: Architecture doc small inaccuracies
-      id: 5E3C
-      date: "2026-10-06"
-      tags:
-        - type:documentation
-        - priority:low
-        - plan/phase:doc-updates
-        - effort:unspecified
-      text: 'Small inaccuracies in docs/architecture.md found by the Phase 4 review (high confidence, low severity): (1) lines ~97 and ~196 say a ''stubbed CLI suite'' runs against pandoc 2.0.6; the legacy-pandoc CI job runs plain ''make test-cli'', which includes real-toolchain bats files (links-and-images.bats runs the Lua filter against real pandoc), so drop ''stubbed''. (2) Line ~87 (and the comment at src/cli/md2x.sh:16-17) says the interpreter guard rejects POSIX mode because process substitution is unavailable, but the CLI no longer uses process substitution; reword to POSIX mode being unsupported/untested. (3) Lines ~101 and ~194 say git runs only after the config key-name check; in fact ''git rev-parse --show-toplevel'' and ''git config --local --list --name-only'' run first (through the hardened md2x-infer-git) and only ''git status'' is gated by the allowlist. (4) Line ~101 says any failure is one warning and the footer omits the version, but a failing ''git status'' sets STATUS=''?'' and prints ''working'' with no warning. (5) Line ~70 says every failure is one ''md2x: '' line; md2x-die-usage adds an unprefixed ''Try md2x --help'' line and WeasyPrint bootstrap failures print several lines. Nits: preflight order is gs, pandoc, pdftk, python3 (md2x.sh:167); with --to-stdout no output targets are planned (md2x.sh:435). Optionally group the 26 Key decisions bullets under a few ### subheadings.'
+items: []
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
@@ -129,4 +120,9 @@ closed:
       title: Release dry-run and doc wording polish
       disposition: promoted
       ref: FUld
+      date: "2026-10-06"
+    - id: 5E3C
+      title: Architecture doc small inaccuracies
+      disposition: promoted
+      ref: 5E3C
       date: "2026-10-06"
