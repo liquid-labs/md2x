@@ -300,11 +300,13 @@ phases:
           slug: spec-agents-and-structure-docs
           title: Update Spec, AGENTS.md, and Project Structure Docs
           path: phase-03-docs-ci-and-release-readiness/008-spec-agents-and-structure-docs.md
-          done: false
+          done: true
           tier: sonnet-high
+          digest: 'Brought the spec, AGENTS.md, and project-structure.md to the final behavior: spec links the README flag table and keeps normative content (exit codes, dependency set, trust notes), AGENTS.md no longer lists perl and has current layout/commands/constraints, project-structure lists every src file. make qa passes.'
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-03-008
+            commit:
+                - 8816aab
             merge: null
         - number: 9
           slug: flag-table-drift-test
