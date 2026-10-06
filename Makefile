@@ -97,10 +97,10 @@ smoke-test: all $(SMOKE_TEST_OUT)
 
 # lint rules
 lint: | $(ESLINT)
-	$(ESLINT) $(NODE_SRC)
+	$(ESLINT) .
 
 lint-fix: | $(ESLINT)
-	$(ESLINT) --fix $(NODE_SRC)
+	$(ESLINT) --fix .
 
 qa: test lint
 	

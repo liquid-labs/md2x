@@ -35,3 +35,7 @@ architectural_impact: false
 
 - [Audit coverage](../notes/audit-coverage.md): row R10.
 - [Sequencing and file ownership](../notes/sequencing-and-file-ownership.md)
+
+## Status
+
+Succeeded (2026-10-05). `eslint .` was failing only on `eslint.config.mjs` key-spacing (20 errors, fixed with `--fix`). `make lint` / `make lint-fix` now run `eslint .`; ignores gained `worktrees/**`, `plan/**`, `.flow/**`. ESLint stays on 9: `neostandard@0.13.0` (latest) peers `eslint ^9.0.0`, so 10 is incompatible. `bun outdated` shows no other updates, so `package.json`/`bun.lock` are unchanged. The shelljs bump item is superseded (already removed). Validation: eslint, make lint (negative test fails as expected), frozen install, make qa, make test-pack, and bash 3.2 test-cli all pass. Files: `eslint.config.mjs`, `Makefile`.
