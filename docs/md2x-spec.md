@@ -162,6 +162,6 @@ const outputFiles = md2x({
 
 ## Pointers to deeper docs
 
-- [`docs/architecture.md`](./architecture.md) — design-level material not covered here: the PDF header/footer overlay mechanism (Ghostscript-rendered PostScript merged onto the Pandoc output via `pdftk multistamp`), the WeasyPrint bootstrap, and the bash-rollup build pipeline.
+- [`docs/architecture.md`](./architecture.md) — design-level material not covered here: the PDF header/footer overlay mechanism (Ghostscript-rendered PostScript merged onto the Pandoc output via `pdftk multistamp`), the WeasyPrint bootstrap, the option parser and GNU `getopt` discovery, the Lua link and image filter, output planning and delivery, the run-wide `EXIT` trap that enforces the exit-code contract, the Node wrapper's process model and dual build, and the bash-rollup build pipeline with its version injection.
 - [`AGENTS.md`](../AGENTS.md) — build, test, and contribution conventions for working on md2x itself.
 - [`docs/project-structure.md`](./project-structure.md) — the project's file and directory layout.

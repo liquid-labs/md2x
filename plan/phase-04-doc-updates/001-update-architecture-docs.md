@@ -49,3 +49,10 @@ architectural_impact: true
 - [Audit coverage](../notes/audit-coverage.md): the D1 and D2 rows, about the spec's dependency list and the gnu-getopt requirement.
 - [Brew and getopt resolution](../notes/brew-and-getopt-resolution.md): the getopt dependency facts.
 - User answers: [exit codes](../notes/exit-code-contract-answer.md), [short flags](../notes/short-flag-set-answer.md), and [N4/N8 scope](../notes/n4-n8-scope-answer.md).
+
+## Status
+
+- Outcome: succeeded (2026-10-05).
+- `docs/architecture.md`: rewrote System overview (diagram, 10-step sequence, exit-code contract), Tech stack, and Build pipeline; fixed CLI entry point, WeasyPrint bootstrap (exit 3, single run-wide trap), TOC preprocessor, Page generation, Bundled stylesheet, and Node wrapper; added component subsections (option parser, dependency preflight, version inference, error helpers, title handling, output planning, output staging and delivery, link and image filter, run cleanup and exit-status trap); added Key decisions for each Phase 1 to 3 change.
+- `docs/md2x-spec.md`: reviewed against the code and confirmed consistent (exit codes, short flags, conflict rules, dependency set, bash 3.2 floor, deferred N4/N8); only the Pointers entry for the architecture doc was extended. `docs/project-structure.md` was consistent and unchanged.
+- Validation: perl/brew/shelljs/LINK_CONVERTER greps show only removed/optional statements; spec exit grep shows 0/1/2/3; `make qa` and `flag-table-drift.bats` pass (log: `.flow/validation-logs/01-make-qa.log`).
