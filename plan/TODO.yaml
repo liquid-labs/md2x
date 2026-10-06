@@ -247,7 +247,7 @@ phases:
             branch: plan/golden-release-hardening-03-003
             commit:
                 - 5188d51
-            merge: null
+            merge: 7a23add893a9ba6bb9cdfdc0f9befff84c84e28a50
         - number: 4
           slug: lint-and-dependency-bumps
           title: Fix Lint Scope and Bump Dev Dependencies
