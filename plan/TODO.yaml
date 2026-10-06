@@ -295,7 +295,7 @@ phases:
             branch: plan/golden-release-hardening-03-007
             commit:
                 - b8f9d11
-            merge: null
+            merge: 3d401e46d23cc310348fb2885973637be204a3a5
         - number: 8
           slug: spec-agents-and-structure-docs
           title: Update Spec, AGENTS.md, and Project Structure Docs
