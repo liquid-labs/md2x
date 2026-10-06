@@ -39,3 +39,10 @@ architectural_impact: false
 - [Design decisions, release](../notes/design-decisions.md#release)
 - [Audit coverage](../notes/audit-coverage.md): rows D11, R5, R11.
 - [Overview, bun publish finding](../overview.md)
+
+## Status
+
+- Outcome: succeeded (2026-10-05). Validation: `bash -n` and `shellcheck` clean; `make qa` passed; script dry runs for `1.0.0-rc.1` (tag `rc`, prerelease) and `1.0.0` (tag `latest`) passed; `bun publish --dry-run` and `npm publish --dry-run` succeeded without credentials.
+- Not runnable: `bun pm whoami` and `npm whoami` return 401 (no npm credentials), so the script's dry run only warns on that pre-flight; no live publish was run or attempted.
+- Files: [RELEASING.md](../../RELEASING.md), [scripts/release.sh](../../scripts/release.sh).
+- Script changes: `dist_tag_for` function and `--print-dist-tag` mode (numeric or `latest` prerelease identifiers map to `next`); dry run warns instead of failing on missing npm or GitHub login; `make test-pack` runs after the bump (reverts on failure); dry-run publish rehearsal now uses `bun publish --dry-run`; header states the verification status.
