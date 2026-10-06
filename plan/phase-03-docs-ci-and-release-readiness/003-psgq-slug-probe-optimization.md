@@ -34,3 +34,7 @@ architectural_impact: false
 
 - [Followup verification, psgq](../notes/followup-verification.md)
 - [Audit coverage](../notes/audit-coverage.md): row R8.
+
+## Status
+
+Succeeded 2026-10-05. `allocate_slug` now takes an optional `next_probe` dict (base -> next suffix) owned by `build_output`; each probe still checks `used`. Files: `src/cli/lib/toc-preprocess.py`, `src/cli/test/bats/toc-preprocess.bats` (2 new cases, 37 total). Old vs new output byte-identical on the slug corpus, tiny-doc, 2000-duplicate and interleaved documents. 2000 duplicates: old 0.17s, new 0.02s. `make qa` and `MD2X_TEST_BASH=/bin/bash make test-cli` pass; real-toolchain e2e passes (15/15).
