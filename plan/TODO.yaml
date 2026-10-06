@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 3
-    tasks_added: 10
+    tasks_added: 11
 phases:
     - number: 1
       slug: correctness-and-regression-tests
@@ -477,4 +477,18 @@ phases:
       slug: remediation-03
       title: Remediation Round 3
       kind: remediation
-      tasks: []
+      security_review: required
+      tasks:
+        - number: 1
+          slug: allowlist-repo-config-for-infer-version
+          title: Allowlist Repository Config And Harden Git Status In Version Inference
+          path: phase-07-remediation-03/001-allowlist-repo-config-for-infer-version.md
+          done: false
+          tier: sonnet-high
+          findings:
+            - U0Pj
+            - Qbv2
+          git:
+            branch: null
+            commit: []
+            merge: null
