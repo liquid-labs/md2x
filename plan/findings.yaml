@@ -1,14 +1,5 @@
 version: 2
-items:
-    - title: Pipefail SIGPIPE fails open in config refusal
-      id: Qbv2
-      date: "2026-10-05"
-      tags:
-        - type:security
-        - priority:high
-        - plan/phase:remediation-02
-        - effort:unspecified
-      text: 'MAJOR, reproduced. md2x-infer-config-refusal (src/cli/lib/preflight.sh lines ~119-121) detects extensions.worktreeConfig with ''printf ... | grep -qixF extensions.worktreeconfig''. md2x.sh sets pipefail and grep -q exits on first match, so when the key list exceeds the pipe buffer (~64 KB) printf takes SIGPIPE, the pipeline returns 141, and the ''if'' reads that as not set; the per-worktree config (.git/config.worktree) is then never read, so an attacker can pad .git/config with ordinary keys after extensions.worktreeConfig=true and put filter.x.clean in .git/config.worktree (reproduced with a 162 KB config). Fix: avoid pipe-then-grep -q under pipefail (use a here-string or a case match inside the key loop, or read the key via ''git config --local --bool''), lowercase the whole key list once with ''LC_ALL=C tr'' instead of forking per key (bash 3.2: no ${var,,}), and add a bats test with a >64 KB local config that must still refuse. Also drop or reword the dead post-mv -L check in md2x-deliver-output (src/cli/lib/output-plan.sh ~186-221, optional).'
+items: []
 closed:
     - id: d7Tf
       title: Docs still say missing dep exits 2
@@ -114,4 +105,9 @@ closed:
       title: Config denylist bypassed; use allowlist
       disposition: dismissed
       reason: 'Fixed by remediation task 7.1: config allowlist, --ignore-submodules=all, no lazy fetch, protocol.allow=never; round 3 full security review re-verified the partial-clone, ext:: and submodule cases closed and found no execution path.'
+      date: "2026-10-06"
+    - id: Qbv2
+      title: Pipefail SIGPIPE fails open in config refusal
+      disposition: dismissed
+      reason: 'Fixed by remediation task 7.1: the printf|grep -q pipeline is replaced by here-strings and a case match with a single tr lowercase; a >64KB padded-config test refuses; round 3 review reproduced the closed case.'
       date: "2026-10-06"
