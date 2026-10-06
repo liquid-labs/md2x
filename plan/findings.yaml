@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Release dry-run and doc wording polish
-      id: FUld
-      date: "2026-10-05"
-      tags:
-        - type:bug
-        - priority:low
-        - plan/phase:docs-ci-and-release-readiness
-        - effort:unspecified
-      text: 'Minor items from the Phase 3 review. (1) scripts/release.sh dry-run: it reverts the version bump (revert_bump) before ''bun publish --dry-run --access public --tag "$DIST_TAG"'', so the rehearsal packs the pre-bump version while the tag is computed for the new version (for example a prerelease version paired with --tag latest for 1.0.0), and prepack rebuilds bin/md2x at the old version; run the publish dry-run before revert_bump (then revert) or document that the rehearsal runs at the pre-bump version; RELEASING.md says the dry run proves ''the same file list and the given tag''. (2) SECURITY.md ''Expected response'' promises an acknowledgement ''within a few days'' (unconfirmed by the maintainer) and the advisory URL only works if private vulnerability reporting is enabled on the GitHub repository; soften to best-effort with no guaranteed timeline and confirm the setting before release. (3) CHANGELOG.md Added states the CI workflow ''runs the suite under macOS, Linux, bash 3.2, and a legacy Pandoc'' as fact; rephrase as intended until it has run. (4) .github/workflows/ci.yml has no timeout-minutes or concurrency group (a hung brew/apt step runs up to 6 hours), and the legacy-pandoc job uses dpkg -i without apt-get -f install; add them when the first CI run is observed. (5) The Node README claims about python3-venv on Debian-family systems and the apt/brew install lines were not executed on a Linux host; verify on the first CI run.'
     - title: Architecture doc small inaccuracies
       id: 5E3C
       date: "2026-10-06"
@@ -133,4 +124,9 @@ closed:
       title: Infer-version hardening trade-offs and spoof
       disposition: promoted
       ref: HdEH
+      date: "2026-10-06"
+    - id: FUld
+      title: Release dry-run and doc wording polish
+      disposition: promoted
+      ref: FUld
       date: "2026-10-06"
