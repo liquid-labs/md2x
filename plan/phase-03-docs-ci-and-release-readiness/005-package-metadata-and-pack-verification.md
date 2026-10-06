@@ -38,3 +38,7 @@ architectural_impact: false
 
 - [Design decisions, release](../notes/design-decisions.md#release) and [Node wrapper packaging](../notes/design-decisions.md#node-wrapper)
 - [Audit coverage](../notes/audit-coverage.md): rows R3, R11, D13, D14, D15, N10.
+
+## Status
+
+succeeded 2026-10-05. package.json: description fixed, keywords added, engines.node ">=20" (verified on Node 20.20.2 and 26.5.0 via make test-pack), repository/bugs/homepage/orgBase lowercased with git+https, prepack "make all" (verified: bun pm pack runs it and rebuilds bin/md2x), files adds CHANGELOG.md. Tarball: CHANGELOG.md, LICENSE.txt, README.md, bin/md2x, dist/index.d.ts, dist/md2x.cjs, dist/md2x.mjs, package.json. make qa and make test-pack pass.

@@ -264,11 +264,13 @@ phases:
           slug: package-metadata-and-pack-verification
           title: Correct Package Metadata and Verify Pack Contents
           path: phase-03-docs-ci-and-release-readiness/005-package-metadata-and-pack-verification.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: Corrected package.json metadata (description, keywords, engines >=20, lowercase org with git+https URLs, prepack make all, CHANGELOG.md in files). Confirmed bun runs prepack and rebuilds bin/md2x. The 8-file tarball verified; qa and test-pack pass on Node 20 and 26.
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-03-005
+            commit:
+                - e43e43e
             merge: null
         - number: 6
           slug: release-procedure-and-dry-run
