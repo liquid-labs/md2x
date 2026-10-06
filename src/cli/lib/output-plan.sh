@@ -216,8 +216,9 @@ md2x-deliver-output() {
     md2x-die-runtime "could not write '${TARGET_SHOWN}'."
   fi
   MD2X_DELIVERY_TEMP=''
-  # The rename must have produced a regular file at the target, not a symlink or directory.
-  if [[ ! -f "${TARGET}" ]] || [[ -L "${TARGET}" ]]; then
+  # 'mv' replaces a symlink at the target rather than following it, so only the target's
+  # having gone missing (or been swapped for a non-file) after the rename is left to catch.
+  if [[ ! -f "${TARGET}" ]]; then
     md2x-die-runtime "could not write '${TARGET_SHOWN}': the result is not a regular file."
   fi
 }
