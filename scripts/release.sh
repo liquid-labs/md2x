@@ -10,7 +10,7 @@
 # itself on the terminal.
 #
 # Tooling split: bun drives the version bump (bun pm version, which runs package.json's
-# preversion hook: make all && make qa), the pack check (bun pm pack), and the registry
+# preversion hook: make all && make qa), the dry-run pack check (bun publish --dry-run), and the registry
 # operations (bun pm whoami, bun info, bun publish). bun publish prompts for the 2FA
 # one-time code interactively. Verification status: 1.0.0-alpha.11 was published with
 # 'npm publish' (commit a21f731); the switch to 'bun publish' came afterwards, so the
@@ -150,8 +150,8 @@ fi
 # --- publish ------------------------------------------------------------------
 say "Publishing $PKG_NAME@$NEW to npm (dist-tag: $DIST_TAG)"
 if (( DRY_RUN )); then
-  echo "[dry-run] would run: bun publish --access public --tag $DIST_TAG; checking package contents"
-  bun pm pack --dry-run >/dev/null
+  echo "[dry-run] would run: bun publish --access public --tag $DIST_TAG; rehearsing with 'bun publish --dry-run' (lists the files; uploads nothing, needs no credentials)"
+  bun publish --dry-run --access public --tag "$DIST_TAG"
 elif [[ -n "$(bun info "$PKG_NAME@$NEW" version 2>/dev/null)" ]]; then
   echo "Already published; skipping."
 else
