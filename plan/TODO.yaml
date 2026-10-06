@@ -316,7 +316,7 @@ phases:
           tier: sonnet-high
           digest: Added a bats drift test and helper comparing (short, long) flag pairs across the parser table, md2x --help and the README CLI table, plus a spec link/no-table check. Drift detection demonstrated on temp copies; make qa and the bash 3.2 suite pass (369 tests).
           git:
-            branch: null
+            branch: plan/golden-release-hardening-03-009
             commit: []
             merge: null
     - number: 4
