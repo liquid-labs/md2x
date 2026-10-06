@@ -281,7 +281,8 @@ phases:
           digest: Rewrote RELEASING.md as a numbered procedure with accurate publish verification status and dry-run guidance, and fixed scripts/release.sh dist-tag logic, dry-run credential handling and pack check. Script dry runs for 1.0.0-rc.1 and 1.0.0 pass; nothing was published.
           git:
             branch: plan/golden-release-hardening-03-006
-            commit: []
+            commit:
+                - 40b2ad4
             merge: null
         - number: 7
           slug: readme-overhaul
