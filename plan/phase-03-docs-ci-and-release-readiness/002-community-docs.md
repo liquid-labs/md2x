@@ -41,3 +41,7 @@ architectural_impact: false
 - [Design decisions](../notes/design-decisions.md): exit-code contract, short flags, Node wrapper defaults.
 - [Audit coverage](../notes/audit-coverage.md): rows D9, D10.
 - [Phase summary](../phases/docs-ci-and-release-readiness.md)
+
+## Status
+
+Succeeded, 2026-10-05. Created [CHANGELOG.md](../../CHANGELOG.md), [CONTRIBUTING.md](../../CONTRIBUTING.md), and [SECURITY.md](../../SECURITY.md). Validation: files present, no capitalized org name, no trailing whitespace, `make qa` passed. The title-precedence fix predates alpha.11 so it is not listed under Fixed.
