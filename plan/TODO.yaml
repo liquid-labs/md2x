@@ -491,6 +491,6 @@ phases:
             - U0Pj
             - Qbv2
           git:
-            branch: null
+            branch: plan/golden-release-hardening-07-001
             commit: []
             merge: null
