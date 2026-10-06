@@ -271,7 +271,7 @@ phases:
             branch: plan/golden-release-hardening-03-005
             commit:
                 - e43e43e
-            merge: null
+            merge: ef9b92c5646b1de63b70a50ce92e2c0e27c5568a
         - number: 6
           slug: release-procedure-and-dry-run
           title: Fix Release Procedure and Rehearse Dry Run
