@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Release @liquid-labs/md2x: bump, commit, tag, push, npm publish, GitHub release.
+# Release md2x: bump, commit, tag, push, bun publish, GitHub release.
 #
 # Usage: scripts/release.sh [--dry-run] <patch|minor|major|prerelease|X.Y.Z[-pre.N]>
+#        scripts/release.sh --print-dist-tag <X.Y.Z[-pre.N]>   (print the dist-tag; no side effects)
 #
 # Safe to re-run: pass the explicit version of a partly finished release and every step
 # whose result already exists (tag, remote tag, npm version, GitHub release) is skipped.
@@ -11,8 +12,10 @@
 # Tooling split: bun drives the version bump (bun pm version, which runs package.json's
 # preversion hook: make all && make qa), the pack check (bun pm pack), and the registry
 # operations (bun pm whoami, bun info, bun publish). bun publish prompts for the 2FA
-# one-time code interactively. (Earlier versions used npm for these; bun publish is
-# unverified by a live publish until the next real release.)
+# one-time code interactively. Verification status: 1.0.0-alpha.11 was published with
+# 'npm publish' (commit a21f731); the switch to 'bun publish' came afterwards, so the
+# 'bun publish' path is UNVERIFIED: it has never run live. Only its dry-run form and the
+# surrounding logic have been exercised. See RELEASING.md.
 set -euo pipefail
 
 DRY_RUN=0
@@ -33,13 +36,30 @@ NOTES_SKIP_PATTERNS=(
   'merging auto-generated release branch*'  # legacy liq release merges
 )
 
-for arg in "$@"; do
-  case "$arg" in
+# Map a version to its npm dist-tag. A release (no prerelease part) takes 'latest'. A prerelease
+# takes its first prerelease identifier (1.0.0-rc.1 -> rc), so it never takes 'latest'. A
+# prerelease with a numeric or otherwise unusable identifier (1.0.1-0) or the reserved word
+# 'latest' (1.0.0-latest.1) falls back to 'next'. Build metadata (+...) is ignored.
+dist_tag_for() {
+  local v=${1%%+*} pre tag
+  [[ "$v" == *-* ]] || { echo latest; return; }
+  pre=${v#*-}; tag=${pre%%.*}
+  [[ "$tag" =~ ^[A-Za-z][A-Za-z0-9-]*$ && "$tag" != latest ]] || tag=next
+  echo "$tag"
+}
+
+while (( $# )); do
+  case "$1" in
     --dry-run) DRY_RUN=1 ;;
-    -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
-    -*) echo "Unknown option: $arg" >&2; exit 2 ;;
-    *) [[ -z "$BUMP" ]] || { echo "Only one bump argument allowed." >&2; exit 2; }; BUMP="$arg" ;;
+    --print-dist-tag)
+      [[ $# -ge 2 && "$2" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]] \
+        || { echo "--print-dist-tag needs an explicit version (X.Y.Z[-pre.N])." >&2; exit 2; }
+      dist_tag_for "$2"; exit 0 ;;
+    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
+    -*) echo "Unknown option: $1" >&2; exit 2 ;;
+    *) [[ -z "$BUMP" ]] || { echo "Only one bump argument allowed." >&2; exit 2; }; BUMP="$1" ;;
   esac
+  shift
 done
 [[ -n "$BUMP" ]] || { echo "Usage: $0 [--dry-run] <bump>" >&2; exit 2; }
 
@@ -61,8 +81,13 @@ say "Pre-flight"
   || { echo "Must be on branch '$RELEASE_BRANCH'." >&2; exit 1; }
 [[ -z "$(git status --porcelain)" ]] || { echo "Working tree is not clean." >&2; exit 1; }
 git remote get-url "$REMOTE" >/dev/null || { echo "Remote '$REMOTE' not configured." >&2; exit 1; }
-bun pm whoami >/dev/null 2>&1 || { echo "Not logged in to npm. Run 'bunx npm login' in your own terminal, then re-run." >&2; exit 1; }
-gh auth status >/dev/null 2>&1 || { echo "Not logged in to GitHub. Run 'gh auth login' in your own terminal, then re-run." >&2; exit 1; }
+# A real run needs both logins. A dry run only warns, so the rest of the rehearsal can run without
+# credentials; the warning means a real run would stop here.
+preflight_fail() {
+  if (( DRY_RUN )); then echo "[dry-run] WARNING: $1 (a real run would stop here)" >&2; else echo "$1" >&2; exit 1; fi
+}
+bun pm whoami >/dev/null 2>&1 || preflight_fail "Not logged in to npm. Run 'bunx npm login' in your own terminal, then re-run."
+gh auth status >/dev/null 2>&1 || preflight_fail "Not logged in to GitHub. Run 'gh auth login' in your own terminal, then re-run."
 if (( ! DRY_RUN )) && [[ ! -t 0 ]]; then
   echo "bun publish may need a one-time code; run this script from an interactive terminal." >&2; exit 1
 fi
@@ -91,6 +116,10 @@ if (( ! RESUME )); then
   TAG="v$NEW"
   git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && { echo "Tag $TAG already exists." >&2; revert_bump; exit 1; }
 
+  # Pack check on the bumped tree: packs the tarball and proves ESM import, CJS require, and types.
+  say "Pack check (make test-pack)"
+  make test-pack || { echo "make test-pack failed; reverting the version bump." >&2; revert_bump; exit 1; }
+
   if (( DRY_RUN )); then
     say "Dry run: build and QA passed for $NEW; reverting local edits"
     revert_bump
@@ -105,12 +134,8 @@ fi
 TAG="v$NEW"
 
 # --- dist-tag -----------------------------------------------------------------
-if [[ "$NEW" == *-* ]]; then
-  PRE=${NEW#*-}; DIST_TAG=${PRE%%.*}   # 1.0.0-alpha.11 -> alpha
-  PRERELEASE_FLAG=(--prerelease)
-else
-  DIST_TAG=latest; PRERELEASE_FLAG=()
-fi
+DIST_TAG=$(dist_tag_for "$NEW")   # 1.0.0-rc.1 -> rc; 1.0.0 -> latest
+if [[ "$DIST_TAG" == latest ]]; then PRERELEASE_FLAG=(); else PRERELEASE_FLAG=(--prerelease); fi
 
 # --- push ---------------------------------------------------------------------
 say "Pushing branch and $TAG to $REMOTE"
@@ -145,6 +170,7 @@ trap 'rm -f "$NOTES_FILE"' EXIT
   while read -r sha; do
     subj=$(git log -1 --format=%s "$sha")
     skip=0
+    # shellcheck disable=SC2053  # the patterns are intentional shell globs
     for pat in "${NOTES_SKIP_PATTERNS[@]}"; do [[ "$subj" == $pat ]] && { skip=1; break; }; done
     (( skip )) && continue
     if [[ $(git rev-list --parents -n1 "$sha" | wc -w) -gt 2 && "$subj" =~ ^Merge\ branch\ \'([^\']+)\' ]]; then
@@ -157,7 +183,7 @@ trap 'rm -f "$NOTES_FILE"' EXIT
       body=''
     fi
     echo "* ${subj}${body:+ - $body}"
-  done < <(git rev-list --first-parent ${RANGE:-HEAD})
+  done < <(git rev-list --first-parent "${RANGE:-HEAD}")
   SLUG=$(git remote get-url "$REMOTE" | sed -E 's#^.*[:/]([^/:]+/[^/]+)$#\1#; s#\.git$##')
   [[ -z "$PREV_TAG" ]] || printf '\n**Full changelog**: https://github.com/%s/compare/%s...%s\n' "$SLUG" "$PREV_TAG" "$TAG"
 } > "$NOTES_FILE"
