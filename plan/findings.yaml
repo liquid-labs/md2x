@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Config denylist bypassed; use allowlist
-      id: U0Pj
-      date: "2026-10-05"
-      tags:
-        - type:security
-        - priority:high
-        - plan/phase:remediation-02
-        - effort:unspecified
-      text: 'MAJOR, reproduced by the full security lens. The md2x-infer-config-refusal denylist in src/cli/lib/preflight.sh (lines ~86-95, 160-175) is bypassable and ''git status --porcelain'' (line ~188) can still run commands in an attacker-supplied repository: (a) remote.<n>.uploadpack/receivepack (not in the suffix list) and ''protocol.ext.allow=always'' with remote.origin.url=''ext::sh -c ...'' are executed when a partial-clone repo (remote.<n>.promisor=true plus partialclonefilter, blob missing locally) makes status lazy-fetch during rename detection; unlisted keys on the same path include remote.<n>.vcs, remote.<n>.proxy, protocol.*, url.*.insteadOf. (b) A checked-out submodule with its own .git/config (filter.p.clean plus a .gitattributes in the submodule and a stat-dirty file) runs its clean filter when the OUTER status runs (this also covers finding JEAt). Fix: replace the denylist with an ALLOWLIST - proceed only when every local key is in a small known-benign set (core.repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode|symlinks, user.*, branch.*, and similar), and refuse remote.*, protocol.*, url.*, extensions.partialclone and submodule.* (and anything unknown); add defense in depth on the status call: --ignore-submodules=all, GIT_NO_LAZY_FETCH=1 (git >= 2.44), -c protocol.allow=never, --no-renames. Add regression bats cases (partial-clone remote uploadpack/ext, submodule filter) verified failing on the current code, update the spec trust text accordingly.'
     - title: Pipefail SIGPIPE fails open in config refusal
       id: Qbv2
       date: "2026-10-05"
@@ -119,3 +110,8 @@ closed:
       disposition: dismissed
       reason: 'Duplicate: the reachable submodule git status case is covered by U0Pj (allowlist plus --ignore-submodules=all).'
       date: "2026-10-05"
+    - id: U0Pj
+      title: Config denylist bypassed; use allowlist
+      disposition: dismissed
+      reason: 'Fixed by remediation task 7.1: config allowlist, --ignore-submodules=all, no lazy fetch, protocol.allow=never; round 3 full security review re-verified the partial-clone, ext:: and submodule cases closed and found no execution path.'
+      date: "2026-10-06"
