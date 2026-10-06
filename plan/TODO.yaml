@@ -283,7 +283,7 @@ phases:
             branch: plan/golden-release-hardening-03-006
             commit:
                 - 40b2ad4
-            merge: null
+            merge: 171af748cd52efd4a927ff0237bed571586d5491
         - number: 7
           slug: readme-overhaul
           title: Overhaul README
