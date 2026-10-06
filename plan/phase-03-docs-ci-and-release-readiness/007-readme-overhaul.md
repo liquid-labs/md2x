@@ -50,3 +50,10 @@ architectural_impact: false
 - After installation, dependency, and platform sections.
 - After CLI and exit-code tables.
 - After the Node API section.
+
+## Status
+
+- Outcome: succeeded (2026-10-05).
+- Changed: [README.md](../../README.md) rewritten against the built CLI, `bin/md2x --help`, `src/node/index.d.ts`, `src/node/md2x.js`, and `src/cli/lib/preflight.sh`.
+- Validation: banned-term grep clean (only the "perl not required" row remains); every flag in `--help` is in the README table and vice versa; relative links resolve; CLI examples run; Node ESM and CJS snippets run against a packed tarball; TypeScript snippet type-checked with `tsc --noEmit`; `make qa` passed.
+- Not executed: the `apt install` line (macOS host); the `brew install` line was not run either.
