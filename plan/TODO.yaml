@@ -223,7 +223,7 @@ phases:
             branch: plan/golden-release-hardening-03-001
             commit:
                 - d7d3def
-            merge: null
+            merge: c4b5cf15be64d0ea2a47f4788a27865bda1e085b
         - number: 2
           slug: community-docs
           title: Add Changelog, Contributing, and Security Docs
