@@ -221,7 +221,8 @@ phases:
           digest: Added .github/workflows/ci.yml with an ubuntu/macOS matrix running make qa, a macOS bash 3.2 test run, and a legacy-pandoc job to validate the pandoc 2.0 floor. actionlint and YAML parse pass; the workflow itself is unproven until pushed.
           git:
             branch: plan/golden-release-hardening-03-001
-            commit: []
+            commit:
+                - d7d3def
             merge: null
         - number: 2
           slug: community-docs
