@@ -336,7 +336,7 @@ phases:
             branch: plan/golden-release-hardening-04-001
             commit:
                 - f5b76b6
-            merge: null
+            merge: 2cb7f32ece89278ff89c393328850f5404c2a8c1
     - number: 5
       slug: remediation-01
       title: Remediation Round 1
