@@ -288,7 +288,7 @@ phases:
           slug: readme-overhaul
           title: Overhaul README
           path: phase-03-docs-ci-and-release-readiness/007-readme-overhaul.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: Rewrote README.md for 1.0 with every claim and example run against the built CLI and a packed-tarball Node install; machine-parseable 17-row flag table, exit-code and troubleshooting tables, Node API, dependency/platform/security/limitation notes. make qa passes.
           git:
