@@ -216,11 +216,13 @@ phases:
           slug: github-actions-ci
           title: Add GitHub Actions CI Workflow
           path: phase-03-docs-ci-and-release-readiness/001-github-actions-ci.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: Added .github/workflows/ci.yml with an ubuntu/macOS matrix running make qa, a macOS bash 3.2 test run, and a legacy-pandoc job to validate the pandoc 2.0 floor. actionlint and YAML parse pass; the workflow itself is unproven until pushed.
           git:
-            branch: null
-            commit: []
+            branch: plan/golden-release-hardening-03-001
+            commit:
+                - d7d3def
             merge: null
         - number: 2
           slug: community-docs
