@@ -319,7 +319,7 @@ phases:
             branch: plan/golden-release-hardening-03-009
             commit:
                 - cf527cb
-            merge: null
+            merge: fd1a2807e1334864eabd6f51f4f0554aa1caf539
     - number: 4
       slug: doc-updates
       title: Documentation Updates
