@@ -331,6 +331,7 @@ phases:
           path: phase-04-doc-updates/001-update-architecture-docs.md
           done: false
           tier: sonnet-high
+          digest: Brought docs/architecture.md into conformance with the final code (exit-code contract, new components, Node wrapper process model and dual build, stylesheet and stderr handling, version inference trust model, dependency set, CI) with 18 added Key decisions; reviewed the spec and left it unchanged apart from one pointer bullet. make qa and the drift test pass.
           git:
             branch: null
             commit: []
