@@ -305,7 +305,8 @@ phases:
           digest: 'Brought the spec, AGENTS.md, and project-structure.md to the final behavior: spec links the README flag table and keeps normative content (exit codes, dependency set, trust notes), AGENTS.md no longer lists perl and has current layout/commands/constraints, project-structure lists every src file. make qa passes.'
           git:
             branch: plan/golden-release-hardening-03-008
-            commit: []
+            commit:
+                - 8816aab
             merge: null
         - number: 9
           slug: flag-table-drift-test
