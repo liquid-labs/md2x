@@ -307,7 +307,7 @@ phases:
             branch: plan/golden-release-hardening-03-008
             commit:
                 - 8816aab
-            merge: null
+            merge: 7e367ed959a7a966f47f62dff3c6573b6005f162
         - number: 9
           slug: flag-table-drift-test
           title: Add Flag Table Drift Test
