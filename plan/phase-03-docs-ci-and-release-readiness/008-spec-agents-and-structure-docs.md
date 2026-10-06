@@ -39,3 +39,9 @@ architectural_impact: false
 - [Design decisions, flag table single source](../notes/design-decisions.md#flag-table-single-source) and [dependency set](../notes/design-decisions.md#dependency-set-and-version-floor)
 - [Audit coverage](../notes/audit-coverage.md): D1, D2, D20, S16.
 - [Phase 4 task](../phase-04-doc-updates/001-update-architecture-docs.md)
+
+## Status
+
+- Outcome: succeeded (2026-10-05).
+- Updated [`docs/md2x-spec.md`](../../docs/md2x-spec.md), [`AGENTS.md`](../../AGENTS.md), and [`docs/project-structure.md`](../../docs/project-structure.md). The spec now links the README CLI table instead of duplicating it, keeps the `#constraints-and-assumptions` anchor, and carries the 0/1/2/3 exit contract, conflict/title/stdin rules, the final dependency set, the infer-version trade-offs, the image trust note, the `--single-page` marker limitation, and the N4/N8 deferral.
+- Validation: perl/brew/shelljs/Liquid-Labs grep returns only removed/not-required statements; no text says missing dependencies exit 2; every path in the project-structure tree exists and every `src/` file is listed; relative links resolve; `make qa` passes.
