@@ -35,8 +35,6 @@ set -o errexit # exit on errors
 set -o nounset # exit on use of uninitialized variable
 set -o pipefail
 
-import lists
-
 source ./lib/index.sh
 
 # extract options (sets the option variables, and leaves the positional arguments in
@@ -274,11 +272,11 @@ else
       md2x-die-usage "input path '$(md2x-title-display "${TEST_PATH}")' contains control characters."
     fi
     if [[ -d "${TEST_PATH}" ]]; then
-      list-add-item SEARCH_DIRS "${TEST_PATH}"
+      SEARCH_DIRS="${SEARCH_DIRS}${TEST_PATH}"$'\n'
     elif [[ -f "${TEST_PATH}" ]]; then
       [[ -r "${TEST_PATH}" ]] \
         || md2x-die-usage "'$(md2x-title-display "${TEST_PATH}")' is not readable."
-      list-add-item MD_FILES "${TEST_PATH}"
+      MD_FILES="${MD_FILES}${TEST_PATH}"$'\n'
     else
       # Planner decision: a nonexistent (or otherwise unusable) input argument is a usage
       # error (exit 2), not a runtime failure -- the caller named something invalid.
@@ -333,7 +331,7 @@ if [[ -z "${STDIN_MODE}" ]]; then
       SEARCH_ERROR_ROOT="${ROOT_DIR}"
       break
     fi
-    (( ROOT_FOUND > 0 )) || list-add-item EMPTY_DIRS "${ROOT_DIR}"
+    (( ROOT_FOUND > 0 )) || EMPTY_DIRS="${EMPTY_DIRS}${ROOT_DIR}"$'\n'
   done <<< "${SEARCH_DIRS}"
 
   if [[ -n "${SEARCH_ERROR_ROOT}" ]] && [[ -z "${CANDIDATES}" ]] && [[ -z "${MD_FILES}" ]]; then
