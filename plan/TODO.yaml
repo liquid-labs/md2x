@@ -5,4 +5,14 @@ phases:
     - number: 1
       slug: followup-polish
       title: Followup Polish
-      tasks: []
+      tasks:
+        - number: 1
+          slug: harden-cli-sources
+          title: Harden CLI Sources
+          path: phase-01-followup-polish/001-harden-cli-sources.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
