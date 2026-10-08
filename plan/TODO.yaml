@@ -16,3 +16,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: polish-release-and-ci
+          title: Polish Release And CI
+          path: phase-01-followup-polish/002-polish-release-and-ci.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
