@@ -563,3 +563,110 @@ assert_key_refused() {
   [[ -z "${stderr}" ]] || md2x_fail "unexpected stderr: ${stderr}"
   assert_any_call_contains gs 'Version: 2.3.4'
 }
+
+# --- the per-worktree config, the git directory, and the key list ----------------------------
+
+@test "--infer-version accepts an existing but empty per-worktree config and prints the version" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  git -C repo config extensions.worktreeConfig true
+  : > repo/.git/config.worktree
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_success
+  [[ -z "${stderr}" ]] || md2x_fail "unexpected stderr: ${stderr}"
+  assert_any_call_contains gs 'Version: 2.3.4'
+}
+
+@test "--infer-version still refuses a non-empty per-worktree config whose keys cannot be read" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  git -C repo config extensions.worktreeConfig true
+  printf '# only a comment\n' > repo/.git/config.worktree
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_version_omitted
+  assert_stderr_contains 'its per-worktree git config could not be read'
+}
+
+@test "--infer-version refuses a core.worktree redirect to another repository" {
+  require_git_and_jq
+  # 'benign' is a clean repository with a version; 'hostile' redirects its work tree there,
+  # so the top level git reports for hostile/doc.md is benign's, whose own config is harmless.
+  make_repo benign '{"name":"x","version":"9.9.9"}'
+  make_repo hostile ''
+  git -C hostile config core.worktree "${PWD}/benign"
+  git -C hostile config core.fsmonitor "touch '${PWD}/fsmonitor-ran'; true"
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out hostile/doc.md
+
+  [[ ! -e "${PWD}/fsmonitor-ran" ]] || md2x_fail "the redirecting repository's core.fsmonitor command ran"
+  assert_version_omitted
+  assert_stderr_contains 'a core.worktree redirect?'
+  refute_any_call_contains gs '9.9.9'
+  [[ "$(printf '%s\n' "${stderr}" | grep -c 'not running git in')" == 1 ]] || md2x_fail "expected one warning: ${stderr}"
+}
+
+@test "--infer-version refuses a config key whose subsection holds a control character" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  # A tab and an \001 in a subsection name; git stores both. Allowlisted by shape, so only the
+  # control-character refusal stops them.
+  add_config_keys repo "$(printf '[remote "a\001b"]\n\turl = https://example.com/x.git')"
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_version_omitted
+  assert_stderr_contains 'its local git config could not be parsed'
+}
+
+@test "--infer-version refuses a per-worktree config key whose subsection holds a tab" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  git -C repo config extensions.worktreeConfig true
+  printf '[remote "a\tb"]\n\turl = https://example.com/x.git\n' > repo/.git/config.worktree
+
+  md2x_run --infer-version --output-format pdf --flatten-dirs --output-path out repo/doc.md
+
+  assert_version_omitted
+  assert_stderr_contains 'its local git config could not be parsed'
+}
+
+# scan_keys <key list>: runs 'md2x-infer-scan-keys' on the list in a fresh interpreter and
+# prints 'rc=<status> reason=<REASON>'.
+scan_keys() {
+  "${MD2X_TEST_BASH:-bash}" -c '
+    set -o pipefail
+    source "$1/src/cli/lib/title-safe.sh"
+    source "$1/src/cli/lib/preflight.sh"
+    REASON=""
+    WORKTREE_CONFIG=0
+    rc=0
+    md2x-infer-scan-keys "$2" || rc=$?
+    printf "rc=%s reason=%s" "${rc}" "${REASON}"' scan "${MD2X_REPO_ROOT}" "${1}"
+}
+
+@test "md2x-infer-scan-keys refuses any key holding a control character, and accepts ordinary keys" {
+  assert_equal "$(scan_keys $'core.bare\nuser.name')" 'rc=0 reason=' 'ordinary keys'
+  # \001 is what 'md2x-infer-config-keys' turns an embedded newline into.
+  assert_equal "$(scan_keys $'remote.a\001b.url')" 'rc=1 reason=its local git config could not be parsed' 'newline stand-in'
+  assert_equal "$(scan_keys $'core.bare\nremote.a\tb.url')" 'rc=1 reason=its local git config could not be parsed' 'tab'
+  assert_equal "$(scan_keys $'core.bare\nremote.a\033b.url')" 'rc=1 reason=its local git config could not be parsed' 'escape'
+  assert_equal "$(scan_keys $'core.bare\nremote.a\177b.url')" 'rc=1 reason=its local git config could not be parsed' 'DEL'
+}
+
+@test "md2x-infer-config-keys reads keys NUL-delimited and maps an embedded newline to \\001" {
+  require_git_and_jq
+  make_repo repo '{"name":"x","version":"2.3.4"}'
+  add_config_keys repo "$(printf '[remote "a\tb"]\n\turl = https://example.com/x.git')"
+  local keys
+  keys="$("${MD2X_TEST_BASH:-bash}" -c '
+    set -o pipefail
+    source "$1/src/cli/lib/title-safe.sh"
+    source "$1/src/cli/lib/preflight.sh"
+    md2x-infer-config-keys "$2" --local' keys "${MD2X_REPO_ROOT}" "${PWD}/repo")"
+  [[ "${keys}" == *$'\n'"remote.a"$'\t'"b.url"* ]] || md2x_fail "expected the tab-bearing key on its own line: $(printf '%s' "${keys}" | od -c | head)"
+  [[ "${keys}" == *'core.bare'* ]] || md2x_fail "missing ordinary key: ${keys}"
+}

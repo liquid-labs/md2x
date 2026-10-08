@@ -74,3 +74,12 @@ Resolve followup `32b8` (all four sub-items) and `HdEH` items 2 to 4 in the CLI 
 - After the `link-filter.sh` and `output-plan.sh` efficiency changes.
 - After the `md2xAsync` cap.
 - After the `preflight.sh` changes and their tests.
+
+## Status
+
+- Outcome: succeeded (2026-10-08). The dispatch contract required a final commit, overriding this document's "do not commit".
+- Validation: `make test` (369 bats cases plus 64 bun tests) and `make lint` pass; `MD2X_TEST_BASH=/bin/bash make test-cli` (bash 3.2.57) passes; `bun install --frozen-lockfile` succeeds; `make clean all` rebuilds `bin/md2x` with `input-discovery.sh` rolled in; `make test-out/visual-smoke-test.sh` builds and `bash -n` passes; the toolkit grep shows only the historical `parse-options.sh` header comment.
+- Already satisfied: 32b8 item 2 (the terminator was already `MD2X_LUA_EOF` and absent from the Lua source); only the bats guard was added.
+- `md2x-lookup-record` measurement (scan alone, 2 lookups per target, generated keys): 2000 targets 7.8 s (bash 5.3) / 19.7 s (bash 3.2); 4000 targets 32.4 s / 79.6 s, i.e. quadratic. Replaced with per-key variables (`md2x-plan-key-hex`, `md2x-record-set`, `md2x-record-get` in `src/cli/lib/output-plan.sh`). Whole planning for 4000 files fell from 3m41s to 3m02s on bash 5.3 (the rest is a linear per-file fork cost, filed as a finding).
+- Optional `safe.directory` hint skipped: `md2x-infer-git` drops global config, so the hint would point at a setting that cannot help.
+- Files: `src/cli/md2x.sh`, `src/cli/lib/{index,input-discovery,link-filter,output-plan,preflight}.sh`, `src/cli/test/manual/visual-smoke-test.sh`, `src/cli/test/bats/{work-directory,percent-encode,version-inference}.bats`, `src/node/{md2x.js,md2x.test.js,index.d.ts}`, `package.json`, `bun.lock`, `CHANGELOG.md`.
