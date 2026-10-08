@@ -95,8 +95,14 @@ def slugify(raw_text):
     return '-'.join(filtered_tokens)
 
 
-def allocate_slug(base, used):
+def allocate_slug(base, used, next_probe=None):
     """Allocates a deduplicated identifier for 'base', recording it into 'used'.
+
+    'next_probe' (optional dict) maps a base to the first suffix not yet tried for
+    it. 'used' only ever grows, so every suffix below that index is already taken
+    and need not be re-probed; this makes d duplicates O(d) rather than O(d^2)
+    while producing identical output. Each probe still checks 'used', because a
+    literal heading such as 'foo-1' can occupy a candidate.
 
     Mirrors Pandoc: on collision, try 'base-1', 'base-2', ... skipping any
     candidate already in 'used'. Works uniformly for empty and non-empty bases --
@@ -106,11 +112,13 @@ def allocate_slug(base, used):
     if base not in used:
         used.add(base)
         return base
-    n = 1
+    n = 1 if next_probe is None else next_probe.get(base, 1)
     while True:
         candidate = f'{base}-{n}'
         if candidate not in used:
             used.add(candidate)
+            if next_probe is not None:
+                next_probe[base] = n + 1
             return candidate
         n += 1
 
@@ -406,7 +414,8 @@ def build_output(contents, eols, headings, marker_indices, in_fence_for_line, mo
     else:
         title_index = compute_title_index(headings)
         used_slugs = set()
-        slugs = [allocate_slug(slugify(h['text']), used_slugs) for h in headings]
+        next_probe = {}
+        slugs = [allocate_slug(slugify(h['text']), used_slugs, next_probe) for h in headings]
 
         if mode == 'auto':
             section_count = compute_top_level_sections(headings, title_index)
@@ -448,20 +457,68 @@ def build_output(contents, eols, headings, marker_indices, in_fence_for_line, mo
 
 # --- CLI entry point ----------------------------------------------------------------------------
 
+# Exit status for input that is not valid UTF-8 text; 'generate-page()' maps it to md2x's
+# own exit 1 without adding a second message.
+EXIT_BAD_ENCODING = 4
+
+
 def parse_args(argv):
-    """Parses '--mode on|off|auto'; exits with an 'md2x: ' usage message otherwise."""
-    if len(argv) == 2 and argv[0] == '--mode' and argv[1] in ('on', 'off', 'auto'):
-        return argv[1]
-    sys.stderr.write("md2x: usage: toc-preprocess.py --mode on|off|auto\n")
-    sys.exit(1)
+    """Parses '--mode on|off|auto' or '--validate', plus an optional '--source-name <name>'.
+
+    Returns (mode, validate_only, source_name); exits with an 'md2x: ' usage message
+    otherwise.
+    """
+    mode = None
+    validate_only = False
+    source_name = 'stdin'
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == '--mode' and i + 1 < len(argv) and argv[i + 1] in ('on', 'off', 'auto'):
+            mode = argv[i + 1]
+            i += 2
+        elif arg == '--validate':
+            validate_only = True
+            i += 1
+        elif arg == '--source-name' and i + 1 < len(argv):
+            source_name = argv[i + 1]
+            i += 2
+        else:
+            mode = None
+            validate_only = False
+            break
+    if mode is None and not validate_only:
+        sys.stderr.write(
+            "md2x: usage: toc-preprocess.py (--mode on|off|auto | --validate) [--source-name NAME]\n"
+        )
+        sys.exit(1)
+    return mode, validate_only, source_name
 
 
-def run(mode):
-    sys.stdin.reconfigure(encoding='utf-8', errors='surrogateescape')
+class BadEncoding(Exception):
+    """The document is not valid UTF-8 text, or contains a NUL byte."""
+
+
+def read_document():
+    """Reads all of stdin as text, rejecting a NUL byte or invalid UTF-8.
+
+    A UTF-8 byte order mark is valid input and is passed through unchanged, as before.
+    """
+    sys.stdin.reconfigure(encoding='utf-8', errors='strict')
+    try:
+        data = sys.stdin.read()
+    except UnicodeDecodeError as exc:
+        raise BadEncoding() from exc
+    if '\0' in data:
+        raise BadEncoding()
+    return data
+
+
+def run(mode, validate_only):
     sys.stdout.reconfigure(encoding='utf-8', errors='surrogateescape')
 
-    data = sys.stdin.read()
-    if data == '':
+    data = read_document()
+    if validate_only or data == '':
         return
 
     lines = data.splitlines(keepends=True)
@@ -485,9 +542,12 @@ def run(mode):
 
 
 def main(argv):
-    mode = parse_args(argv)
+    mode, validate_only, source_name = parse_args(argv)
     try:
-        run(mode)
+        run(mode, validate_only)
+    except BadEncoding:
+        sys.stderr.write(f"md2x: '{source_name}' is not valid UTF-8 text\n")
+        return EXIT_BAD_ENCODING
     except Exception as exc:  # noqa: BLE001 -- top-level guard: never fail silently or partially.
         sys.stderr.write(f'md2x: toc-preprocess.py failed: {exc}\n')
         return 1

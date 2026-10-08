@@ -285,38 +285,34 @@ EOF
     || md2x_fail 'expected the piped document to get a generated TOC bullet list' "got: ${run_input}"
 }
 
-# --- --keep-intermediate retention of the preprocessed temp file --------------------
+# --- --keep-intermediate retention of the preprocessed file --------------------------
 
-@test "--keep-intermediate retains the preprocessed temp file, and it contains the TOC" {
+@test "--keep-intermediate retains the preprocessed file, and it contains the TOC" {
   md2x_write_toc_worthy_doc 'report.md'
 
   md2x_run --keep-intermediate --output-format pdf --flatten-dirs --output-path . report.md
 
   assert_success
-  local preprocessed_tmp_file
-  preprocessed_tmp_file="$(md2x_stub_last_call_args pandoc | grep 'md2x-preprocessed\.' || true)"
-  [[ -n "${preprocessed_tmp_file}" ]] \
-    || md2x_fail 'expected the last pandoc invocation to carry a md2x-preprocessed temp file argument'
-  assert_file_exists "${preprocessed_tmp_file}"
-  assert_file_contains "${preprocessed_tmp_file}" '](#'
-
-  # Unlike the case's own working directory (removed wholesale by 'md2x_teardown'),
-  # 'PREPROCESSED_TMP_FILE' lives in the ambient '${TMPDIR}' -- exactly the CSS/
-  # body-open/body-close temp files do -- so a case that deliberately retains it must
-  # also delete it itself, once its assertions are done, to leave no orphan behind (see
-  # this task doc's '## Validation').
-  rm -f "${preprocessed_tmp_file}"
+  local preprocessed_file kept
+  kept="$(md2x_kept_work_dir)"
+  preprocessed_file="$(md2x_stub_last_call_args pandoc | grep 'preprocessed\.md$' || true)"
+  [[ -n "${preprocessed_file}" ]] \
+    || md2x_fail 'expected the last pandoc invocation to carry a preprocessed Markdown argument'
+  [[ "${preprocessed_file}" == "${kept}/"* ]] \
+    || md2x_fail "expected the preprocessed file inside '${kept}', got '${preprocessed_file}'"
+  assert_file_exists "${preprocessed_file}"
+  assert_file_contains "${preprocessed_file}" '](#'
 }
 
-@test "without --keep-intermediate, the preprocessed temp file is removed after conversion" {
+@test "without --keep-intermediate, the preprocessed file is removed after conversion" {
   md2x_write_toc_worthy_doc 'report.md'
 
   md2x_run --output-format pdf --flatten-dirs --output-path . report.md
 
   assert_success
-  local preprocessed_tmp_file
-  preprocessed_tmp_file="$(md2x_stub_last_call_args pandoc | grep 'md2x-preprocessed\.' || true)"
-  [[ -n "${preprocessed_tmp_file}" ]] \
-    || md2x_fail 'expected the last pandoc invocation to carry a md2x-preprocessed temp file argument'
-  assert_file_not_exists "${preprocessed_tmp_file}"
+  local preprocessed_file
+  preprocessed_file="$(md2x_stub_last_call_args pandoc | grep 'preprocessed\.md$' || true)"
+  [[ -n "${preprocessed_file}" ]] \
+    || md2x_fail 'expected the last pandoc invocation to carry a preprocessed Markdown argument'
+  assert_file_not_exists "${preprocessed_file}"
 }

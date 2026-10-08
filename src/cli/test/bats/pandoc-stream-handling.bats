@@ -64,7 +64,7 @@ Done'
 
   md2x_run --flatten-dirs --output-path . report.md
 
-  assert_failure
+  assert_failure 1
   assert_stderr_contains 'ERROR: fatal WeasyPrint failure'
 }
 
@@ -73,12 +73,11 @@ Done'
 @test "--css is a real path ending in '.css', never a '/dev/fd/*' process substitution" {
   md2x_write_doc 'report.md'
 
-  md2x_run --flatten-dirs --output-path . report.md
+  md2x_run --output-format pdf --flatten-dirs --output-path . report.md
 
   assert_success
-  # '--metadata-file' and the (link-rewritten) input document are still legitimately
-  # delivered via process substitution -- out of this task's scope -- so assert on the
-  # '--css' argument's own value specifically, not the whole invocation line.
+  # Assert on the '--css' argument's own value specifically, not the whole invocation
+  # line.
   local css_arg previous='' found=''
   while IFS= read -r css_arg; do
     if [[ "${previous}" == '--css' ]]; then

@@ -90,15 +90,6 @@ e2e_teardown() {
      && [[ -d "${MD2X_TEST_TMPDIR}" ]]; then
     rm -rf "${MD2X_TEST_TMPDIR}"
   fi
-  # This file's PDF case below passes '--keep-intermediate', which -- since task 004 --
-  # also retains 'generate-page()'s preprocessed-Markdown temp file, exactly like the
-  # PDF overlay it exists to prove ran. That file lives in the ambient '${TMPDIR}', not
-  # 'MD2X_TEST_TMPDIR' above, so it survives the removal two lines up; delete it here so
-  # a real-toolchain run of this file leaves no orphan 'md2x-preprocessed.*' behind (see
-  # plan/phase-01-markdown-toc-generation/004-wire-preprocessor-into-generate-page.md's
-  # '## Validation'). A serial, one-file-at-a-time bats run (this Makefile's default)
-  # never has another case racing to create one of its own at the same moment.
-  rm -f "${TMPDIR:-/tmp}"/md2x-preprocessed.* 2>/dev/null || true
   unset MD2X_TEST_TMPDIR MD2X_TEST_WORK_DIR E2E_ORIGINAL_DIR
 }
 
@@ -205,7 +196,7 @@ EOF
   assert_file_exists './tiny-doc.html'
   e2e_assert_nonempty './tiny-doc.html'
   # 'Tiny Doc' is the fixture's own heading text; '<style>' is the bundled GitHub CSS
-  # 'generate-page.sh' embeds via '--css'. Neither marker exists in stub output, so this
+  # 'generate-page.sh' embeds inline via '--include-in-header'. Neither marker exists in stub output, so this
   # is proof a real Pandoc conversion happened.
   assert_file_contains './tiny-doc.html' 'Tiny Doc'
   assert_file_contains './tiny-doc.html' '<style>'
@@ -214,6 +205,18 @@ EOF
   # genuinely lands around the rendered body so 'github.css''s bare '.markdown-body'
   # selectors match.
   assert_file_contains './tiny-doc.html' 'class="markdown-body"'
+  # The stylesheet is inline, never a link to a work-directory file deleted at exit.
+  local ref_values html_content
+  html_content="$(cat -- './tiny-doc.html')"
+  [[ "${html_content}" != *'<link rel="stylesheet"'* ]] \
+    || md2x_fail 'expected the HTML output to contain no <link rel="stylesheet"'
+  ref_values="$(grep -oE '(href|src)="[^"]*"' './tiny-doc.html' || true)"
+  [[ "${ref_values}" != *"${TMPDIR:-/nonexistent-tmpdir}"* ]] \
+    || md2x_fail "expected no href/src value to contain TMPDIR, got: ${ref_values}"
+  [[ "${ref_values}" != *"${MD2X_TEST_TMPDIR}"* ]] \
+    || md2x_fail "expected no href/src value to contain the test tmp dir, got: ${ref_values}"
+  [[ "${ref_values}" != *'/md2x.'* ]] \
+    || md2x_fail "expected no href/src value to contain '/md2x.', got: ${ref_values}"
 }
 
 @test "e2e: tiny-doc.md converts to a real, non-empty DOCX" {
@@ -234,8 +237,8 @@ EOF
 
   md2x_copy_fixture 'tiny-doc.md'
 
-  # '--keep-intermediate' keeps '<title>-overlay.pdf' around instead of deleting it once
-  # merged, so its presence here is direct proof the Ghostscript/pdftk stage actually
+  # '--keep-intermediate' keeps the work directory (and its 'overlay.pdf') around instead
+  # of deleting it once merged, so the overlay's presence there is direct proof the Ghostscript/pdftk stage actually
   # ran -- not just that Pandoc produced a PDF on its own.
   md2x_run --flatten-dirs --output-path . --keep-intermediate tiny-doc.md
 
@@ -243,9 +246,16 @@ EOF
   e2e_assert_nonempty './tiny-doc.pdf'
   e2e_assert_pdf_magic './tiny-doc.pdf'
 
-  assert_file_exists './tiny-doc-overlay.pdf'
-  e2e_assert_nonempty './tiny-doc-overlay.pdf'
-  e2e_assert_pdf_magic './tiny-doc-overlay.pdf'
+  local kept
+  kept="$(md2x_kept_work_dir)"
+  [[ -n "${kept}" ]] || md2x_fail 'expected a kept-intermediate notice on stderr' "got: ${stderr}"
+  assert_file_exists "${kept}/overlay.pdf"
+  e2e_assert_nonempty "${kept}/overlay.pdf"
+  e2e_assert_pdf_magic "${kept}/overlay.pdf"
+  rm -rf "${kept}"
+  # Nothing but the input and the requested output may sit in the cwd.
+  [[ "$(ls -A | LC_ALL=C sort | tr '\n' ' ')" == 'tiny-doc.md tiny-doc.pdf ' ]] \
+    || md2x_fail 'unexpected files in the cwd' "$(ls -A)"
 }
 
 @test "e2e: --single-page concatenates two fixtures into one real HTML document" {
@@ -262,6 +272,17 @@ EOF
   e2e_assert_nonempty './combined.html'
   assert_file_contains './combined.html' 'Alpha Heading'
   assert_file_contains './combined.html' 'Beta Heading'
+}
+
+@test "e2e: indented code arriving on stdin renders as a pre/code block" {
+  e2e_require_pandoc
+
+  printf '# T\n\n    indented\n\n  two\\nslash\n' | md2x_run --output-format html --output-path . -
+
+  assert_success
+  assert_file_exists './output.html'
+  assert_file_contains './output.html' '<pre'
+  assert_file_contains './output.html' '<code>'
 }
 
 # --- TOC: slug agreement with real Pandoc -------------------------------------------
@@ -407,4 +428,99 @@ ${bookmarks}"
     grep -qx -- "${anchor}" <<< "${ids}" \
       || md2x_fail "TOC anchor '#${anchor}' has no matching id=\"${anchor}\" in the same file"
   done <<< "${toc_anchors}"
+}
+
+# --- title-safe PostScript sink --------------------------------------------------------
+#
+# A title is interpolated into the Ghostscript header/footer program; an unescaped ')'
+# used to crash 'gs'. Each must convert and yield a PDF 'pdftk' can read.
+
+e2e_title_pdf_case() {
+  local title="$1"
+  e2e_require_pdf_engine
+  command -v gs >/dev/null 2>&1 || skip "real 'gs' not found on PATH"
+  command -v pdftk >/dev/null 2>&1 || skip "real 'pdftk' not found on PATH"
+
+  e2e_write_toc_nav_doc 'doc.md'
+
+  md2x_run --title "${title}" --flatten-dirs --output-path . doc.md
+
+  assert_success
+  e2e_assert_pdf_magic "./${title}.pdf"
+  pdftk "./${title}.pdf" dump_data > /dev/null \
+    || md2x_fail "pdftk could not read './${title}.pdf'"
+}
+
+@test "e2e: pdf with --title 'a)b' converts (unbalanced paren)" {
+  e2e_title_pdf_case 'a)b'
+}
+
+@test "e2e: pdf with --title 'x\y(z' converts (backslash and paren)" {
+  e2e_title_pdf_case 'x\y(z'
+}
+
+@test "e2e: pdf with a non-ASCII --title converts" {
+  e2e_title_pdf_case 'Ünïcødé 日本'
+}
+
+@test "e2e: -o - streams a real PDF to stdout and leaves no .pdf in the cwd" {
+  e2e_require_pdf_engine
+
+  md2x_copy_fixture 'tiny-doc.md'
+
+  md2x_run -o - tiny-doc.md
+
+  assert_success
+  [[ "${output:0:4}" == '%PDF' ]] || md2x_fail "expected stdout to start with '%PDF', got: ${output:0:4}"
+  local pdfs
+  pdfs="$(find . -name '*.pdf')"
+  [[ -z "${pdfs}" ]] || md2x_fail "expected no .pdf file in the cwd, found: ${pdfs}"
+}
+
+@test "e2e: -o with an unrecognized extension writes a real PDF to the path as given" {
+  e2e_require_pdf_engine
+
+  md2x_copy_fixture 'tiny-doc.md'
+
+  md2x_run -o out/report tiny-doc.md
+
+  assert_success
+  e2e_assert_pdf_magic './out/report'
+}
+
+@test "e2e: pdf conversion of a representative document emits no WeasyPrint 'Ignored' warnings" {
+  e2e_require_pdf_engine
+
+  cat > rich.md <<'MD'
+# Heading One
+
+## Heading Two
+
+Press <kbd>Ctrl</kbd>+<kbd>C</kbd> and `inline code`.
+
+> A blockquote
+
+| a | b |
+|---|---|
+| 1 | 2 |
+
+- [x] done
+- [ ] todo
+
+```bash
+echo hi
+```
+MD
+
+  md2x_run rich.md
+
+  assert_success
+  e2e_assert_pdf_magic './rich.pdf'
+
+  # Any 'WARNING: Ignored' line -- e.g. a rule in 'github.css' -- fails the case; pandoc's
+  # own known 'user-select' warning is dropped by generate-page.sh.
+  local unexpected
+  unexpected="$(printf '%s\n' "${stderr}" \
+    | grep -F 'WARNING: Ignored' || true)"
+  [[ -z "${unexpected}" ]] || md2x_fail "unexpected WeasyPrint 'Ignored' warning(s) on stderr" "${unexpected}"
 }

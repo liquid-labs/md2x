@@ -61,13 +61,13 @@ teardown() {
   refute_output_contains '.docx'
 }
 
-@test "an unrecognized --output-format exits non-zero, names the format, and never calls pandoc" {
+@test "an unrecognized --output-format exits 2, names the format, and never calls pandoc" {
   md2x_write_doc 'report.md'
 
   md2x_run --output-format bogus --flatten-dirs --output-path . report.md
 
-  assert_failure
-  assert_stderr_contains "Unsupported output format 'bogus'"
+  assert_failure 2
+  assert_stderr_contains "unsupported output format 'bogus' (expected pdf|html|docx)"
   refute_stub_called pandoc
   assert_file_not_exists './report.pdf'
 }

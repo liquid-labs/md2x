@@ -114,7 +114,7 @@ teardown() {
   assert_file_not_exists './CombinedReport.md'
 }
 
-@test "--single-page --keep-intermediate retains the concatenation file and announces it on stderr" {
+@test "--single-page --keep-intermediate retains the concatenation file in the announced work directory" {
   md2x_write_doc 'chapter1.md' 'Chapter One'
   md2x_write_doc 'chapter2.md' 'Chapter Two'
 
@@ -122,6 +122,53 @@ teardown() {
 
   assert_success
   assert_file_exists './CombinedReport.pdf'
-  assert_file_exists './CombinedReport.md'
-  assert_stderr_contains "kept intermediate combined file: 'CombinedReport.md'"
+  assert_file_not_exists './CombinedReport.md'
+  local kept
+  kept="$(md2x_kept_work_dir)"
+  [[ -n "${kept}" ]] || md2x_fail 'expected a kept-intermediate notice on stderr' "got: ${stderr}"
+  assert_file_exists "${kept}/single-page.md"
+  assert_file_contains "${kept}/single-page.md" 'Chapter One'
+  assert_file_contains "${kept}/single-page.md" 'Chapter Two'
+}
+
+# --- stdin '-' is a byte-exact copy ------------------------------------------------------
+
+@test "stdin '-' keeps the leading indentation of an indented code line" {
+  printf '# T\n\n    indented\n' > in.md
+  md2x_run --output-path . - < in.md
+
+  assert_success
+  assert_equal "$(md2x_pandoc_capture input)" "$(printf '# T\n\n    indented')" 'pandoc input'
+}
+
+@test "stdin '-' keeps a literal backslash" {
+  printf '# T\n\ntwo\\nslash\n' > in.md
+  md2x_run --output-path . - < in.md
+
+  assert_success
+  assert_equal "$(md2x_pandoc_capture input)" "$(printf '# T\n\ntwo\\nslash')" 'pandoc input'
+}
+
+@test "stdin '-' keeps a final line that has no trailing newline" {
+  printf '# T\n\nlast' | md2x_run --output-path . -
+
+  assert_success
+  assert_equal "$(md2x_pandoc_capture input)" "$(printf '# T\n\nlast')" 'pandoc input'
+}
+
+@test "stdin '-' with empty stdin is a usage error and writes no output" {
+  md2x_run --output-path . - < /dev/null
+
+  assert_failure 2
+  assert_stderr_contains 'md2x: no input on stdin'
+  assert_stderr_contains "Try 'md2x --help' for more information."
+  assert_file_not_exists './output.pdf'
+  assert_equal "$(md2x_pandoc_capture_count)" '0' 'pandoc invocation count'
+}
+
+@test "stdin '-' with whitespace-only input converts normally" {
+  printf '  \n\n' | md2x_run --output-path . -
+
+  assert_success
+  assert_file_exists './output.pdf'
 }

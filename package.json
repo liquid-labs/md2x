@@ -1,33 +1,55 @@
 {
   "name": "@liquid-labs/md2x",
   "version": "1.0.0-alpha.11",
-  "description": "A command line utility to print Mardown documents to PDF, HTML, and other formats.",
-  "main": "dist/md2x.js",
+  "description": "A command line utility and Node.js library to convert Markdown documents to PDF, HTML, and DOCX.",
+  "main": "dist/md2x.cjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/md2x.mjs",
+      "require": "./dist/md2x.cjs"
+    },
+    "./package.json": "./package.json"
+  },
   "bin": {
     "md2x": "bin/md2x"
   },
   "scripts": {
     "build": "make all",
     "test": "make test",
+    "prepack": "make all",
     "preversion": "make all && make qa"
   },
   "files": [
     "bin/*",
-    "dist/*"
+    "dist/*",
+    "CHANGELOG.md"
   ],
-  "keywords": [],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "markdown",
+    "pdf",
+    "html",
+    "docx",
+    "pandoc",
+    "cli",
+    "converter"
+  ],
   "author": "Zane Rockenbaugh <zane@liquid-labs.com>",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/Liquid-Labs/md2x.git"
+    "url": "git+https://github.com/liquid-labs/md2x.git"
   },
   "bugs": {
-    "url": "https://github.com/Liquid-Labs/md2x/issues"
+    "url": "https://github.com/liquid-labs/md2x/issues"
   },
-  "homepage": "https://github.com/Liquid-Labs/md2x#readme",
+  "homepage": "https://github.com/liquid-labs/md2x#readme",
   "liq": {
-    "orgBase": "git@github.com:Liquid-Labs/Liquid-Labs.git",
+    "orgBase": "git@github.com:liquid-labs/liquid-labs.git",
     "packageType": "node|library"
   },
   "devDependencies": {
@@ -36,9 +58,7 @@
     "bats": "^1.13.0",
     "eslint": "^9",
     "eslint-plugin-import-x": "^4.17.1",
-    "neostandard": "^0.13.0"
-  },
-  "dependencies": {
-    "shelljs": "^0.8.5"
+    "neostandard": "^0.13.0",
+    "typescript": "^7.0.2"
   }
 }

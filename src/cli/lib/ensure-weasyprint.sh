@@ -37,8 +37,9 @@ WEASYPRINT_LOCK_POLL_SECS=1
 # Reports the failure of the bootstrap step named in $1, releases the bootstrap lock (this
 # is only ever called from within the locked section below, so the caller always holds the
 # lock at this point), removes the incomplete venv so the next invocation retries from a
-# clean state rather than resuming a half-built one, and exits with the same code the
-# preflight loop uses for 'a required external dependency is not usable'.
+# clean state rather than resuming a half-built one, and exits 3 (the contract's
+# 'missing or unusable dependency' code, the same one the preflight loop uses; see
+# 'lib/errors.sh').
 ensure-weasyprint-fail() {
   echo "md2x: failed to install weasyprint (step: ${1})." >&2
   echo "md2x: likely causes: no network access, a proxy blocking PyPI, or missing platform build tooling." >&2
@@ -46,7 +47,7 @@ ensure-weasyprint-fail() {
   echo "  rm -rf '${VENV_DIR}' && python3 -m venv '${VENV_DIR}' && '${VENV_DIR}/bin/python3' -m ensurepip --upgrade && '${VENV_DIR}/bin/python3' -m pip install 'weasyprint==69.0'" >&2
   rm -rf "${VENV_DIR}"
   rmdir "${WEASYPRINT_LOCK_DIR}" 2>/dev/null || true
-  exit 2
+  exit 3
 }
 
 # Reports that this process gave up waiting for another 'md2x' process's weasyprint
@@ -66,7 +67,7 @@ ensure-weasyprint-lock-timeout-fail() {
   echo "md2x: if no 'md2x' process is actually still running, a previous one was likely killed mid-install and left a stale lock." >&2
   echo "md2x: to clear it and retry, run:" >&2
   echo "  rm -rf '${WEASYPRINT_LOCK_DIR}' '${VENV_DIR}' && python3 -m venv '${VENV_DIR}' && '${VENV_DIR}/bin/python3' -m ensurepip --upgrade && '${VENV_DIR}/bin/python3' -m pip install 'weasyprint==69.0'" >&2
-  exit 2
+  exit 3
 }
 
 # Reports that 'mkdir "${WEASYPRINT_LOCK_DIR}"' failed for a reason other than lock
@@ -83,7 +84,7 @@ ensure-weasyprint-lock-mkdir-fail() {
   echo "md2x: failed to create the weasyprint bootstrap lock directory '${WEASYPRINT_LOCK_DIR}'." >&2
   echo "md2x: likely cause: an unwritable '\${HOME}' (${HOME}), a full disk, or a permissions problem -- not lock contention." >&2
   echo "md2x: check that '${HOME}' is writable and has free space, then retry." >&2
-  exit 2
+  exit 3
 }
 
 # Ensures '${WEASYPRINT_BIN}' exists and is executable, installing it into '${VENV_DIR}' on first use. Callers must

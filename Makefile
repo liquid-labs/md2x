@@ -1,6 +1,6 @@
 SHELL=/bin/bash -o pipefail
 .DELETE_ON_ERROR:
-.PHONY: all clean lint lint-fix qa smoke-test test test-cli test-node
+.PHONY: all clean lint lint-fix qa smoke-test test test-cli test-node test-pack
 
 # Dev tools resolve only to the lockfile-pinned binaries installed by 'bun install'. They are
 # deliberately NOT run through 'bunx', which would fetch an unpinned latest version from the
@@ -17,7 +17,10 @@ $(BIN_DIR)/%:
 
 NODE_SRC=src/node
 NODE_FILES:=$(shell find $(NODE_SRC) -name "*.js" -not -path "*/test/*" -not -name "*.test.js")
-NODE_DIST:=dist/md2x.js
+NODE_DIST_ESM:=dist/md2x.mjs
+NODE_DIST_CJS:=dist/md2x.cjs
+NODE_DIST_TYPES:=dist/index.d.ts
+NODE_DIST:=$(NODE_DIST_ESM) $(NODE_DIST_CJS) $(NODE_DIST_TYPES)
 
 CLI_LIB_SRC:=$(shell find src/cli/lib -type f)
 CLI_SRC:=src/cli/md2x.sh $(CLI_LIB_SRC)
@@ -37,13 +40,32 @@ BUILD_TARGETS:=$(NODE_DIST) $(CLI_BIN)
 all: $(BUILD_TARGETS)
 
 # build recipes
-$(NODE_DIST): package.json $(NODE_FILES)
+# Dual build. The .mjs/.cjs extensions make each format unambiguous to Node regardless of the package
+# 'type'. Sourcemaps are omitted: they inflate the published tarball and the bundle is a thin wrapper.
+$(NODE_DIST_ESM): package.json $(NODE_FILES)
 	mkdir -p $(dir $@)
-	bun build $(NODE_SRC)/index.js --target=node --format=cjs --packages=external --sourcemap=inline --outfile=$@
+	bun build $(NODE_SRC)/index.js --target=node --format=esm --packages=external --outfile=$@
 
-$(CLI_BIN): $(CLI_SRC) | $(BASH_ROLLUP)
+$(NODE_DIST_CJS): package.json $(NODE_FILES)
+	mkdir -p $(dir $@)
+	bun build $(NODE_SRC)/index.js --target=node --format=cjs --packages=external --define import.meta.dirname=module.path --define import.meta.url=undefined --outfile=$@
+
+# The hand-written type declarations ship as-is.
+$(NODE_DIST_TYPES): $(NODE_SRC)/index.d.ts
+	mkdir -p $(dir $@)
+	cp $< $@
+
+# The package.json version is injected into the rolled-up script as a literal, replacing the
+# '@MD2X_VERSION@' placeholder in src/cli/md2x.sh. It is read without jq or node, and the
+# build fails rather than embed an empty or odd version. package.json is a prerequisite so a
+# version bump rebuilds bin/md2x.
+$(CLI_BIN): $(CLI_SRC) package.json | $(BASH_ROLLUP)
 	mkdir -p $(dir $@)
 	$(BASH_ROLLUP) $< $@
+	@v="$$(sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' package.json | head -n 1)"; \
+	case "$$v" in ''|*[!0-9A-Za-z.+-]*) echo "error: could not read a valid version from package.json (got '$$v')" >&2; exit 1;; esac; \
+	grep -q '@MD2X_VERSION@' $@ || { echo "error: version placeholder missing from $@" >&2; exit 1; }; \
+	sed "s/@MD2X_VERSION@/$$v/g" $@ > $@.tmp && cat $@.tmp > $@ && rm -f $@.tmp
 
 # test recipes
 #
@@ -59,6 +81,11 @@ test-cli: all $(CLI_TEST_FILES) | $(BATS)
 test-node:
 	bun test ./$(NODE_SRC) --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=coverage
 
+# Release-time check (not part of 'qa': it runs npm pack/install and a TypeScript compile, which
+# can need the network). Packs the tarball and proves ESM import, CJS require, and the types.
+test-pack: all
+	bash scripts/test-pack.sh
+
 # smoke test recipes (interactive; opt in)
 $(SMOKE_TEST_OUT): $(SMOKE_TEST_SRC) $(CLI_SRC) | $(BASH_ROLLUP)
 	mkdir -p $(dir $@)
@@ -70,10 +97,10 @@ smoke-test: all $(SMOKE_TEST_OUT)
 
 # lint rules
 lint: | $(ESLINT)
-	$(ESLINT) $(NODE_SRC)
+	$(ESLINT) .
 
 lint-fix: | $(ESLINT)
-	$(ESLINT) --fix $(NODE_SRC)
+	$(ESLINT) --fix .
 
 qa: test lint
 	

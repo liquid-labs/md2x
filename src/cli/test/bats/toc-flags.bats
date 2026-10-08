@@ -25,12 +25,12 @@ teardown() {
 
 # --- conflict: both flags together ---------------------------------------------------
 
-@test "--toc --no-toc together exits non-zero, names both flags, and never calls pandoc" {
+@test "--toc --no-toc together exits 2, names both flags, and never calls pandoc" {
   md2x_write_doc 'report.md'
 
   md2x_run --toc --no-toc --flatten-dirs --output-path . report.md
 
-  assert_failure
+  assert_failure 2
   assert_stderr_contains "Cannot specify both '--toc' and '--no-toc'"
   refute_stub_called pandoc
   assert_file_not_exists './report.pdf'
@@ -41,7 +41,7 @@ teardown() {
 
   md2x_run --no-toc --toc --flatten-dirs --output-path . report.md
 
-  assert_failure
+  assert_failure 2
   assert_stderr_contains "Cannot specify both '--toc' and '--no-toc'"
   refute_stub_called pandoc
   assert_file_not_exists './report.pdf'

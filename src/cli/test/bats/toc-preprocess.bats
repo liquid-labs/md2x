@@ -763,3 +763,57 @@ EOF
   assert_success
   assert_output_contains '- [Heading with \[brackets\] literally](#heading-with-brackets-literally)'
 }
+
+# --- 10. duplicate-slug probing ------------------------------------------------------------------
+
+@test "toc: slugs - 2000 identical headings dedupe to foo, foo-1 ... foo-1999 quickly" {
+  local doc="${TOC_TEST_TMPDIR}/many-dups.md" i
+  {
+    printf '# Doc Title\n\n'
+    for ((i = 0; i < 2000; i++)); do printf '## foo\n\n'; done
+  } > "${doc}"
+  local start end
+  start="$(date +%s)"
+  toc_run_file on "${doc}"
+  end="$(date +%s)"
+  assert_success
+  assert_output_contains '- [foo](#foo)'
+  assert_output_contains '- [foo](#foo-1)'
+  assert_output_contains '- [foo](#foo-1999)'
+  if [[ "${output}" == *'(#foo-2000)'* ]]; then
+    md2x_fail 'unexpected foo-2000 slug'
+  fi
+  (( end - start < 5 )) || md2x_fail "2000 duplicate headings took $((end - start))s"
+}
+
+@test "toc: slugs - literal 'foo-1' headings interleaved with duplicates are skipped over" {
+  toc_run on <<'EOF2'
+# Doc Title
+
+## foo
+
+## foo
+
+## foo-1
+
+## foo
+
+## foo-1
+
+## foo-2
+
+## foo
+EOF2
+  assert_success
+  local -a slugs=()
+  local line
+  while IFS= read -r line; do
+    [[ "${line}" == '- ['*'](#'*')' ]] || continue
+    line="${line##*\(#}"
+    slugs+=("${line%\)}")
+  done <<< "${output}"
+  local actual expected
+  actual="${slugs[*]}"
+  expected='foo foo-1 foo-1-1 foo-2 foo-1-2 foo-2-1 foo-3'
+  [[ "${actual}" == "${expected}" ]] || md2x_fail "expected '${expected}', got '${actual}'"
+}
