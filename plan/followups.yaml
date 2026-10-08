@@ -50,16 +50,6 @@ items:
         - priority:low
         - effort:unspecified
       text: 'From 1.0 audit (audit-interface.md N4 and feature parts of N8), deferred by user decision during golden-release-hardening planning: (a) --jobs parallelism and progress output; (b) configurable header/footer, first-page header, font. Title safety for non-ASCII/PostScript-special characters is NOT deferred; it is in the plan.'
-    - title: Harden getopt eval and cap title length
-      id: ttPU
-      date: "2026-10-04"
-      tags:
-        - type:security
-        - priority:high
-        - effort:small
-        - plan/phase:correctness-and-regression-tests
-        - plan/slug:golden-release-hardening
-      text: Two hardening suggestions. (1) src/cli/lib/parse-options.sh evals getopt output; with GETOPT_COMPATIBLE set, util-linux getopt emits unquoted output while still passing --test, so unset GETOPT_COMPATIBLE before invoking getopt (or run getopt -T first) and document that MD2X_GETOPT names an executable that is run. (2) md2x-ps-string / md2x-validate-title in src/cli/lib/title-safe.sh do not bound title or version length before they go into the gs argv and pandoc -M argument; consider capping the title at 255 bytes, since the Node wrapper may forward untrusted titles.
     - title: Drop bash-toolkit lists, harden heredoc
       id: 32b8
       date: "2026-10-05"
