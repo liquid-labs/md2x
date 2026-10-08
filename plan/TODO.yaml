@@ -5,6 +5,7 @@ phases:
     - number: 1
       slug: followup-polish
       title: Followup Polish
+      diff_base: fcc01298be7833de6e2ee22639d77d1814f09516
       tasks:
         - number: 1
           slug: harden-cli-sources
