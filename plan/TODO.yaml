@@ -30,7 +30,7 @@ phases:
             branch: plan/release-followups-polish-01-002
             commit:
                 - 4f112b4
-            merge: null
+            merge: 675a2b11da1aceee710c29f604fd8284ed3ddfeb
         - number: 3
           slug: update-docs
           title: Update Docs
