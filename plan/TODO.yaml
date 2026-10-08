@@ -39,6 +39,6 @@ phases:
           tier: sonnet-med
           digest: Docs-only sync of architecture, spec, README, AGENTS and project-structure to the landed code from tasks 001 and 002, resolving all 5E3C items and confirming HdEH item 1. Only source edit is the guard comment in md2x.sh. Optional Key decisions regrouping skipped. make test (380 bats, 64 node) and lint pass.
           git:
-            branch: null
+            branch: plan/release-followups-polish-01-003
             commit: []
             merge: null
