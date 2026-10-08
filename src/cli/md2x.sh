@@ -321,28 +321,30 @@ SINGLE_TARGET=''
 if [[ -z "${TO_STDOUT}" ]]; then
   NL=$'\n'
   TAB=$'\t'
-  INPUT_KEYS="${NL}"
-  TARGET_KEYS="${NL}"
   while IFS=$'\t' read -r PLAN_FILE PLAN_ROOT; do
     [[ -n "${PLAN_FILE}" ]] || continue
     PLAN_KEY="$(md2x-lowercase "$(md2x-canonical-target "${PLAN_FILE}")")"
-    INPUT_KEYS="${INPUT_KEYS}${PLAN_KEY}${TAB}${PLAN_FILE}${NL}"
+    md2x-plan-key-hex "${PLAN_KEY}"
+    md2x-record-set MD2X_PLAN_INPUT "${PLAN_KEY_HEX}" "${PLAN_FILE}"
   done <<< "${RESOLVED_INPUTS}"
 
-  # md2x-plan-register <source-label> <target>: checks <target> and records it.
+  # md2x-plan-register <source-label> <target>: checks <target> and records it. The lookups
+  # are keyed by the lowercased canonical target ('MD2X_PLAN_INPUT' holds the inputs,
+  # 'MD2X_PLAN_TARGET' the targets registered so far; see 'lib/output-plan.sh').
   md2x-plan-register() {
-    local REG_SOURCE="${1}" REG_TARGET="${2}" REG_KEY REG_OTHER
+    local REG_SOURCE="${1}" REG_TARGET="${2}" REG_KEY
     md2x-check-output-location "${REG_TARGET}"
     REG_KEY="$(md2x-lowercase "$(md2x-canonical-target "${REG_TARGET}")")"
-    if REG_OTHER="$(md2x-lookup-record "${INPUT_KEYS}" "${REG_KEY}")"; then
+    md2x-plan-key-hex "${REG_KEY}"
+    if md2x-record-get MD2X_PLAN_INPUT "${PLAN_KEY_HEX}"; then
       md2x-die-usage "output '$(md2x-title-display "${REG_TARGET}")' would overwrite its own input" \
-        "'$(md2x-title-display "${REG_OTHER}")'."
+        "'$(md2x-title-display "${PLAN_RECORD_VALUE}")'."
     fi
-    if REG_OTHER="$(md2x-lookup-record "${TARGET_KEYS}" "${REG_KEY}")"; then
-      md2x-die-usage "'$(md2x-title-display "${REG_OTHER}")' and '$(md2x-title-display "${REG_SOURCE}")'" \
+    if md2x-record-get MD2X_PLAN_TARGET "${PLAN_KEY_HEX}"; then
+      md2x-die-usage "'$(md2x-title-display "${PLAN_RECORD_VALUE}")' and '$(md2x-title-display "${REG_SOURCE}")'" \
         "would both be written to '$(md2x-title-display "${REG_TARGET}")'."
     fi
-    TARGET_KEYS="${TARGET_KEYS}${REG_KEY}${TAB}${REG_SOURCE}${NL}"
+    md2x-record-set MD2X_PLAN_TARGET "${PLAN_KEY_HEX}" "${REG_SOURCE}"
   }
 
   if [[ -n "${STDIN_MODE}" ]] || [[ -n "${SINGLE_PAGE}" ]]; then

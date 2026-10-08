@@ -7,14 +7,22 @@
 # pass through. The result has no space, newline, '-' or '>' in it, so it is safe inside a
 # single-line HTML comment. Prints no newline.
 md2x-percent-encode() {
-  local HEX BYTE OUT=''
-  HEX="$(printf '%s' "${1-}" | LC_ALL=C od -An -v -tx1 | tr -d ' \n')"
+  local HEX BYTE CH ENC OUT=''
+  HEX="$(printf '%s' "${1-}" | LC_ALL=C od -An -v -tx1)"
+  # Pure parameter expansion drops the spaces and newlines 'od' lays the bytes out with.
+  HEX="${HEX//[$' \n']/}"
+  # Per byte, 'printf -v' (bash 3.2 has it) seats the result without a command substitution,
+  # so the loop forks nothing: '\x<byte>' for a pass-through byte, '%XX' for an escape.
   while [[ -n "${HEX}" ]]; do
     BYTE="${HEX:0:2}"
     HEX="${HEX:2}"
     case "${BYTE}" in
-      2[ef]|3[0-9]|4[1-9a-f]|5[0-9af]|6[1-9a-f]|7[0-9a]) OUT="${OUT}$(printf "\\x${BYTE}")";;
-      *) OUT="${OUT}%$(printf '%s' "${BYTE}" | tr 'a-f' 'A-F')";;
+      2[ef]|3[0-9]|4[1-9a-f]|5[0-9af]|6[1-9a-f]|7[0-9a])
+        printf -v CH "\\x${BYTE}"
+        OUT="${OUT}${CH}";;
+      *)
+        printf -v ENC '%%%02X' "0x${BYTE}"
+        OUT="${OUT}${ENC}";;
     esac
   done
   printf '%s' "${OUT}"
