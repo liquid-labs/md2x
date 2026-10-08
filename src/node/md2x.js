@@ -172,7 +172,7 @@ const md2x = (options) => {
 /**
 * Asynchronous 'md2x()': same options and validation, but validation errors reject the returned Promise.
 * @param {object} options - See 'md2x()'.
-* @returns {Promise<string[]>} The generated file paths.
+* @returns {Promise<string[]>} The generated file paths. Rejects, killing the child, if stdout or stderr exceeds 64 MiB.
 */
 const md2xAsync = (options) => new Promise((resolve, reject) => {
   const { args, input, quiet } = buildInvocation(options)
@@ -188,8 +188,27 @@ const md2xAsync = (options) => new Promise((resolve, reject) => {
   }
   child.stdout.setEncoding('utf8')
   child.stderr.setEncoding('utf8')
-  child.stdout.on('data', (chunk) => { stdout += chunk })
-  child.stderr.on('data', (chunk) => { stderr += chunk })
+  // Each stream is capped at MAX_BUFFER bytes, like the 'maxBuffer' the synchronous path passes to spawnSync. On overflow
+  // the child is killed and the promise rejects with a 'failure()' (no exitCode, the stderr captured so far) rather than
+  // silently truncating the output or growing without bound; chunks arriving afterward are dropped.
+  const capture = (stream, name, append) => {
+    let bytes = 0
+    stream.on('data', (chunk) => {
+      if (settled) {
+        return
+      }
+      bytes += Buffer.byteLength(chunk)
+      if (bytes > MAX_BUFFER) {
+        child.kill()
+        const cause = Object.assign(new Error(`${name} exceeded the ${MAX_BUFFER} byte maxBuffer`), { code : 'ENOBUFS' })
+        settle(reject, failure({ stderr, cause }))
+        return
+      }
+      append(chunk)
+    })
+  }
+  capture(child.stdout, 'stdout', (chunk) => { stdout += chunk })
+  capture(child.stderr, 'stderr', (chunk) => { stderr += chunk })
   // A spawn failure (missing bin) may not be followed by 'close', so reject right away.
   child.on('error', (err) => settle(reject, failure({ stderr, cause : err })))
   if (input !== undefined) {

@@ -47,6 +47,8 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - `--infer-version` is evaluated lazily, so `git` and `jq` are not required otherwise, and its `git` calls are hardened against repository-supplied configuration.
 - Error messages go through one helper and follow the exit-code contract on every path.
 - `github.css` no longer carries rules WeasyPrint does not support.
+- `--infer-version` refuses a repository whose git directory, found from the input, differs from the one for its work tree top (for example a `core.worktree` redirect to another repository): md2x warns once and omits the version. A config key containing a control character is refused as unparseable. An existing but empty per-worktree config (with `extensions.worktreeConfig`) is accepted as holding no keys.
+- `md2xAsync` buffers at most 64 MiB each of the CLI's stdout and stderr, as the synchronous `md2x` does. Past that it kills the child and rejects with an error that has no `exitCode`, instead of growing without bound.
 
 ### Fixed
 
@@ -63,3 +65,4 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - The `shelljs` dependency of the Node wrapper.
 - The `perl` requirement and the `eval`-based link rewrite.
 - The `-q`, `-l`, `-n`, and `-i` short flags.
+- The `@liquid-labs/bash-toolkit` build dependency.

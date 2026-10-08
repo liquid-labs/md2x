@@ -80,6 +80,8 @@ export function md2x(options: Md2xOptions): string[]
 
 /**
  * Asynchronous 'md2x': same options and limitation, but errors (including invalid options) reject the Promise.
+ * Like the synchronous form, it buffers at most 64 MiB each of the CLI's stdout and stderr; beyond that the child is
+ * killed and the Promise rejects (with no `exitCode`).
  *
  * @returns A Promise of the generated file paths.
  */

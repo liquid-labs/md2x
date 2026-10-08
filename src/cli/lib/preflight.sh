@@ -108,20 +108,37 @@ md2x-infer-key-allowed() {
 # Prints the names (never the values) of the keys in one local config file, one per line,
 # through 'md2x-infer-git', without '--includes' so nothing is followed. Needs git >= 2.22
 # ('--name-only'); an older git fails here, which the caller treats as fail closed.
+# The keys are read NUL-delimited ('-z'): a subsection name may hold a tab or any other
+# control character, and only NUL is certain not to occur in a key. A bash variable cannot
+# hold NUL, so 'tr' turns each NUL into the newline that separates the output lines, and a
+# newline inside a key into the control character \001, the way input discovery handles
+# 'find -print0'; 'md2x-infer-scan-keys' then refuses any key holding a control character.
+# A git failure is the pipeline's failure under 'pipefail'; without it the list comes back
+# empty, which the caller also treats as fail closed.
 md2x-infer-config-keys() {
-  md2x-infer-git -C "${1}" config "${2}" --list --name-only 2>/dev/null
+  md2x-infer-git -C "${1}" config "${2}" -z --list --name-only 2>/dev/null \
+    | LC_ALL=C tr '\000\012' '\012\001'
 }
 
 # md2x-infer-scan-keys <key list, one per line>
 # Checks every key against 'md2x-infer-key-allowed', case-insensitively: the list is
-# lowercased once, so a warning names the lowercased key. Returns 0 when every key is
-# allowed; returns 1 after setting 'REASON' in the caller's scope (the caller declares it
-# 'local'). Sets the caller's 'WORKTREE_CONFIG' to 1 when 'extensions.worktreeConfig' is
+# lowercased once, so a warning names the lowercased key. A key holding a control character
+# (see 'md2x-infer-config-keys') cannot be shown or matched safely and is refused as
+# unparseable. Returns 0 when every key is allowed; returns 1 after setting 'REASON' in the
+# caller's scope (the caller declares it 'local'). Sets the caller's 'WORKTREE_CONFIG' to 1 when 'extensions.worktreeConfig' is
 # present. Uses only a here-string and a 'case', never a pipe, so a long list cannot take a
 # SIGPIPE under 'pipefail' and slip through.
 md2x-infer-scan-keys() {
-  local LKEYS LKEY
+  local LKEYS LKEY CLEAN
   LKEYS="$(LC_ALL=C tr '[:upper:]' '[:lower:]' <<< "${1}")"
+  # One 'tr' over the whole list (not one check per key): drop every control character but
+  # the newline separator, and refuse the list if that changed anything. The trailing 'x'
+  # keeps '$(...)' from trimming a final newline off the comparison.
+  CLEAN="$(LC_ALL=C tr -d '\001-\011\013-\037\177' <<< "${LKEYS}"; printf x)"
+  if [[ "${CLEAN}" != "${LKEYS}"$'\n'x ]]; then
+    REASON='its local git config could not be parsed'
+    return 1
+  fi
   while IFS= read -r LKEY; do
     [[ -n "${LKEY}" ]] || continue
     case "${LKEY}" in
@@ -160,8 +177,9 @@ md2x-infer-config-refusal() {
       return 0
     fi
     [[ "${WFILE}" == /* ]] || WFILE="${TOP}/${WFILE}"
-    # No per-worktree file is the ordinary case, and holds no keys.
-    if [[ -e "${WFILE}" ]]; then
+    # No per-worktree file, or an empty one, is the ordinary case and holds no keys; a
+    # non-empty file whose keys cannot be read is refused below.
+    if [[ -s "${WFILE}" ]]; then
       WKEYS="$(md2x-infer-config-keys "${TOP}" --worktree)" || WKEYS=''
       if [[ -z "${WKEYS}" ]]; then
         printf 'its per-worktree git config could not be read'
@@ -176,19 +194,48 @@ md2x-infer-config-refusal() {
   return 1
 }
 
+# md2x-infer-gitdir-refusal <dir> <toplevel>
+# Returns 0 after printing a one-line reason on stdout when the git directory git finds from
+# <dir> is not the one it finds for <toplevel>, or when either cannot be resolved (fail
+# closed); returns 1 when both resolve to the same directory. The other checks read the
+# configuration of the repository found from <toplevel>, so they only mean something when
+# that is also the repository <dir> belongs to. They differ under a 'core.worktree'
+# redirect: a repository whose config points its work tree at a different, benign
+# repository, so that <toplevel> is the benign one and the hostile config is never scanned.
+# Refusing is the conservative answer; '-c core.worktree=' is not used to neutralize it.
+md2x-infer-gitdir-refusal() {
+  local INPUT_GITDIR TOP_GITDIR
+  INPUT_GITDIR="$(md2x-infer-git -C "${1}" rev-parse --absolute-git-dir 2>/dev/null)" || INPUT_GITDIR=''
+  TOP_GITDIR="$(md2x-infer-git -C "${2}" rev-parse --absolute-git-dir 2>/dev/null)" || TOP_GITDIR=''
+  if [[ -z "${INPUT_GITDIR}" ]] || [[ -z "${TOP_GITDIR}" ]]; then
+    printf 'its git directory could not be resolved'
+    return 0
+  fi
+  if [[ "${INPUT_GITDIR}" != "${TOP_GITDIR}" ]]; then
+    printf 'the git directory found from the input differs from the one for the work tree top (a core.worktree redirect?)'
+    return 0
+  fi
+  return 1
+}
+
 # md2x-infer-version <dir>
 # Prints the version string for the footer, resolved against the git repository containing
 # <dir>: the 'version' of '<toplevel>/package.json', or 'working' when the work tree has
 # uncommitted changes. Prints nothing, after one warning on stderr, when <dir> is not in a
 # git work tree, the package.json is missing, unreadable, or has no version, or the
 # repository's local config holds a key outside the allowlist (or cannot be read; no 'git status'
-# runs then); the caller omits the version from the footer and carries on. Needs 'git' and
+# runs then), or the git directory found from <dir> differs from the one for the work tree
+# top; the caller omits the version from the footer and carries on. Needs 'git' and
 # 'jq' (see above).
 md2x-infer-version() {
   local DIR="${1}" TOP PKG STATUS VER REASON
   TOP="$(md2x-infer-git -C "${DIR}" rev-parse --show-toplevel 2>/dev/null)" || TOP=''
   if [[ -z "${TOP}" ]]; then
     md2x-warn "--infer-version: '$(md2x-title-display "${DIR}")' is not inside a git work tree; no version in the footer."
+    return 0
+  fi
+  if REASON="$(md2x-infer-gitdir-refusal "${DIR}" "${TOP}")"; then
+    md2x-warn "--infer-version: not running git in '$(md2x-title-display "${TOP}")': ${REASON}; no version in the footer."
     return 0
   fi
   PKG="${TOP}/package.json"

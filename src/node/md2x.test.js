@@ -25,8 +25,12 @@ const fakeChild = () => {
   child.stdout = Object.assign(new EventEmitter(), { setEncoding : jest.fn() })
   child.stderr = Object.assign(new EventEmitter(), { setEncoding : jest.fn() })
   child.stdin = Object.assign(new EventEmitter(), { end : jest.fn() })
+  child.kill = jest.fn()
   return child
 }
+
+// The output cap 'md2xAsync' applies to each of stdout and stderr (64 MiB).
+const MAX_BUFFER = 64 * 1024 * 1024
 
 const argsOf = () => spawnSync.mock.calls[0][1]
 
@@ -384,6 +388,47 @@ describe('md2xAsync', () => {
     const error = await promise.catch((err) => err)
     expect(error.exitCode).toBeUndefined()
     expect(error.cause.message).toMatch(/SIGTERM/)
+  })
+
+  test('accepts output of exactly the cap on each stream', async() => {
+    const promise = md2xAsync({ sources : ['a.md'], quiet : true })
+    child.stdout.emit('data', 'x'.repeat(MAX_BUFFER))
+    child.stderr.emit('data', 'y'.repeat(MAX_BUFFER))
+    child.emit('close', 0, null)
+
+    expect(await promise).toEqual(['x'.repeat(MAX_BUFFER)])
+    expect(child.kill).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['stdout', 'stdout'],
+    ['stderr', 'stderr']
+  ])('kills the child and rejects when %s exceeds the cap, counting bytes across chunks', async(_name, stream) => {
+    const promise = md2xAsync({ sources : ['a.md'] })
+    const kept = 'kept so far'
+    child.stderr.emit('data', kept)
+    // One byte short of the cap in total, counting what stderr already holds.
+    child[stream].emit('data', 'x'.repeat(MAX_BUFFER - 1 - (stream === 'stderr' ? kept.length : 0)))
+    expect(child.kill).not.toHaveBeenCalled()
+    // 'é' is two bytes, so this chunk pushes the total past the cap.
+    child[stream].emit('data', 'é')
+    // Whatever arrives afterward, including the close, is ignored.
+    child[stream].emit('data', 'more')
+    child.emit('close', null, 'SIGTERM')
+
+    const error = await promise.catch((err) => err)
+    expect(child.kill).toHaveBeenCalledTimes(1)
+    expect(error.exitCode).toBeUndefined()
+    expect(error.message).toMatch(/^md2x could not run: .*exceeded the \d+ byte maxBuffer/)
+    expect(error.cause.code).toBe('ENOBUFS')
+    if (stream === 'stderr') {
+      // The overflowing chunk is not buffered, so the captured stderr stays within the cap.
+      expect(error.stderr.length).toBe(MAX_BUFFER - 1)
+    }
+    else {
+      expect(error.stderr).toBe(kept)
+    }
+    expect(errorSpy).not.toHaveBeenCalled()
   })
 
   test('rejects (never throws synchronously) on invalid options, without spawning', async() => {
