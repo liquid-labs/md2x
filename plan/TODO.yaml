@@ -23,7 +23,7 @@ phases:
           slug: polish-release-and-ci
           title: Polish Release And CI
           path: phase-01-followup-polish/002-polish-release-and-ci.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: 'release.sh dry-run now rehearses bun publish on the bumped tree before revert_bump; CI gained timeout-minutes, PR-only concurrency cancel and apt-get install of the legacy pandoc deb; SECURITY.md softened to best-effort; CHANGELOG CI claim phrased as intended; pandoc floor wording says unproven until CI runs; RELEASING.md artifact list already correct. Not verified end to end: release.sh --dry-run was not run.'
           git:
