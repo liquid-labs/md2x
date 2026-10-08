@@ -59,10 +59,10 @@ What each proves:
 
 | Command | Proves | Cannot prove |
 | --- | --- | --- |
-| `scripts/release.sh --dry-run <version>` | Pre-flight, a clean install from `bun.lock`, the version bump, `make all && make qa`, `make test-pack`, the computed dist-tag, and the release notes. Nothing is committed, tagged, pushed, published, or released; the bump is reverted. Missing npm or GitHub credentials are reported as warnings (a real run stops there). | That credentials work, that the push or publish succeeds, that the 2FA prompt behaves. |
+| `scripts/release.sh --dry-run <version>` | Pre-flight, a clean install from `bun.lock`, the version bump, `make all && make qa`, `make test-pack`, a `bun publish --dry-run --access public --tag <dist-tag>` rehearsal on the bumped tree (before the revert), the computed dist-tag, and the release notes. Nothing is committed, tagged, pushed, published, or released; the bump is reverted. Missing npm or GitHub credentials are reported as warnings (a real run stops there). | That credentials work, that the push or publish succeeds, that the 2FA prompt behaves. |
 | `--print-dist-tag <version>` | The dist-tag (and whether the GitHub release is a prerelease) for a version. | Anything else. |
 | `npm pack --dry-run` | The exact file list and size of the tarball (`bin/*`, `dist/*`, `CHANGELOG.md`, plus the always-included `package.json`, `README.md`, `LICENSE.txt`). | That the tarball works once installed (that is `make test-pack`). |
-| `bun publish --dry-run` | That bun builds the same file list (it runs `prepack`) and would send the given tag and access level. Needs no credentials. | Authentication, the registry's acceptance, 2FA, and tag assignment. This is the unverified part; see [Verification status](#verification-status). |
+| `bun publish --dry-run` | That bun builds the same file list (it runs `prepack`) and would send the given tag and access level. Needs no credentials. `scripts/release.sh --dry-run` runs it against the bumped version, so the file list and tag match the real publish. | Authentication, the registry's acceptance, 2FA, and tag assignment. This is the unverified part; see [Verification status](#verification-status). |
 | `npm publish --dry-run` | The same for npm, the tool that published `1.0.0-alpha.11`. | The same limits. |
 | `make test-pack` | The packed artifact imports under ESM and CJS and its types compile. Needs `bun install` (it uses the pinned `tsc`). | Behavior against the real registry. |
 

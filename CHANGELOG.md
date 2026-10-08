@@ -35,7 +35,7 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - `*.markdown` files, as well as `*.md`, are discovered in directory searches, matched case-insensitively.
 - A project-owned option parser: long options may be abbreviated to any unambiguous prefix, and values may be attached with `=`.
 - Bash 3.2 support (the macOS system shell), with an interpreter guard and a `MD2X_TEST_BASH` override for the test harness.
-- A GitHub Actions workflow that runs the suite under macOS, Linux, bash 3.2, and a legacy Pandoc.
+- A GitHub Actions workflow intended to run the suite under macOS, Linux, bash 3.2, and a legacy Pandoc. It has not run yet, so none of that coverage is observed.
 - Bats coverage for the exit-code contract, options, title sinks, stdin handling, output collisions, links and images, and the Node and packaging surfaces.
 
 ### Changed
