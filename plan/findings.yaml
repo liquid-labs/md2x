@@ -1,0 +1,12 @@
+version: 2
+items:
+    - title: Planning phase forks per file
+      id: y217
+      date: "2026-10-08"
+      tags:
+        - type:optimization
+        - plan/phase:followup-polish
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Target planning and input resolution in src/cli/md2x.sh and src/cli/lib/input-discovery.sh, output-plan.sh cost roughly 40 to 60 ms per input file (about 3 minutes for 4000 files under bash 5.3, about 6 minutes under bash 3.2), in a linear fork-per-helper pattern: md2x-canonical-path, md2x-canonical-target, md2x-lowercase (nested command substitutions), md2x-strip-markdown-ext, relative-output-dir, md2x-join-path and md2x-title-display each fork per file. The quadratic key lookup was replaced separately; the remaining cost could be cut by returning results through globals (printf -v style) instead of command substitutions. Measured with the stub tools and generated *.md files across 50 subdirectories.'
+closed: []
