@@ -13,8 +13,8 @@
 #   * a shell that is not bash ('BASH_VERSION' empty);
 #   * bash older than 3.2 (the oldest supported, macOS /bin/bash is 3.2.57); version
 #     strings look like '3.2.57(1)-release', so a prefix match on 'BASH_VERSION' is exact;
-#   * bash running in POSIX mode (as when started as 'sh', or with '--posix'): process
-#     substitution, which this script needs, is unavailable there in bash 3.2.
+#   * bash running in POSIX mode (as when started as 'sh', or with '--posix'): that mode
+#     is unsupported and untested.
 if [ -z "${BASH_VERSION:-}" ]; then
   printf '%s\n' 'md2x: requires bash 3.2 or later; this shell is not bash. Run it with bash.' >&2
   exit 3
