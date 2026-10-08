@@ -121,7 +121,13 @@ if (( ! RESUME )); then
   make test-pack || { echo "make test-pack failed; reverting the version bump." >&2; revert_bump; exit 1; }
 
   if (( DRY_RUN )); then
-    say "Dry run: build and QA passed for $NEW; reverting local edits"
+    # Publish rehearsal on the bumped tree (before the revert) so it lists the new version's files.
+    # Lists the files; uploads nothing and needs no credentials. The bump is reverted either way.
+    say "Dry run: publish rehearsal for $NEW (bun publish --dry-run)"
+    REHEARSAL_TAG=$(dist_tag_for "$NEW")
+    bun publish --dry-run --access public --tag "$REHEARSAL_TAG" \
+      || { echo "bun publish --dry-run failed; reverting the version bump." >&2; revert_bump; exit 1; }
+    say "Dry run: build, QA, pack check and publish rehearsal passed for $NEW; reverting local edits"
     revert_bump
   else
     git add package.json
@@ -150,8 +156,7 @@ fi
 # --- publish ------------------------------------------------------------------
 say "Publishing $PKG_NAME@$NEW to npm (dist-tag: $DIST_TAG)"
 if (( DRY_RUN )); then
-  echo "[dry-run] would run: bun publish --access public --tag $DIST_TAG; rehearsing with 'bun publish --dry-run' (lists the files; uploads nothing, needs no credentials)"
-  bun publish --dry-run --access public --tag "$DIST_TAG"
+  echo "[dry-run] would run: bun publish --access public --tag $DIST_TAG (the 'bun publish --dry-run' rehearsal already ran above, on the bumped tree)"
 elif [[ -n "$(bun info "$PKG_NAME@$NEW" version 2>/dev/null)" ]]; then
   echo "Already published; skipping."
 else

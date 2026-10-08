@@ -47,7 +47,7 @@ sudo apt install pandoc ghostscript pdftk-java python3 python3-venv
 | Dependency | When required | Notes |
 | --- | --- | --- |
 | bash 3.2 or later | Always | The macOS system `/bin/bash` (3.2) works. md2x exits `3` under an older bash or a non-bash shell. |
-| [`pandoc`](https://pandoc.org/installing.html) 2.0 or later | Always | md2x checks the version at startup and exits `3` for an older one. Only pandoc 3.10.1 has been exercised by hand; the floor comes from the Pandoc changelog. The CI workflow has a legacy-pandoc job intended to run the suite against a 2.x release, but it is unproven until the workflow has run. |
+| [`pandoc`](https://pandoc.org/installing.html) 2.0 or later | Always | md2x checks the version at startup and exits `3` for an older one. Only pandoc 3.10.1 has been exercised by hand; the floor is derived from the Pandoc changelogs. The CI workflow has a legacy-pandoc job intended to run the suite against a 2.x release, but it is unproven until the workflow has run. |
 | [Ghostscript](https://www.ghostscript.com/) (`gs`) | Always | Renders the PDF header/footer overlay. |
 | `pdftk` ([pdftk-java](https://gitlab.com/pdftk-java/pdftk)) | Always | Merges the overlay onto the PDF. |
 | [`python3`](https://www.python.org/) | Always | Runs the table-of-contents preprocessor and hosts WeasyPrint. |

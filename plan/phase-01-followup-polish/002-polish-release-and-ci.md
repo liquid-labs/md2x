@@ -43,3 +43,11 @@ Resolve followup `FUld` items 1, 3, and 4, followup `S0YR`, and the `SECURITY.md
 - After the `release.sh` reordering and RELEASING.md sync.
 - After the `ci.yml` edits.
 - After the SECURITY.md, CHANGELOG, and floor-wording edits.
+
+## Status
+
+- Outcome: succeeded (2026-10-08).
+- Validation: `make test` passed (log `.flow/validation-logs/01-make-test.log`); `bash -n scripts/release.sh` ok; `--print-dist-tag` gives `latest` / `rc`; ci.yml parses; SECURITY/CHANGELOG greps empty. `release.sh --dry-run` was not run (verified by syntax check, dist-tag output, and a read).
+- Files: `scripts/release.sh`, `RELEASING.md`, `.github/workflows/ci.yml`, `SECURITY.md`, `CHANGELOG.md`, `README.md`, `CONTRIBUTING.md`, `src/cli/lib/preflight.sh`.
+- RELEASING.md artifact list already matched `package.json` `files` and `make all` outputs; no change needed.
+- Untouched maintainer actions: private vulnerability reporting setting, apt/brew install lines, README `python3-venv` claims.

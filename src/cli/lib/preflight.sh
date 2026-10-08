@@ -15,9 +15,10 @@
 #   '--from gfm' (the GitHub-flavored CommonMark reader) ............ pandoc 2.0
 #   -M/--metadata, --include-in-header/-before-body/-after-body, --css,
 #     --standalone, '--to html5' .................................... pandoc 1.x
-# Only pandoc 3.10.1 has actually been exercised; the floor comes from the changelog and
-# the Lua filter documentation, not from test runs on older releases. Raise it here if an
-# older release turns out to misbehave.
+# The floor is derived from the pandoc changelogs and the Lua filter documentation. Only
+# pandoc 3.10.1 has been exercised by hand. The CI legacy-pandoc job is intended to exercise
+# 2.0.6 but is unproven until the workflow has run. Raise the floor here if an older
+# release turns out to misbehave.
 MD2X_PANDOC_MIN_VERSION='2.0'
 
 # md2x-version-at-least <found> <floor>
