@@ -18,7 +18,7 @@ phases:
             branch: plan/release-followups-polish-01-001
             commit:
                 - 71a4131
-            merge: null
+            merge: b4744ae2d3d15dd4ef6579548fdbbb12b740d9f4
         - number: 2
           slug: polish-release-and-ci
           title: Polish Release And CI
