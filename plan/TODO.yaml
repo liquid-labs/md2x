@@ -15,7 +15,7 @@ phases:
           tier: sonnet-high
           digest: Dropped the bash-toolkit dependency (incl. smoke-test script). Extracted input discovery into lib/input-discovery.sh with unchanged behaviour. Removed per-byte forks in percent-encode and replaced the quadratic plan-collision lookup (measured 32s and 80s for 4000 targets) with per-key variables. Capped md2xAsync buffering at 64 MiB. Hardened --infer-version against core.worktree redirect, control-character config keys and empty config.worktree, each with tests. make test, lint and bash 3.2 test-cli pass.
           git:
-            branch: null
+            branch: plan/release-followups-polish-01-001
             commit: []
             merge: null
         - number: 2
