@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Re-wrap md2x-infer-scan-keys comment
-      id: SJUO
-      date: "2026-10-08"
-      tags:
-        - type:style
-        - priority:low
-        - plan/phase:followup-polish
-        - effort:unspecified
-      text: 'src/cli/lib/preflight.sh ~125-133: the md2x-infer-scan-keys header comment runs past the file''s wrapping width after the control-character screen note was added. Cosmetic only; re-wrap. (correctness review, suggestion)'
     - title: 'Architecture doc: sentence fix, record note'
       id: wheq
       date: "2026-10-08"
@@ -38,4 +29,9 @@ closed:
       title: Harden plan record vars and async child kill
       disposition: fixed
       ref: phase-02-remediation-01/002-harden-plan-records-and-async-kill.md
+      date: "2026-10-09"
+    - id: SJUO
+      title: Re-wrap md2x-infer-scan-keys comment
+      disposition: fixed
+      ref: phase-02-remediation-01/003-fix-architecture-wording-and-comment-wrap.md
       date: "2026-10-09"
