@@ -59,6 +59,7 @@ phases:
           path: phase-02-remediation-01/001-release-dry-run-resume-rehearsal.md
           done: false
           tier: sonnet-med
+          digest: A release.sh --dry-run on the resume path now runs the bun publish --dry-run rehearsal in the publish section (fresh path unchanged); RELEASING.md documents both placements. Verified by bash -n and a read of both paths; release.sh --dry-run itself was not run.
           findings:
             - wf4S
           git:
