@@ -63,7 +63,7 @@ phases:
           findings:
             - wf4S
           git:
-            branch: null
+            branch: plan/release-followups-polish-02-001
             commit: []
             merge: null
         - number: 2
