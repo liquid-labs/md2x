@@ -93,5 +93,6 @@ phases:
             - SJUO
           git:
             branch: plan/release-followups-polish-02-003
-            commit: []
+            commit:
+                - 108c9fd
             merge: null
