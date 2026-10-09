@@ -25,7 +25,7 @@ items:
         - type:optimization
         - priority:low
         - plan/phase:followup-polish
-        - effort:unspecified
+        - effort:medium
       text: 'src/cli/lib/input-discovery.sh lines ~125-139: md2x-resolve-inputs keeps SEEN_CANONICAL as one growing newline-delimited string and does a glob substring match per file (O(n^2)), plus one fork per file for md2x-canonical-path. Moved verbatim from md2x.sh, so not a regression. Reuse md2x-plan-key-hex / md2x-record-set / md2x-record-get (move them out of output-plan.sh''s planning section or load them first) for an O(1) lookup. Related remaining linear cost: per-file helper forks in planning. Optional micro-nits: md2x-percent-encode re-slices HEX per byte (iterate by offset); md2xAsync re-encodes chunks to count bytes. (efficiency review, suggestion)'
     - title: Harden plan record vars and async child kill
       id: iRLu
