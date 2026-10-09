@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 1
-    tasks_added: 1
+    tasks_added: 2
 phases:
     - number: 1
       slug: followup-polish
@@ -50,6 +50,7 @@ phases:
       slug: remediation-01
       title: Remediation Round 1
       kind: remediation
+      security_review: required
       tasks:
         - number: 1
           slug: release-dry-run-resume-rehearsal
@@ -59,6 +60,18 @@ phases:
           tier: sonnet-med
           findings:
             - wf4S
+          git:
+            branch: null
+            commit: []
+            merge: null
+        - number: 2
+          slug: harden-plan-records-and-async-kill
+          title: Clear Inherited Plan Record Variables And Escalate Async Child Kill
+          path: phase-02-remediation-01/002-harden-plan-records-and-async-kill.md
+          done: false
+          tier: sonnet-med
+          findings:
+            - iRLu
           git:
             branch: null
             commit: []
