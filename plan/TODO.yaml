@@ -64,7 +64,8 @@ phases:
             - wf4S
           git:
             branch: plan/release-followups-polish-02-001
-            commit: []
+            commit:
+                - bcb551f
             merge: null
         - number: 2
           slug: harden-plan-records-and-async-kill
