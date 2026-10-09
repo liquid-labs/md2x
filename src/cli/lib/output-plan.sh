@@ -167,6 +167,17 @@ md2x-plan-key-hex() {
   PLAN_KEY_HEX="${HEX//[$' \n']/}"
 }
 
+# md2x-record-reset
+# Unsets every variable named with a record-table prefix ('MD2X_PLAN_INPUT_', 'MD2X_PLAN_TARGET_'),
+# so an exported variable of that shape inherited from the caller's environment can neither
+# pre-seed a record nor change a collision verdict or message. Run before anything is recorded.
+md2x-record-reset() {
+  local RESET_VAR
+  for RESET_VAR in $(compgen -v | grep -E '^MD2X_PLAN_(INPUT|TARGET)_' || true); do
+    unset "${RESET_VAR}"
+  done
+}
+
 # md2x-record-set <table> <key-hex> <value>
 # Records <value> under <key-hex> (see 'md2x-plan-key-hex') in <table>, a variable-name
 # prefix such as 'MD2X_PLAN_INPUT', unless the key already has a record: the first wins.
