@@ -45,4 +45,13 @@ items:
         - plan/phase:followup-polish
         - effort:unspecified
       text: 'src/cli/lib/preflight.sh ~125-133: the md2x-infer-scan-keys header comment runs past the file''s wrapping width after the control-character screen note was added. Cosmetic only; re-wrap. (correctness review, suggestion)'
+    - title: 'Architecture doc: sentence fix, record note'
+      id: wheq
+      date: "2026-10-08"
+      tags:
+        - type:documentation
+        - priority:low
+        - plan/phase:followup-polish
+        - effort:unspecified
+      text: 'docs/architecture.md, Key decision ''Version inference is lazy, config-allowlisted, and hardened'' (~line 194): the reworded sentence reads ''...and gates only git status on every key is on a short allowlist of harmless ones'', which is ungrammatical. Reword to ''...and runs git status only when every key is on a short allowlist of harmless ones''. Also add one sentence to the ''Output planning and collision checks'' section (~lines 111-113) that collision records are kept as one shell variable per key (md2x-plan-key-hex, md2x-record-set, md2x-record-get in output-plan.sh) for constant-time lookup because bash 3.2 has no associative arrays. (correctness + architecture review, minor/low)'
 closed: []
