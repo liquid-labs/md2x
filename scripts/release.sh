@@ -156,7 +156,15 @@ fi
 # --- publish ------------------------------------------------------------------
 say "Publishing $PKG_NAME@$NEW to npm (dist-tag: $DIST_TAG)"
 if (( DRY_RUN )); then
-  echo "[dry-run] would run: bun publish --access public --tag $DIST_TAG (the 'bun publish --dry-run' rehearsal already ran above, on the bumped tree)"
+  if (( RESUME )); then
+    # Resume path: the tree is already at $NEW (commit and tag exist), so there is no bump to revert.
+    say "Dry run: publish rehearsal for $NEW (bun publish --dry-run)"
+    bun publish --dry-run --access public --tag "$DIST_TAG" \
+      || { echo "bun publish --dry-run failed." >&2; exit 1; }
+    echo "[dry-run] would run: bun publish --access public --tag $DIST_TAG (the 'bun publish --dry-run' rehearsal just ran above)"
+  else
+    echo "[dry-run] would run: bun publish --access public --tag $DIST_TAG (the 'bun publish --dry-run' rehearsal already ran above, on the bumped tree)"
+  fi
 elif [[ -n "$(bun info "$PKG_NAME@$NEW" version 2>/dev/null)" ]]; then
   echo "Already published; skipping."
 else
