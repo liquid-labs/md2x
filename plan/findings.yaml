@@ -18,4 +18,13 @@ items:
         - plan/phase:followup-polish
         - effort:unspecified
       text: 'scripts/release.sh lines ~119-133 and ~156-162: the ''bun publish --dry-run'' rehearsal now sits inside the ''if (( ! RESUME ))'' block, so a ''release.sh --dry-run'' run that takes the resume path (tag already at HEAD with matching package.json version) never rehearses the publish, yet the later publish-section message says the rehearsal already ran above. RELEASING.md describes the rehearsal as part of every dry run. Run the rehearsal on the resume path too (the tree is already bumped), or make the echo conditional on RESUME and note the skip in RELEASING.md. (correctness review, minor, high confidence)'
+    - title: Input dedupe in input-discovery.sh is O(n^2)
+      id: KPVO
+      date: "2026-10-08"
+      tags:
+        - type:optimization
+        - priority:low
+        - plan/phase:followup-polish
+        - effort:unspecified
+      text: 'src/cli/lib/input-discovery.sh lines ~125-139: md2x-resolve-inputs keeps SEEN_CANONICAL as one growing newline-delimited string and does a glob substring match per file (O(n^2)), plus one fork per file for md2x-canonical-path. Moved verbatim from md2x.sh, so not a regression. Reuse md2x-plan-key-hex / md2x-record-set / md2x-record-get (move them out of output-plan.sh''s planning section or load them first) for an O(1) lookup. Related remaining linear cost: per-file helper forks in planning. Optional micro-nits: md2x-percent-encode re-slices HEX per byte (iterate by offset); md2xAsync re-encodes chunks to count bytes. (efficiency review, suggestion)'
 closed: []
