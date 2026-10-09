@@ -1,6 +1,9 @@
 slug: release-followups-polish
 version: 1
 title: ""
+remediation:
+    rounds: 1
+    tasks_added: 0
 phases:
     - number: 1
       slug: followup-polish
@@ -43,3 +46,8 @@ phases:
             commit:
                 - 8fe6828
             merge: 2e52387b7ac35602b83db1d7b4419e9b4922391e
+    - number: 2
+      slug: remediation-01
+      title: Remediation Round 1
+      kind: remediation
+      tasks: []
