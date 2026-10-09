@@ -40,16 +40,6 @@ items:
         - priority:low
         - effort:unspecified
       text: 'From 1.0 audit (audit-interface.md N4 and feature parts of N8), deferred by user decision during golden-release-hardening planning: (a) --jobs parallelism and progress output; (b) configurable header/footer, first-page header, font. Title safety for non-ASCII/PostScript-special characters is NOT deferred; it is in the plan.'
-    - title: Validate pandoc floor and RELEASING artifacts
-      id: S0YR
-      date: "2026-10-05"
-      tags:
-        - type:documentation
-        - priority:low
-        - effort:unspecified
-        - plan/phase:interface-contract
-        - plan/slug:golden-release-hardening
-      text: 'Two items for the CI and release documentation tasks: (1) the pandoc >= 2.0 floor in src/cli/lib/preflight.sh is derived from changelogs only and only pandoc 3.10.1 has been exercised; add a CI job on an older pandoc to validate the claimed floor or raise the floor to the oldest tested release. (2) RELEASING.md line 7 still lists the published artifacts as bin/md2x and dist/md2x.js; the build now produces dist/md2x.mjs, dist/md2x.cjs and dist/index.d.ts (package.json files is bin/* and dist/*). Confirm the release-procedure task covers the artifact list.'
     - title: Infer-version hardening trade-offs and spoof
       id: HdEH
       date: "2026-10-05"
