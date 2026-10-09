@@ -22,3 +22,7 @@ Resolves finding `wf4S` of this plan. The work targets the plan branch `plan/rel
 
 - Finding `wf4S` in this plan's `plan/findings.yaml`.
 - `plan/phase-01-followup-polish/002-polish-release-and-ci.md`, which introduced the ordering.
+
+## Status
+
+Succeeded 2026-10-08. Resume-path dry run now runs the publish rehearsal in the publish step (no revert needed); fresh path unchanged. See scripts/release.sh and RELEASING.md. bash -n, print-dist-tag, make test, make lint passed.

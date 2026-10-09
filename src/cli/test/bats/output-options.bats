@@ -194,6 +194,20 @@ assert_cwd_files() {
   [[ "$(cat a.md)" == "${before}" ]]
 }
 
+@test "inherited MD2X_PLAN_INPUT_/MD2X_PLAN_TARGET_ variables do not cause a false collision" {
+  md2x_write_doc 'a.md'
+  local key hex
+  for key in "$(pwd -P)/a.md" "$(pwd -P)/a.html"; do
+    hex="$(printf '%s' "${key}" | LC_ALL=C tr '[:upper:]' '[:lower:]' | od -An -v -tx1 | tr -d ' \n')"
+    export "MD2X_PLAN_INPUT_${hex}=planted" "MD2X_PLAN_TARGET_${hex}=planted"
+  done
+
+  md2x_run -F html a.md
+
+  assert_success
+  [[ -f a.html ]]
+}
+
 @test "-o naming the input through a different spelling or case exits 2" {
   md2x_write_doc 'a.md'
 

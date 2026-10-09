@@ -21,3 +21,7 @@ Resolves finding `iRLu` of this plan (a `type:security` finding, so the phase is
 
 - Finding `iRLu` in this plan's `plan/findings.yaml`.
 - `plan/phase-01-followup-polish/001-harden-cli-sources.md`, which introduced the record store and the cap.
+
+## Status
+
+Succeeded, 2026-10-08. md2x-record-reset (compgen -v) added to src/cli/lib/output-plan.sh and called in src/cli/md2x.sh before recording; md2xAsync SIGKILL escalation (2s grace, cleared on close) in src/node/md2x.js; tests in src/node/md2x.test.js and src/cli/test/bats/output-options.bats; CHANGELOG entries. make test, make lint, MD2X_TEST_BASH=/bin/bash make test-cli all pass.

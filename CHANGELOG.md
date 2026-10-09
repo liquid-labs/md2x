@@ -58,6 +58,8 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - Running under bash 3.2 no longer exits `0` silently without converting.
 - `-s` now means `--to-stdout` as documented, and the hidden auto-generated short flags are removed.
 - `--title` is sanitized in every sink: titles with non-ASCII characters or PostScript-special characters no longer break the PDF header overlay, and filenames and document metadata are made safe.
+- Output planning no longer trusts inherited environment variables shaped like its internal record tables (`MD2X_PLAN_INPUT_*`, `MD2X_PLAN_TARGET_*`); they are cleared first, so they cannot cause a false collision refusal.
+- The Node `md2xAsync` wrapper now sends `SIGKILL` to a child that is still running shortly after the output-cap kill, so a child that ignores `SIGTERM` cannot linger.
 - A spurious Pandoc `user-select` warning is filtered from PDF stderr.
 
 ### Removed

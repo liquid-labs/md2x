@@ -321,6 +321,7 @@ SINGLE_TARGET=''
 if [[ -z "${TO_STDOUT}" ]]; then
   NL=$'\n'
   TAB=$'\t'
+  md2x-record-reset
   while IFS=$'\t' read -r PLAN_FILE PLAN_ROOT; do
     [[ -n "${PLAN_FILE}" ]] || continue
     PLAN_KEY="$(md2x-lowercase "$(md2x-canonical-target "${PLAN_FILE}")")"

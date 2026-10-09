@@ -431,6 +431,42 @@ describe('md2xAsync', () => {
     expect(errorSpy).not.toHaveBeenCalled()
   })
 
+  test('escalates to SIGKILL after the cap trips when the child ignores SIGTERM, and still rejects as before', async() => {
+    jest.useFakeTimers()
+    try {
+      const promise = md2xAsync({ sources : ['a.md'] })
+      child.stdout.emit('data', 'x'.repeat(MAX_BUFFER + 1))
+      expect(child.kill).toHaveBeenCalledTimes(1)
+      expect(child.kill).toHaveBeenLastCalledWith()
+      jest.advanceTimersByTime(60000)
+      expect(child.kill).toHaveBeenCalledTimes(2)
+      expect(child.kill).toHaveBeenLastCalledWith('SIGKILL')
+      child.emit('close', null, 'SIGKILL')
+
+      const error = await promise.catch((err) => err)
+      expect(error.exitCode).toBeUndefined()
+      expect(error.cause.code).toBe('ENOBUFS')
+    }
+    finally {
+      jest.useRealTimers()
+    }
+  })
+
+  test('does not send SIGKILL when the child closes within the grace period', async() => {
+    jest.useFakeTimers()
+    try {
+      const promise = md2xAsync({ sources : ['a.md'] })
+      child.stdout.emit('data', 'x'.repeat(MAX_BUFFER + 1))
+      child.emit('close', null, 'SIGTERM')
+      jest.advanceTimersByTime(60000)
+      expect(child.kill).toHaveBeenCalledTimes(1)
+      await promise.catch(() => {})
+    }
+    finally {
+      jest.useRealTimers()
+    }
+  })
+
   test('rejects (never throws synchronously) on invalid options, without spawning', async() => {
     let promise
     expect(() => { promise = md2xAsync({ sources : ['-'] }) }).not.toThrow()
