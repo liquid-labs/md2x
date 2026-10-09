@@ -90,3 +90,31 @@ items:
         - plan/phase:doc-updates
         - plan/slug:golden-release-hardening
       text: 'Small inaccuracies in docs/architecture.md found by the Phase 4 review (high confidence, low severity): (1) lines ~97 and ~196 say a ''stubbed CLI suite'' runs against pandoc 2.0.6; the legacy-pandoc CI job runs plain ''make test-cli'', which includes real-toolchain bats files (links-and-images.bats runs the Lua filter against real pandoc), so drop ''stubbed''. (2) Line ~87 (and the comment at src/cli/md2x.sh:16-17) says the interpreter guard rejects POSIX mode because process substitution is unavailable, but the CLI no longer uses process substitution; reword to POSIX mode being unsupported/untested. (3) Lines ~101 and ~194 say git runs only after the config key-name check; in fact ''git rev-parse --show-toplevel'' and ''git config --local --list --name-only'' run first (through the hardened md2x-infer-git) and only ''git status'' is gated by the allowlist. (4) Line ~101 says any failure is one warning and the footer omits the version, but a failing ''git status'' sets STATUS=''?'' and prints ''working'' with no warning. (5) Line ~70 says every failure is one ''md2x: '' line; md2x-die-usage adds an unprefixed ''Try md2x --help'' line and WeasyPrint bootstrap failures print several lines. Nits: preflight order is gs, pandoc, pdftk, python3 (md2x.sh:167); with --to-stdout no output targets are planned (md2x.sh:435). Optionally group the 26 Key decisions bullets under a few ### subheadings.'
+    - title: Planning phase forks per file
+      id: y217
+      date: "2026-10-08"
+      tags:
+        - type:optimization
+        - priority:low
+        - effort:medium
+        - plan/phase:followup-polish
+        - plan/slug:release-followups-polish
+      text: 'Target planning and input resolution in src/cli/md2x.sh and src/cli/lib/input-discovery.sh, output-plan.sh cost roughly 40 to 60 ms per input file (about 3 minutes for 4000 files under bash 5.3, about 6 minutes under bash 3.2), in a linear fork-per-helper pattern: md2x-canonical-path, md2x-canonical-target, md2x-lowercase (nested command substitutions), md2x-strip-markdown-ext, relative-output-dir, md2x-join-path and md2x-title-display each fork per file. The quadratic key lookup was replaced separately; the remaining cost could be cut by returning results through globals (printf -v style) instead of command substitutions. Measured with the stub tools and generated *.md files across 50 subdirectories.'
+    - title: Input dedupe in input-discovery.sh is O(n^2)
+      id: KPVO
+      date: "2026-10-08"
+      tags:
+        - type:optimization
+        - priority:low
+        - effort:medium
+        - plan/phase:followup-polish
+        - plan/slug:release-followups-polish
+      text: 'src/cli/lib/input-discovery.sh lines ~125-139: md2x-resolve-inputs keeps SEEN_CANONICAL as one growing newline-delimited string and does a glob substring match per file (O(n^2)), plus one fork per file for md2x-canonical-path. Moved verbatim from md2x.sh, so not a regression. Reuse md2x-plan-key-hex / md2x-record-set / md2x-record-get (move them out of output-plan.sh''s planning section or load them first) for an O(1) lookup. Related remaining linear cost: per-file helper forks in planning. Optional micro-nits: md2x-percent-encode re-slices HEX per byte (iterate by offset); md2xAsync re-encodes chunks to count bytes. (efficiency review, suggestion)'
+    - title: 'CI: pandoc deb checksum, SHA-pin actions'
+      id: uFUk
+      date: "2026-10-09"
+      tags:
+        - type:security
+        - priority:low
+        - effort:unspecified
+      text: .github/workflows/ci.yml downloads the legacy pandoc .deb over HTTPS from a pinned release URL with no checksum verification, and third-party actions are tag-pinned (@v4, @v2) rather than SHA-pinned. Both are pre-existing, CI-only, low risk. Add a sha256 check for the deb and pin actions to commit SHAs. (Surfaced by the release-followups-polish security review; split out of finding iRLu so it is not lost when that finding closes.)
