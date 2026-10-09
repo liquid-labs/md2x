@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: release.sh resume skips publish rehearsal
-      id: wf4S
-      date: "2026-10-08"
-      tags:
-        - type:bug
-        - priority:medium
-        - plan/phase:followup-polish
-        - effort:small
-      text: 'scripts/release.sh lines ~119-133 and ~156-162: the ''bun publish --dry-run'' rehearsal now sits inside the ''if (( ! RESUME ))'' block, so a ''release.sh --dry-run'' run that takes the resume path (tag already at HEAD with matching package.json version) never rehearses the publish, yet the later publish-section message says the rehearsal already ran above. RELEASING.md describes the rehearsal as part of every dry run. Run the rehearsal on the resume path too (the tree is already bumped), or make the echo conditional on RESUME and note the skip in RELEASING.md. (correctness review, minor, high confidence)'
     - title: Harden plan record vars and async child kill
       id: iRLu
       date: "2026-10-08"
@@ -46,4 +37,9 @@ closed:
       title: Input dedupe in input-discovery.sh is O(n^2)
       disposition: promoted
       ref: KPVO
+      date: "2026-10-09"
+    - id: wf4S
+      title: release.sh resume skips publish rehearsal
+      disposition: fixed
+      ref: phase-02-remediation-01/001-release-dry-run-resume-rehearsal.md
       date: "2026-10-09"
