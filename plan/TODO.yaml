@@ -3,7 +3,7 @@ version: 1
 title: ""
 remediation:
     rounds: 1
-    tasks_added: 2
+    tasks_added: 3
 phases:
     - number: 1
       slug: followup-polish
@@ -72,6 +72,19 @@ phases:
           tier: sonnet-med
           findings:
             - iRLu
+          git:
+            branch: null
+            commit: []
+            merge: null
+        - number: 3
+          slug: fix-architecture-wording-and-comment-wrap
+          title: Fix Architecture Doc Wording And Re-Wrap Scan-Keys Comment
+          path: phase-02-remediation-01/003-fix-architecture-wording-and-comment-wrap.md
+          done: false
+          tier: haiku-med
+          findings:
+            - wheq
+            - SJUO
           git:
             branch: null
             commit: []
