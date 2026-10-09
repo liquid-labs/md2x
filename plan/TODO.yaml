@@ -85,7 +85,7 @@ phases:
           slug: fix-architecture-wording-and-comment-wrap
           title: Fix Architecture Doc Wording And Re-Wrap Scan-Keys Comment
           path: phase-02-remediation-01/003-fix-architecture-wording-and-comment-wrap.md
-          done: false
+          done: true
           tier: haiku-med
           digest: Fixed the ungrammatical git status clause in docs/architecture.md, added the sentence on per-key collision record variables (md2x-plan-key-hex, md2x-record-set, md2x-record-get), and re-wrapped the md2x-infer-scan-keys comment in preflight.sh with comment-only changes. make test and lint pass.
           findings:
