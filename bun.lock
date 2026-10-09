@@ -6,7 +6,6 @@
       "name": "@liquid-labs/md2x",
       "devDependencies": {
         "@liquid-labs/bash-rollup": "^1.0.0-alpha.6",
-        "@liquid-labs/bash-toolkit": "^1.0.0-alpha.57",
         "bats": "^1.13.0",
         "eslint": "^9",
         "eslint-plugin-import-x": "^4.17.1",
@@ -53,8 +52,6 @@
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
 
     "@liquid-labs/bash-rollup": ["@liquid-labs/bash-rollup@1.0.0-alpha.6", "", { "bin": { "bash-rollup": "dist/bash-rollup.sh" } }, "sha512-LN7uNGk0b6pwgOp9yM+f+hpF9Qfz7pXnJH1ZHhjxYrn4uGaCzSIph7FWAvmo1GkWC/x7FB6JaO3k/CpEhU5QHg=="],
-
-    "@liquid-labs/bash-toolkit": ["@liquid-labs/bash-toolkit@1.0.0-alpha.61", "", {}, "sha512-3s5wIxoP0ZjOEkzSPDzhOqNVpVLCVSosqo7I33EBCajg2bD9IMCcW/JzLVfhhKSd8KABaXJU3gsEmU+37KUe7A=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.2.4", "", { "dependencies": { "@tybys/wasm-util": "^0.10.3" }, "peerDependencies": { "@emnapi/core": "^1.7.1 || ^2.0.0-alpha.4", "@emnapi/runtime": "^1.7.1 || ^2.0.0-alpha.4" } }, "sha512-AJxoUD2/15ESHbvpcyjU274nsAPLuOtPHCk0vKJM5pj//Fg/B1FXNWjPnXTT9PymCYYiHo4zPj0ZomXBKhoy7g=="],
 

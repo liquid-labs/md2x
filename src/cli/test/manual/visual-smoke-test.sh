@@ -12,9 +12,9 @@
 # binaries instead; this script is the complement to it -- the "does the output
 # actually look right" check that stubs can never make.
 
-import strict
-
-import lists
+set -o errexit
+set -o nounset
+set -o pipefail
 
 source ../../lib/parameters.sh
 
@@ -25,6 +25,9 @@ TINY_DOC=./src/cli/test/tiny-doc.md
 [[ -f ${MD2X} ]] || { echo "Did not find '${MD2X}'; bailing out of test."; exit 2; }
 
 mkdir -p "${TEST_OUTPUT}"
+
+# Newline-terminated list of the files to close afterwards.
+FILES=''
 
 for OUTPUT_FORMAT in ${OUTPUT_FORMATS}; do
   echo -n "Testing single file output to '${OUTPUT_FORMAT}' format: "
@@ -40,7 +43,7 @@ for OUTPUT_FORMAT in ${OUTPUT_FORMATS}; do
     echo -e "\nThere was a problem opening '${FILE}'" >&2
     exit 2
   }
-  list-add-item FILES "${FILE}"
+  FILES="${FILES}${FILE}"$'\n'
 done
 
 echo ""

@@ -48,6 +48,7 @@ md2x/
 │   │   │   ├── preflight.sh          # Dependency checks, pandoc floor, --infer-version inference
 │   │   │   ├── title-safe.sh         # Title validation/encoding for filename, metadata, PostScript sinks
 │   │   │   ├── output-plan.sh        # Output-path planning, location checks, collision lookup
+│   │   │   ├── input-discovery.sh    # Input-argument processing and resolution
 │   │   │   ├── link-filter.sh        # Writes the Lua filter and the --single-page source markers
 │   │   │   ├── md2x-links.lua        # Pandoc Lua filter: .md link rewriting and image resolution
 │   │   │   ├── generate-page.sh      # Pandoc, Ghostscript, and pdftk conversion pipeline
@@ -117,7 +118,7 @@ md2x/
 The CLI (`src/cli/`) is the actual conversion engine: Bash source rolled up by `@liquid-labs/bash-rollup` into the single-file `bin/md2x` executable per the `Makefile`. `src/cli/md2x.sh` is the entrypoint: it opens with a POSIX-sh interpreter guard (exit `3` under a non-bash shell or bash older than 3.2), parses options, answers `--help`/`--version`, runs the dependency preflight, resolves and plans the inputs and outputs, and runs the conversion loop. `src/cli/lib/` holds the modules it pulls in:
 
 - `parse-options.sh` is the option parser and the explicit flag table (`MD2X_OPTION_TABLE`); it resolves GNU `getopt` without needing `brew`. `parameters.sh` holds the supported output-format list.
-- `errors.sh` defines the `md2x:`-prefixed error helpers and the 0/1/2/3 exit-code contract; `preflight.sh` checks the required tools and the pandoc version floor and implements `--infer-version`; `title-safe.sh` validates and encodes titles for the filename, metadata, and PostScript sinks; `output-plan.sh` plans output paths and the collision check.
+- `errors.sh` defines the `md2x:`-prefixed error helpers and the 0/1/2/3 exit-code contract; `preflight.sh` checks the required tools and the pandoc version floor and implements `--infer-version`; `title-safe.sh` validates and encodes titles for the filename, metadata, and PostScript sinks; `output-plan.sh` plans output paths and the collision check; `input-discovery.sh` processes the input arguments (files, directories, or stdin) and resolves the input list.
 - `generate-page.sh` is the Pandoc → Ghostscript → `pdftk` conversion pipeline. `link-filter.sh` and `md2x-links.lua` provide the Pandoc Lua filter that rewrites relative `.md` links and resolves images per source file (including the `--single-page` source markers). `toc-preprocess.py` is the Markdown-in/Markdown-out table-of-contents stage `generate-page()` runs ahead of Pandoc.
 - `ensure-weasyprint.sh` bootstraps the per-user `~/.md2x/venv` WeasyPrint install used as Pandoc's `--pdf-engine`; `github.css` is the bundled stylesheet; `index.sh` is the import list.
 

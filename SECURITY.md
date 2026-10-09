@@ -16,7 +16,7 @@ Include the md2x version, your platform, the input and command line that trigger
 
 ## Expected response
 
-This is a volunteer-maintained project, so there is no formal service level. Expect an acknowledgement of your report within a few days, and a status update once the report has been assessed. Fixes ship in a new release, and reporters are credited unless they ask otherwise.
+This is a volunteer-maintained project, so there is no formal service level. Reports are handled on a best-effort basis, with no guaranteed response or fix time. The email address above is the fallback if the advisory form is unavailable. Fixes ship in a new release, and reporters are credited unless they ask otherwise.
 
 ## Scope and trust notes
 

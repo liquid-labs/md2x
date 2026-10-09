@@ -6,7 +6,7 @@ This guide covers setting up a development environment for md2x, running its che
 
 ## Development setup
 
-Prerequisites match the [README installation list](./README.md#installation): `pandoc` (2.0 or later), Ghostscript (`gs`), `pdftk`, `python3`, and GNU `getopt` (on macOS, `brew install gnu-getopt`). `jq` and `git` are needed only for `--infer-version`. [Bun](https://bun.sh/) installs the Node dependencies and runs the Node tests.
+Prerequisites match the [README installation list](./README.md#installation): `pandoc` (2.0 or later; the floor is derived from the pandoc changelogs, only 3.10.1 has been exercised by hand, and the CI legacy-pandoc job is intended to exercise 2.0.6 but is unproven until the workflow has run), Ghostscript (`gs`), `pdftk`, `python3`, and GNU `getopt` (on macOS, `brew install gnu-getopt`). `jq` and `git` are needed only for `--infer-version`. [Bun](https://bun.sh/) installs the Node dependencies and runs the Node tests.
 
 ```bash
 bun install

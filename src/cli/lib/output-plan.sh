@@ -148,15 +148,52 @@ md2x-check-output-location() {
   fi
 }
 
-# md2x-lookup-record <records> <key>
-# <records> is a newline-led list of '<key><tab><value>' lines. Prints the value of the
-# first record whose key equals <key> exactly and returns 0, or returns 1 when none does.
-md2x-lookup-record() {
-  local RECORDS="${1}" PATTERN
-  PATTERN=$'\n'"${2}"$'\t'
-  [[ "${RECORDS}" == *"${PATTERN}"* ]] || return 1
-  RECORDS="${RECORDS#*"${PATTERN}"}"
-  printf '%s' "${RECORDS%%$'\n'*}"
+# The collision checks in 'md2x' (an output that would overwrite an input, two inputs that
+# would write one output) look a key up once per planned output. Records live in one shell
+# variable per key, named '<table>_<hex of the key's bytes>', so a lookup is constant time
+# and the first record for a key wins. The earlier design scanned one growing
+# newline-delimited string per lookup, which is quadratic: measured on 2000 and 4000 files
+# the scans alone took about 8 s and 32 s under bash 5.3 and 20 s and 80 s under bash 3.2
+# (the whole planning phase was 2 to 4 minutes at that size), so it was replaced. Bash 3.2 has
+# no associative arrays, hence the generated variable names; results come back through
+# globals because bash 3.2 has no namerefs and a command substitution would fork per lookup.
+
+# md2x-plan-key-hex <key>
+# Sets 'PLAN_KEY_HEX' to the lowercase hex of <key>'s bytes (a valid variable-name suffix
+# that is unique per key).
+md2x-plan-key-hex() {
+  local HEX
+  HEX="$(printf '%s' "${1}" | LC_ALL=C od -An -v -tx1)"
+  PLAN_KEY_HEX="${HEX//[$' \n']/}"
+}
+
+# md2x-record-reset
+# Unsets every variable named with a record-table prefix ('MD2X_PLAN_INPUT_', 'MD2X_PLAN_TARGET_'),
+# so an exported variable of that shape inherited from the caller's environment can neither
+# pre-seed a record nor change a collision verdict or message. Run before anything is recorded.
+md2x-record-reset() {
+  local RESET_VAR
+  for RESET_VAR in $(compgen -v | grep -E '^MD2X_PLAN_(INPUT|TARGET)_' || true); do
+    unset "${RESET_VAR}"
+  done
+}
+
+# md2x-record-set <table> <key-hex> <value>
+# Records <value> under <key-hex> (see 'md2x-plan-key-hex') in <table>, a variable-name
+# prefix such as 'MD2X_PLAN_INPUT', unless the key already has a record: the first wins.
+md2x-record-set() {
+  local VAR_NAME="${1}_${2}"
+  [[ -z "${!VAR_NAME:-}" ]] || return 0
+  printf -v "${VAR_NAME}" '%s' "${3}"
+}
+
+# md2x-record-get <table> <key-hex>
+# Returns 0 and sets 'PLAN_RECORD_VALUE' to the value recorded under <key-hex> in <table>,
+# or returns 1 (leaving 'PLAN_RECORD_VALUE' empty) when there is none. Values are never empty.
+md2x-record-get() {
+  local VAR_NAME="${1}_${2}"
+  PLAN_RECORD_VALUE="${!VAR_NAME:-}"
+  [[ -n "${PLAN_RECORD_VALUE}" ]]
 }
 
 # md2x-target-is-input <target> <inputs>

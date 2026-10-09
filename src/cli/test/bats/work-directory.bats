@@ -133,3 +133,20 @@ listing() {
   assert_file_exists "${kept}/overlay.pdf"
   refute_output_contains 'kept intermediate'
 }
+
+# The Lua filter is embedded in 'md2x' through a quoted heredoc ('<<'MD2X_LUA_EOF''). A source
+# line equal to the terminator would end the heredoc early and truncate the filter, so the
+# source must never contain one, and the written filter must be the source byte for byte.
+# Unlike the pandoc-backed check in 'links-and-images.bats', this runs against the stubs.
+@test "work directory: the written Lua filter is byte-identical to its source and the source has no heredoc terminator line" {
+  md2x_write_doc 'a.md'
+
+  md2x_run --keep-intermediate -F html a.md
+
+  assert_success
+  local kept
+  kept="$(md2x_kept_work_dir)"
+  [[ -n "${kept}" ]] || md2x_fail "no kept-intermediate notice in stderr: ${stderr}"
+  cmp "${kept}/md2x-links.lua" "${BATS_TEST_DIRNAME}/../../lib/md2x-links.lua"
+  ! grep -qx 'MD2X_LUA_EOF' "${BATS_TEST_DIRNAME}/../../lib/md2x-links.lua"
+}

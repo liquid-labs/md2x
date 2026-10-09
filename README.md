@@ -47,7 +47,7 @@ sudo apt install pandoc ghostscript pdftk-java python3 python3-venv
 | Dependency | When required | Notes |
 | --- | --- | --- |
 | bash 3.2 or later | Always | The macOS system `/bin/bash` (3.2) works. md2x exits `3` under an older bash or a non-bash shell. |
-| [`pandoc`](https://pandoc.org/installing.html) 2.0 or later | Always | md2x checks the version at startup and exits `3` for an older one. Only pandoc 3.10.1 has been exercised by hand; the floor comes from the Pandoc changelog. The CI workflow has a legacy-pandoc job intended to run the suite against a 2.x release, but it is unproven until the workflow has run. |
+| [`pandoc`](https://pandoc.org/installing.html) 2.0 or later | Always | md2x checks the version at startup and exits `3` for an older one. Only pandoc 3.10.1 has been exercised by hand; the floor is derived from the Pandoc changelogs. The CI workflow has a legacy-pandoc job intended to run the suite against a 2.x release, but it is unproven until the workflow has run. |
 | [Ghostscript](https://www.ghostscript.com/) (`gs`) | Always | Renders the PDF header/footer overlay. |
 | `pdftk` ([pdftk-java](https://gitlab.com/pdftk-java/pdftk)) | Always | Merges the overlay onto the PDF. |
 | [`python3`](https://www.python.org/) | Always | Runs the table-of-contents preprocessor and hosts WeasyPrint. |
@@ -299,7 +299,7 @@ md2x is not a sandbox, and converting untrusted Markdown is not safe by default.
 
 `--infer-version` adds `Version: <version>` to the PDF footer: the `version` in the `package.json` at the top of the git repository containing the **first** input (the current directory for stdin), or `Version: working` when that repository's work tree has uncommitted changes. `git` and `jq` are needed only for this flag; global git configuration is ignored.
 
-Because the repository's own configuration is untrusted, md2x runs `git` only in a repository whose local config holds nothing but a short allowlist of harmless keys. A repository whose config has any other key (filters, includes, non-URL remote settings, and so on), real partial clones, sparse checkouts, and submodule inputs all make md2x print one warning and omit the version from the footer. A missing git work tree or `package.json` does the same. See the [specification](./docs/md2x-spec.md#constraints-and-assumptions) for the exact allowlist.
+Because the repository's own configuration is untrusted, md2x runs `git` only in a repository whose local config holds nothing but a short allowlist of harmless keys. A repository whose config has any other key (filters, includes, non-URL remote settings, and so on), real partial clones, sparse checkouts, and submodule inputs all make md2x print one warning and omit the version from the footer. A missing git work tree or `package.json` does the same, as does a repository whose git directory, found from the input, differs from that of its work-tree top (for example a `core.worktree` redirect to another repository). See the [specification](./docs/md2x-spec.md#constraints-and-assumptions) for the exact allowlist.
 
 ### The PDF header/footer overlay
 

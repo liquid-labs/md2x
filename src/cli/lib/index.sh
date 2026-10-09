@@ -1,6 +1,7 @@
 source ./errors.sh
 source ./ensure-weasyprint.sh
 source ./generate-page.sh
+source ./input-discovery.sh
 source ./link-filter.sh
 source ./output-plan.sh
 source ./preflight.sh

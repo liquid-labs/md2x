@@ -35,7 +35,7 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - `*.markdown` files, as well as `*.md`, are discovered in directory searches, matched case-insensitively.
 - A project-owned option parser: long options may be abbreviated to any unambiguous prefix, and values may be attached with `=`.
 - Bash 3.2 support (the macOS system shell), with an interpreter guard and a `MD2X_TEST_BASH` override for the test harness.
-- A GitHub Actions workflow that runs the suite under macOS, Linux, bash 3.2, and a legacy Pandoc.
+- A GitHub Actions workflow intended to run the suite under macOS, Linux, bash 3.2, and a legacy Pandoc. It has not run yet, so none of that coverage is observed.
 - Bats coverage for the exit-code contract, options, title sinks, stdin handling, output collisions, links and images, and the Node and packaging surfaces.
 
 ### Changed
@@ -47,6 +47,8 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - `--infer-version` is evaluated lazily, so `git` and `jq` are not required otherwise, and its `git` calls are hardened against repository-supplied configuration.
 - Error messages go through one helper and follow the exit-code contract on every path.
 - `github.css` no longer carries rules WeasyPrint does not support.
+- `--infer-version` refuses a repository whose git directory, found from the input, differs from the one for its work tree top (for example a `core.worktree` redirect to another repository): md2x warns once and omits the version. A config key containing a control character is refused as unparseable. An existing but empty per-worktree config (with `extensions.worktreeConfig`) is accepted as holding no keys.
+- `md2xAsync` buffers at most 64 MiB each of the CLI's stdout and stderr, as the synchronous `md2x` does. Past that it kills the child and rejects with an error that has no `exitCode`, instead of growing without bound.
 
 ### Fixed
 
@@ -56,6 +58,8 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - Running under bash 3.2 no longer exits `0` silently without converting.
 - `-s` now means `--to-stdout` as documented, and the hidden auto-generated short flags are removed.
 - `--title` is sanitized in every sink: titles with non-ASCII characters or PostScript-special characters no longer break the PDF header overlay, and filenames and document metadata are made safe.
+- Output planning no longer trusts inherited environment variables shaped like its internal record tables (`MD2X_PLAN_INPUT_*`, `MD2X_PLAN_TARGET_*`); they are cleared first, so they cannot cause a false collision refusal.
+- The Node `md2xAsync` wrapper now sends `SIGKILL` to a child that is still running shortly after the output-cap kill, so a child that ignores `SIGTERM` cannot linger.
 - A spurious Pandoc `user-select` warning is filtered from PDF stderr.
 
 ### Removed
@@ -63,3 +67,4 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - The `shelljs` dependency of the Node wrapper.
 - The `perl` requirement and the `eval`-based link rewrite.
 - The `-q`, `-l`, `-n`, and `-i` short flags.
+- The `@liquid-labs/bash-toolkit` build dependency.

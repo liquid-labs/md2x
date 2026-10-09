@@ -13,8 +13,8 @@
 #   * a shell that is not bash ('BASH_VERSION' empty);
 #   * bash older than 3.2 (the oldest supported, macOS /bin/bash is 3.2.57); version
 #     strings look like '3.2.57(1)-release', so a prefix match on 'BASH_VERSION' is exact;
-#   * bash running in POSIX mode (as when started as 'sh', or with '--posix'): process
-#     substitution, which this script needs, is unavailable there in bash 3.2.
+#   * bash running in POSIX mode (as when started as 'sh', or with '--posix'): that mode
+#     is unsupported and untested.
 if [ -z "${BASH_VERSION:-}" ]; then
   printf '%s\n' 'md2x: requires bash 3.2 or later; this shell is not bash. Run it with bash.' >&2
   exit 3
@@ -34,8 +34,6 @@ esac
 set -o errexit # exit on errors
 set -o nounset # exit on use of uninitialized variable
 set -o pipefail
-
-import lists
 
 source ./lib/index.sh
 
@@ -251,127 +249,15 @@ TOC_MODE='auto'
 # 'ensure-weasyprint' sets, and 'OUTPUT_PATH's own default assignment and
 # 'ensure-weasyprint' do not read 'SEARCH_DIRS'/'MD_FILES'/'STDIN_MODE', so this reordering
 # is safe in both directions.
-SEARCH_DIRS=''
-MD_FILES=''
-# process args
-# 'STDIN_MODE' is non-empty when the sole argument is '-'; the document itself is copied
-# byte for byte into the work directory once that exists (see 'STDIN_FILE' below). A '-'
-# next to any other input is a usage error.
-STDIN_MODE=''
-for TEST_PATH in "$@"; do
-  if [[ "${TEST_PATH}" == '-' ]] && (( $# > 1 )); then
-    md2x-die-usage "'-' (stdin) cannot be combined with other inputs"
-  fi
-done
-if (( $# == 1 )) && [[ ${1} == '-' ]]; then
-  STDIN_MODE='true'
-else
-  while (( $# > 0 )); do
-    TEST_PATH="${1}"; shift
-    # Records below are line- and tab-oriented, and every name is echoed in messages, so
-    # a control character (tab, newline, ESC, ...) in an input path is refused up front.
-    if md2x-has-control-chars "${TEST_PATH}"; then
-      md2x-die-usage "input path '$(md2x-title-display "${TEST_PATH}")' contains control characters."
-    fi
-    if [[ -d "${TEST_PATH}" ]]; then
-      list-add-item SEARCH_DIRS "${TEST_PATH}"
-    elif [[ -f "${TEST_PATH}" ]]; then
-      [[ -r "${TEST_PATH}" ]] \
-        || md2x-die-usage "'$(md2x-title-display "${TEST_PATH}")' is not readable."
-      list-add-item MD_FILES "${TEST_PATH}"
-    else
-      # Planner decision: a nonexistent (or otherwise unusable) input argument is a usage
-      # error (exit 2), not a runtime failure -- the caller named something invalid.
-      md2x-die-usage "'$(md2x-title-display "${TEST_PATH}")' is neither a file nor a directory. Bailing out."
-    fi
-  done
-fi
-
-# Build the resolved input list ONCE, before any conversion: 'RESOLVED_INPUTS' holds one
-# '<md-file><tab><search-root>' record per file to convert, directly named files first
-# (empty search-root field), then the recursive search results sorted by path; each
-# physical file appears once, the first occurrence winning (so its search root decides
-# its output location). 'RESOLVED_COUNT' is its length. Both the '--title' gate below
-# and the conversion loop consume this list, so they cannot drift.
-#
-# A search that fails (an unreadable root) stops the search of any later root, keeps what
-# was found so far, and is reported once the files found so far were converted; see
-# 'exit-codes.bats' "unreadable search root" cases and followup 8ZmD.
-RESOLVED_INPUTS=''
-RESOLVED_COUNT=0
-SEARCH_ERROR_ROOT=''
-if [[ -z "${STDIN_MODE}" ]]; then
-  CANDIDATES=''
-  EMPTY_DIRS=''
-  while IFS= read -r ROOT_DIR; do
-    [[ -n "${ROOT_DIR}" ]] || continue
-    # '-print0' piped through 'tr' (NUL to newline, and any newline inside a name to the
-    # control character \001) keeps every name on exactly one line and lets the control
-    # character check below see names that contain a newline.
-    FIND_STATUS=0
-    # 'find' errors (an unreadable directory) are not shown raw: the status is checked and
-    # reported through 'md2x-die-runtime' below, naming the search root.
-    # A relative root could be read by 'find' as an option ('-x') or an expression token
-    # ('!', '(', ')', ','), so every non-absolute root is searched as './<root>' and the
-    # './' is stripped from each result to keep the names as the user gave them.
-    FIND_ROOT="${ROOT_DIR}"
-    [[ "${ROOT_DIR}" == /* ]] || FIND_ROOT="./${ROOT_DIR}"
-    FOUND="$(find "${FIND_ROOT}" \( -iname '*.md' -o -iname '*.markdown' \) ! -type d -print0 2>/dev/null \
-      | tr '\012\000' '\001\012')" || FIND_STATUS=$?
-    ROOT_FOUND=0
-    while IFS= read -r FOUND_FILE; do
-      [[ -n "${FOUND_FILE}" ]] || continue
-      [[ "${FIND_ROOT}" == "${ROOT_DIR}" ]] || FOUND_FILE="${FOUND_FILE#./}"
-      if md2x-has-control-chars "${FOUND_FILE}"; then
-        md2x-die-usage "file name '$(md2x-title-display "${FOUND_FILE}")' found under" \
-          "'$(md2x-title-display "${ROOT_DIR}")' contains control characters."
-      fi
-      ROOT_FOUND=$(( ROOT_FOUND + 1 ))
-      CANDIDATES="${CANDIDATES}${FOUND_FILE}"$'\t'"${ROOT_DIR}"$'\n'
-    done <<< "${FOUND}"
-    if (( FIND_STATUS != 0 )); then
-      SEARCH_ERROR_ROOT="${ROOT_DIR}"
-      break
-    fi
-    (( ROOT_FOUND > 0 )) || list-add-item EMPTY_DIRS "${ROOT_DIR}"
-  done <<< "${SEARCH_DIRS}"
-
-  if [[ -n "${SEARCH_ERROR_ROOT}" ]] && [[ -z "${CANDIDATES}" ]] && [[ -z "${MD_FILES}" ]]; then
-    md2x-die-runtime "could not fully search '$(md2x-title-display "${SEARCH_ERROR_ROOT}")' for Markdown files. Bailing out."
-  fi
-
-  CANDIDATES="$(printf '%s' "${CANDIDATES}" | sort)"
-  SEEN_CANONICAL=$'\n'
-  ALL_CANDIDATES=''
-  while IFS= read -r NAMED_FILE; do
-    [[ -n "${NAMED_FILE}" ]] || continue
-    ALL_CANDIDATES="${ALL_CANDIDATES}${NAMED_FILE}"$'\t\n'
-  done <<< "${MD_FILES}"
-  ALL_CANDIDATES="${ALL_CANDIDATES}${CANDIDATES}"
-  while IFS=$'\t' read -r RESOLVE_FILE RESOLVE_ROOT; do
-    [[ -n "${RESOLVE_FILE}" ]] || continue
-    CANONICAL="$(md2x-canonical-path "${RESOLVE_FILE}")"
-    [[ "${SEEN_CANONICAL}" != *$'\n'"${CANONICAL}"$'\n'* ]] || continue
-    SEEN_CANONICAL="${SEEN_CANONICAL}${CANONICAL}"$'\n'
-    RESOLVED_INPUTS="${RESOLVED_INPUTS}${RESOLVE_FILE}"$'\t'"${RESOLVE_ROOT}"$'\n'
-    RESOLVED_COUNT=$(( RESOLVED_COUNT + 1 ))
-  done <<< "${ALL_CANDIDATES}"
-
-  if [[ -n "${EMPTY_DIRS}" ]]; then
-    if (( RESOLVED_COUNT == 0 )) && [[ -z "${SEARCH_ERROR_ROOT}" ]]; then
-      NO_MATCH_LABEL=''
-      while IFS= read -r EMPTY_DIR; do
-        [[ -n "${EMPTY_DIR}" ]] || continue
-        NO_MATCH_LABEL="${NO_MATCH_LABEL}${NO_MATCH_LABEL:+, }'$(md2x-title-display "${EMPTY_DIR}")'"
-      done <<< "${EMPTY_DIRS}"
-      md2x-die-usage "no Markdown files found in ${NO_MATCH_LABEL}"
-    fi
-    while IFS= read -r EMPTY_DIR; do
-      [[ -n "${EMPTY_DIR}" ]] || continue
-      md2x-warn "no Markdown files found in '$(md2x-title-display "${EMPTY_DIR}")'"
-    done <<< "${EMPTY_DIRS}"
-  fi
-fi
+# The work lives in 'lib/input-discovery.sh': 'md2x-process-input-args' sets
+# 'STDIN_MODE' (non-empty when the sole argument is '-'), 'SEARCH_DIRS' and 'MD_FILES';
+# 'md2x-resolve-inputs' then builds the resolved input list ONCE, before any conversion:
+# 'RESOLVED_INPUTS' (one '<md-file><tab><search-root>' record per file to convert),
+# 'RESOLVED_COUNT' (its length) and 'SEARCH_ERROR_ROOT' (the root whose search failed, if
+# any; reported once the files found so far were converted, see followup 8ZmD). Both the
+# '--title' gate below and the conversion loop consume that list, so they cannot drift.
+md2x-process-input-args "$@"
+md2x-resolve-inputs
 
 # '--title'/'-t' only applies to a single-file conversion: the main per-file loop
 # derives each output's filename (and, via 'generate-page()', the '--infer-title'
@@ -435,28 +321,31 @@ SINGLE_TARGET=''
 if [[ -z "${TO_STDOUT}" ]]; then
   NL=$'\n'
   TAB=$'\t'
-  INPUT_KEYS="${NL}"
-  TARGET_KEYS="${NL}"
+  md2x-record-reset
   while IFS=$'\t' read -r PLAN_FILE PLAN_ROOT; do
     [[ -n "${PLAN_FILE}" ]] || continue
     PLAN_KEY="$(md2x-lowercase "$(md2x-canonical-target "${PLAN_FILE}")")"
-    INPUT_KEYS="${INPUT_KEYS}${PLAN_KEY}${TAB}${PLAN_FILE}${NL}"
+    md2x-plan-key-hex "${PLAN_KEY}"
+    md2x-record-set MD2X_PLAN_INPUT "${PLAN_KEY_HEX}" "${PLAN_FILE}"
   done <<< "${RESOLVED_INPUTS}"
 
-  # md2x-plan-register <source-label> <target>: checks <target> and records it.
+  # md2x-plan-register <source-label> <target>: checks <target> and records it. The lookups
+  # are keyed by the lowercased canonical target ('MD2X_PLAN_INPUT' holds the inputs,
+  # 'MD2X_PLAN_TARGET' the targets registered so far; see 'lib/output-plan.sh').
   md2x-plan-register() {
-    local REG_SOURCE="${1}" REG_TARGET="${2}" REG_KEY REG_OTHER
+    local REG_SOURCE="${1}" REG_TARGET="${2}" REG_KEY
     md2x-check-output-location "${REG_TARGET}"
     REG_KEY="$(md2x-lowercase "$(md2x-canonical-target "${REG_TARGET}")")"
-    if REG_OTHER="$(md2x-lookup-record "${INPUT_KEYS}" "${REG_KEY}")"; then
+    md2x-plan-key-hex "${REG_KEY}"
+    if md2x-record-get MD2X_PLAN_INPUT "${PLAN_KEY_HEX}"; then
       md2x-die-usage "output '$(md2x-title-display "${REG_TARGET}")' would overwrite its own input" \
-        "'$(md2x-title-display "${REG_OTHER}")'."
+        "'$(md2x-title-display "${PLAN_RECORD_VALUE}")'."
     fi
-    if REG_OTHER="$(md2x-lookup-record "${TARGET_KEYS}" "${REG_KEY}")"; then
-      md2x-die-usage "'$(md2x-title-display "${REG_OTHER}")' and '$(md2x-title-display "${REG_SOURCE}")'" \
+    if md2x-record-get MD2X_PLAN_TARGET "${PLAN_KEY_HEX}"; then
+      md2x-die-usage "'$(md2x-title-display "${PLAN_RECORD_VALUE}")' and '$(md2x-title-display "${REG_SOURCE}")'" \
         "would both be written to '$(md2x-title-display "${REG_TARGET}")'."
     fi
-    TARGET_KEYS="${TARGET_KEYS}${REG_KEY}${TAB}${REG_SOURCE}${NL}"
+    md2x-record-set MD2X_PLAN_TARGET "${PLAN_KEY_HEX}" "${REG_SOURCE}"
   }
 
   if [[ -n "${STDIN_MODE}" ]] || [[ -n "${SINGLE_PAGE}" ]]; then
