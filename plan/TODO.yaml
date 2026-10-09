@@ -73,6 +73,7 @@ phases:
           path: phase-02-remediation-01/002-harden-plan-records-and-async-kill.md
           done: false
           tier: sonnet-med
+          digest: Plan record tables are reset (md2x-record-reset, compgen -v) before planning so inherited MD2X_PLAN_INPUT_/TARGET_ variables cannot pre-seed collisions; md2xAsync escalates to SIGKILL 2s after the overflow kill if the child has not closed. New bats case and two bun tests; make test (66), lint and bash 3.2 test-cli pass. The new bats case was not confirmed to fail without the fix.
           findings:
             - iRLu
           git:
