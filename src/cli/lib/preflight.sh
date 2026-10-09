@@ -123,11 +123,12 @@ md2x-infer-config-keys() {
 
 # md2x-infer-scan-keys <key list, one per line>
 # Checks every key against 'md2x-infer-key-allowed', case-insensitively: the list is
-# lowercased once, so a warning names the lowercased key. A key holding a control character
-# (see 'md2x-infer-config-keys') cannot be shown or matched safely and is refused as
-# unparseable. Returns 0 when every key is allowed; returns 1 after setting 'REASON' in the
-# caller's scope (the caller declares it 'local'). Sets the caller's 'WORKTREE_CONFIG' to 1 when 'extensions.worktreeConfig' is
-# present. Uses only a here-string and a 'case', never a pipe, so a long list cannot take a
+# lowercased once, so a warning names the lowercased key. A key holding a control
+# character (see 'md2x-infer-config-keys') cannot be shown or matched safely and is
+# refused as unparseable. Returns 0 when every key is allowed; returns 1 after
+# setting 'REASON' in the caller's scope (the caller declares it 'local'). Sets the
+# caller's 'WORKTREE_CONFIG' to 1 when 'extensions.worktreeConfig' is present. Uses
+# only a here-string and a 'case', never a pipe, so a long list cannot take a
 # SIGPIPE under 'pipefail' and slip through.
 md2x-infer-scan-keys() {
   local LKEYS LKEY CLEAN
