@@ -36,4 +36,13 @@ items:
         - plan/phase:followup-polish
         - effort:unspecified
       text: 'Two optional robustness notes from the security review (no critical/major). (1) src/cli/lib/output-plan.sh ~151-186: record tables are shell variables named <table>_<hex> and are never cleared; an exported MD2X_PLAN_INPUT_<hex> / MD2X_PLAN_TARGET_<hex> in the caller environment could pre-seed a record and cause a false collision refusal or a wrong name in a message. Requires control of the process environment; optionally unset such variables (compgen -v) before planning. (2) src/node/md2x.js ~191-211: on the 64 MiB overflow, child.kill() sends SIGTERM only, so a child ignoring it keeps running; optionally follow with SIGKILL after a grace period or destroy/pause the streams. Also noted as pre-existing: ci.yml downloads the legacy pandoc .deb without a checksum and actions are tag-pinned not SHA-pinned. (security review, suggestion)'
+    - title: Re-wrap md2x-infer-scan-keys comment
+      id: SJUO
+      date: "2026-10-08"
+      tags:
+        - type:style
+        - priority:low
+        - plan/phase:followup-polish
+        - effort:unspecified
+      text: 'src/cli/lib/preflight.sh ~125-133: the md2x-infer-scan-keys header comment runs past the file''s wrapping width after the control-character screen note was added. Cosmetic only; re-wrap. (correctness review, suggestion)'
 closed: []
