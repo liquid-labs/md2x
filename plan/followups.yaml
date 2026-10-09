@@ -40,16 +40,6 @@ items:
         - priority:low
         - effort:unspecified
       text: 'From 1.0 audit (audit-interface.md N4 and feature parts of N8), deferred by user decision during golden-release-hardening planning: (a) --jobs parallelism and progress output; (b) configurable header/footer, first-page header, font. Title safety for non-ASCII/PostScript-special characters is NOT deferred; it is in the plan.'
-    - title: Infer-version hardening trade-offs and spoof
-      id: HdEH
-      date: "2026-10-05"
-      tags:
-        - type:documentation
-        - priority:low
-        - effort:unspecified
-        - plan/phase:remediation-03
-        - plan/slug:golden-release-hardening
-      text: 'Minor items from the round 3 security review of src/cli/lib/preflight.sh and docs/md2x-spec.md. (1) Dropping global/system git config (GIT_CONFIG_GLOBAL=/dev/null, GIT_CONFIG_NOSYSTEM=1) changes what status reports: a global core.excludesFile, core.autocrlf/core.eol (CRLF checkouts), or LFS filters in global/system config can produce a false ''working'' version, and a global safe.directory is dropped so repos owned by another uid (CI containers) fail rev-parse with the misleading warning ''not inside a git work tree''. Add one sentence to the spec''s --infer-version note describing these trade-offs and optionally improve the safe.directory warning text. (2) An existing but empty config.worktree with extensions.worktreeConfig=true is refused as ''could not be read''; treat an empty file as zero keys (check -s first). Common local keys (core.autocrlf, core.untrackedcache, lfs.*, submodule.active) refuse the whole repo by design; the spec already says so. (3) A hostile repo with core.worktree=/abs/other/repo redirects the resolved top level so the footer can print another repository''s package.json version (no code execution; spoofed version only); optionally refuse when the git dir resolved from the input differs from the one resolved from the top level, or pass -c core.worktree= (untested). (4) Optionally read keys with ''git config -z --list --name-only'' to remove any dependence on newline-free key names (no bypass found).'
     - title: Release dry-run and doc wording polish
       id: FUld
       date: "2026-10-05"
