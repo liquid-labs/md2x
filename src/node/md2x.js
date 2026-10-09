@@ -12,6 +12,8 @@ import { fileURLToPath } from 'node:url'
 
 // A first-run WeasyPrint install writes a lot to stderr; the 1 MiB default would turn a successful run into an error.
 const MAX_BUFFER = 64 * 1024 * 1024
+// After the overflow kill (SIGTERM), a child still running this long later is sent SIGKILL.
+const KILL_GRACE_MS = 2000
 
 const BOOLEAN_OPTIONS = ['flattenDirs', 'inferTitle', 'inferVersion', 'noToc', 'toc', 'singlePage', 'quiet']
 const STRING_OPTIONS = ['outputPath', 'output', 'title']
@@ -180,6 +182,7 @@ const md2xAsync = (options) => new Promise((resolve, reject) => {
   let stdout = ''
   let stderr = ''
   let settled = false
+  let killTimer
   const settle = (fn, value) => {
     if (!settled) {
       settled = true
@@ -200,6 +203,9 @@ const md2xAsync = (options) => new Promise((resolve, reject) => {
       bytes += Buffer.byteLength(chunk)
       if (bytes > MAX_BUFFER) {
         child.kill()
+        // A child that ignores SIGTERM would otherwise keep running; escalate unless it closes first.
+        killTimer = setTimeout(() => child.kill('SIGKILL'), KILL_GRACE_MS)
+        killTimer.unref?.()
         const cause = Object.assign(new Error(`${name} exceeded the ${MAX_BUFFER} byte maxBuffer`), { code : 'ENOBUFS' })
         settle(reject, failure({ stderr, cause }))
         return
@@ -217,6 +223,7 @@ const md2xAsync = (options) => new Promise((resolve, reject) => {
     child.stdin.end(input)
   }
   child.on('close', (status, signal) => {
+    clearTimeout(killTimer)
     try {
       settle(resolve, finish({
         status,
