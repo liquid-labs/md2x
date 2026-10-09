@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Harden plan record vars and async child kill
-      id: iRLu
-      date: "2026-10-08"
-      tags:
-        - type:security
-        - priority:low
-        - plan/phase:followup-polish
-        - effort:unspecified
-      text: 'Two optional robustness notes from the security review (no critical/major). (1) src/cli/lib/output-plan.sh ~151-186: record tables are shell variables named <table>_<hex> and are never cleared; an exported MD2X_PLAN_INPUT_<hex> / MD2X_PLAN_TARGET_<hex> in the caller environment could pre-seed a record and cause a false collision refusal or a wrong name in a message. Requires control of the process environment; optionally unset such variables (compgen -v) before planning. (2) src/node/md2x.js ~191-211: on the 64 MiB overflow, child.kill() sends SIGTERM only, so a child ignoring it keeps running; optionally follow with SIGKILL after a grace period or destroy/pause the streams. Also noted as pre-existing: ci.yml downloads the legacy pandoc .deb without a checksum and actions are tag-pinned not SHA-pinned. (security review, suggestion)'
     - title: Re-wrap md2x-infer-scan-keys comment
       id: SJUO
       date: "2026-10-08"
@@ -42,4 +33,9 @@ closed:
       title: release.sh resume skips publish rehearsal
       disposition: fixed
       ref: phase-02-remediation-01/001-release-dry-run-resume-rehearsal.md
+      date: "2026-10-09"
+    - id: iRLu
+      title: Harden plan record vars and async child kill
+      disposition: fixed
+      ref: phase-02-remediation-01/002-harden-plan-records-and-async-kill.md
       date: "2026-10-09"
