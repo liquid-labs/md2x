@@ -40,16 +40,6 @@ items:
         - priority:low
         - effort:unspecified
       text: 'From 1.0 audit (audit-interface.md N4 and feature parts of N8), deferred by user decision during golden-release-hardening planning: (a) --jobs parallelism and progress output; (b) configurable header/footer, first-page header, font. Title safety for non-ASCII/PostScript-special characters is NOT deferred; it is in the plan.'
-    - title: Drop bash-toolkit lists, harden heredoc
-      id: 32b8
-      date: "2026-10-05"
-      tags:
-        - type:optimization
-        - priority:low
-        - effort:unspecified
-        - plan/phase:interface-contract
-        - plan/slug:golden-release-hardening
-      text: 'Maintainability items in src/cli/md2x.sh (now ~690 lines): (1) ''import lists'' from @liquid-labs/bash-toolkit (line ~38) is used only for three list-add-item calls (lines ~272, 276, 325); replace with plain string appends and drop the devDependency and lock entries. (2) The Lua filter is embedded through a ''<<EOF'' heredoc filled by bash-rollup (line ~605); a bare EOF line in md2x-links.lua would silently truncate it, so use a unique terminator such as MD2X_LUA_EOF or add a bats guard that the extracted filter equals the source file. (3) Discovery/resolution could move to lib/input-discovery.sh. (4) Efficiency suggestions: md2x-percent-encode (src/cli/lib/link-filter.sh) forks per byte; md2x-lookup-record plan scan is O(n^2); md2xAsync output buffers in src/node/md2x.js are uncapped (sync path caps at 64MiB).'
     - title: Validate pandoc floor and RELEASING artifacts
       id: S0YR
       date: "2026-10-05"
