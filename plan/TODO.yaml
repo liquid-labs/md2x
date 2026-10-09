@@ -80,7 +80,7 @@ phases:
             branch: plan/release-followups-polish-02-002
             commit:
                 - a6bc1e5
-            merge: null
+            merge: d7f8c8bedb397cf30d36b1125709edfc473f70fb
         - number: 3
           slug: fix-architecture-wording-and-comment-wrap
           title: Fix Architecture Doc Wording And Re-Wrap Scan-Keys Comment
