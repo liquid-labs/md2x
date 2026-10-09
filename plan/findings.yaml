@@ -1,14 +1,5 @@
 version: 2
 items:
-    - title: Planning phase forks per file
-      id: y217
-      date: "2026-10-08"
-      tags:
-        - type:optimization
-        - priority:low
-        - plan/phase:followup-polish
-        - effort:medium
-      text: 'Target planning and input resolution in src/cli/md2x.sh and src/cli/lib/input-discovery.sh, output-plan.sh cost roughly 40 to 60 ms per input file (about 3 minutes for 4000 files under bash 5.3, about 6 minutes under bash 3.2), in a linear fork-per-helper pattern: md2x-canonical-path, md2x-canonical-target, md2x-lowercase (nested command substitutions), md2x-strip-markdown-ext, relative-output-dir, md2x-join-path and md2x-title-display each fork per file. The quadratic key lookup was replaced separately; the remaining cost could be cut by returning results through globals (printf -v style) instead of command substitutions. Measured with the stub tools and generated *.md files across 50 subdirectories.'
     - title: release.sh resume skips publish rehearsal
       id: wf4S
       date: "2026-10-08"
@@ -54,4 +45,9 @@ items:
         - plan/phase:followup-polish
         - effort:unspecified
       text: 'docs/architecture.md, Key decision ''Version inference is lazy, config-allowlisted, and hardened'' (~line 194): the reworded sentence reads ''...and gates only git status on every key is on a short allowlist of harmless ones'', which is ungrammatical. Reword to ''...and runs git status only when every key is on a short allowlist of harmless ones''. Also add one sentence to the ''Output planning and collision checks'' section (~lines 111-113) that collision records are kept as one shell variable per key (md2x-plan-key-hex, md2x-record-set, md2x-record-get in output-plan.sh) for constant-time lookup because bash 3.2 has no associative arrays. (correctness + architecture review, minor/low)'
-closed: []
+closed:
+    - id: y217
+      title: Planning phase forks per file
+      disposition: promoted
+      ref: y217
+      date: "2026-10-09"
