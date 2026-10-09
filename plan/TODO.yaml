@@ -95,4 +95,4 @@ phases:
             branch: plan/release-followups-polish-02-003
             commit:
                 - 108c9fd
-            merge: null
+            merge: c8d47a36a2f284ef9f22a9418d5a92a735131aff
