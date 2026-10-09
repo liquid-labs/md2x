@@ -56,3 +56,11 @@ Resolve followup `5E3C` (all items), `HdEH` item 1, and bring `docs/architecture
 - After the 5E3C corrections in `docs/architecture.md` and the `md2x.sh` comment.
 - After the task 001 and 002 sync edits across spec, README, AGENTS, project-structure.
 - After the optional Key decisions regrouping.
+
+## Status
+
+- Outcome: succeeded (2026-10-08).
+- Edited: `docs/architecture.md`, `docs/md2x-spec.md`, `docs/project-structure.md`, `AGENTS.md`, `README.md`, and the interpreter-guard comment in `src/cli/md2x.sh` (comment only).
+- Already correct, not edited: HdEH item 1 (the spec's `--infer-version` bullet already states the global and system config and `safe.directory` trade-offs; README says global git configuration is ignored); `CHANGELOG.md` (task 001 already recorded the git-directory refusal); the README CLI flag table; `bash-toolkit` was already gone from `package.json`.
+- Not done: the optional Key decisions regrouping under `###` subheadings.
+- Validation: `make test` and `make lint` pass; grep checks as listed in the report.
