@@ -78,7 +78,8 @@ phases:
             - iRLu
           git:
             branch: plan/release-followups-polish-02-002
-            commit: []
+            commit:
+                - a6bc1e5
             merge: null
         - number: 3
           slug: fix-architecture-wording-and-comment-wrap
