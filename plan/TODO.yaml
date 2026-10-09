@@ -77,7 +77,7 @@ phases:
           findings:
             - iRLu
           git:
-            branch: null
+            branch: plan/release-followups-polish-02-002
             commit: []
             merge: null
         - number: 3
