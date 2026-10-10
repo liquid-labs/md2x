@@ -1,6 +1,6 @@
 SHELL=/bin/bash -o pipefail
 .DELETE_ON_ERROR:
-.PHONY: all clean lint lint-fix qa smoke-test test test-cli test-node test-pack
+.PHONY: all clean lint lint-fix qa smoke-test test test-cli test-node test-node-dist test-pack
 
 # Dev tools resolve only to the lockfile-pinned binaries installed by 'bun install'. They are
 # deliberately NOT run through 'bunx', which would fetch an unpinned latest version from the
@@ -84,6 +84,12 @@ test-cli: all $(CLI_TEST_FILES) | $(BATS)
 
 test-node:
 	bun test ./$(NODE_SRC) --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=coverage
+
+# Smoke test of the BUILT package under the running 'node' (not bun): CJS require, ESM import, and one real html
+# conversion. Needs the CLI's tools (gs, pandoc >= 3.4, pdftk, python3, GNU getopt), so it stays out of 'qa'; CI
+# runs it on each supported Node (see .github/workflows/ci.yml).
+test-node-dist: all
+	node scripts/node-smoke.cjs
 
 # Release-time check (not part of 'qa': it runs npm pack/install and a TypeScript compile, which
 # can need the network). Packs the tarball and proves ESM import, CJS require, and the types.

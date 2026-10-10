@@ -24,7 +24,7 @@ npm install -g @liquid-labs/md2x
 bun add -g @liquid-labs/md2x
 ```
 
-That installs the `md2x` command. To use the [Node API](#as-a-nodejs-library) in a project instead, install it as a dependency with `npm install @liquid-labs/md2x` or `bun add @liquid-labs/md2x`. The package requires Node.js 20 or later.
+That installs the `md2x` command. To use the [Node API](#as-a-nodejs-library) in a project instead, install it as a dependency with `npm install @liquid-labs/md2x` or `bun add @liquid-labs/md2x`. The package requires Node.js 22, 24, or 26 and later (not the odd-numbered 23 or 25).
 
 ### Install the prerequisites
 
@@ -153,7 +153,7 @@ Output rules:
 
 ### As a Node.js library
 
-The package ships ESM, CommonJS, and TypeScript types, and requires Node.js 20 or later. Like the CLI, it needs the [external tools](#dependencies) installed.
+The package ships ESM, CommonJS, and TypeScript types, and requires Node.js 22, 24, or 26 and later (not the odd-numbered 23 or 25). Like the CLI, it needs the [external tools](#dependencies) installed.
 
 ```javascript
 import { md2x, md2xAsync } from '@liquid-labs/md2x'

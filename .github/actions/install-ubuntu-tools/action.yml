@@ -1,0 +1,33 @@
+name: Install md2x system packages (Ubuntu)
+description: >-
+  Installs the tools the md2x CLI needs on an Ubuntu runner. Ubuntu's apt pandoc is older than md2x's floor
+  (24.04 ships 3.1.3), so pandoc comes from the official release .deb, downloaded from the jgm/pandoc GitHub
+  release and checked against the sha256 the caller supplies. Fails if the installed pandoc is not the
+  requested version.
+
+inputs:
+  pandoc-version:
+    description: Exact pandoc release to install (for example 3.10.1).
+    required: true
+  pandoc-sha256:
+    description: sha256 of pandoc-<pandoc-version>-1-amd64.deb, computed with `shasum -a 256` on the downloaded file.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install system packages and pandoc ${{ inputs.pandoc-version }}
+      shell: bash
+      env:
+        PANDOC_VERSION: ${{ inputs.pandoc-version }}
+        PANDOC_DEB_SHA256: ${{ inputs.pandoc-sha256 }}
+      run: |
+        set -euo pipefail
+        sudo apt-get update
+        sudo apt-get install -y ghostscript pdftk-java jq python3
+        curl -fsSL --retry 3 -o "${RUNNER_TEMP}/pandoc.deb" \
+          "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-1-amd64.deb"
+        echo "${PANDOC_DEB_SHA256}  ${RUNNER_TEMP}/pandoc.deb" | sha256sum -c -
+        sudo apt-get install -y "${RUNNER_TEMP}/pandoc.deb"
+        pandoc --version | head -n 1
+        test "$(pandoc --version | head -n 1)" = "pandoc ${PANDOC_VERSION}"
