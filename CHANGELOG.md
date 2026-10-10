@@ -9,7 +9,7 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 ### Breaking changes
 
 - **Supported Node.js is now 22, 24, and 26 and later.** The `engines.node` range is `^22 || ^24 || >=26` (was `>=20`); Node 20 is end-of-life and Node 23 and 25 are not supported.
-- **Minimum pandoc is now 3.4.** md2x supports only the weasyprint PDF engine, which pandoc made its default in 3.4. A pandoc older than 3.4 exits `3` at startup. Only pandoc 3.10.1 has been exercised by hand.
+- **Minimum pandoc is now 3.4.** md2x supports only the weasyprint PDF engine, which pandoc made its default in 3.4. A pandoc older than 3.4 exits `3` at startup. CI runs the full test suite against pandoc 3.4 and 3.10.1 and verifies that a real pandoc 3.3 is refused.
 
 - **Exit codes.** A missing or unusable dependency (for example `pandoc` or GNU `getopt`) now exits `3` instead of `2`. The contract is now: `0` success, `1` runtime or conversion failure, `2` usage error, `3` missing or unusable dependency. Scripts that treated `2` as "dependency missing" must check for `3`.
 - **`-s` is `--to-stdout`.** In `1.0.0-alpha.11` the `-s` short flag was silently bound to `--single-page`, contrary to the documentation. It now means `--to-stdout`, as documented. Use the long `--single-page` for concatenation.
@@ -38,7 +38,7 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - `*.markdown` files, as well as `*.md`, are discovered in directory searches, matched case-insensitively.
 - A project-owned option parser: long options may be abbreviated to any unambiguous prefix, and values may be attached with `=`.
 - Bash 3.2 support (the macOS system shell), with an interpreter guard and a `MD2X_TEST_BASH` override for the test harness.
-- A GitHub Actions workflow intended to run the suite under macOS, Linux, and bash 3.2. It has not run yet, so none of that coverage is observed.
+- A GitHub Actions workflow that runs `make qa` on Ubuntu (against pandoc 3.4 and 3.10.1) and on macOS (against the latest Homebrew pandoc), re-runs the CLI suite under the macOS system bash 3.2, smoke-tests the built package on Node 22, 24, and 26, and checks that pandoc 3.3 is refused.
 - Bats coverage for the exit-code contract, options, title sinks, stdin handling, output collisions, links and images, and the Node and packaging surfaces.
 
 ### Changed

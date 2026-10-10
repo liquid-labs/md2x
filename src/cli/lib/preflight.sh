@@ -8,9 +8,9 @@
 # The oldest pandoc md2x supports, and why. md2x supports only the weasyprint PDF engine,
 # and weasyprint became pandoc's default HTML-to-PDF engine in pandoc 3.4. md2x relies on
 # that default, so 3.4 is the floor; an older pandoc would pick a different default engine.
-# The floor follows from the pandoc changelog, not from a test run on 3.4: only pandoc
-# 3.10.1 has been exercised by hand. Raise the floor here if a newer release is found to be
-# required.
+# The floor follows from the pandoc changelog. CI runs the full 'make qa' against real
+# pandoc 3.4 (the floor) and 3.10.1, and verifies that a real pandoc 3.3 is refused. Raise
+# the floor here if a newer release is found to be required.
 MD2X_PANDOC_MIN_VERSION='3.4'
 
 # md2x-version-at-least <found> <floor>
