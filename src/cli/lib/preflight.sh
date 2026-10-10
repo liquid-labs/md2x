@@ -5,21 +5,13 @@
 # Every failure goes through the helpers in 'errors.sh' (exit 3 for a dependency problem),
 # so a tool's own raw error text never reaches the user.
 
-# The oldest pandoc md2x supports, and why. Every pandoc feature md2x uses first appeared in
-# pandoc 2.0 (2017-10-29), so 2.0 is the highest minimum among them, checked against the
-# pandoc changelog:
-#   --lua-filter and the Lua 'Pandoc' filter function, 'pandoc.utils.stringify', and the
-#     element 'walk' method (the link/image filter, 'lib/md2x-links.lua') ... pandoc 2.0
-#   --log, the JSON log file ........................................ pandoc 2.0
-#   --pdf-engine, with weasyprint as an HTML-to-PDF engine .......... pandoc 2.0
-#   '--from gfm' (the GitHub-flavored CommonMark reader) ............ pandoc 2.0
-#   -M/--metadata, --include-in-header/-before-body/-after-body, --css,
-#     --standalone, '--to html5' .................................... pandoc 1.x
-# The floor is derived from the pandoc changelogs and the Lua filter documentation. Only
-# pandoc 3.10.1 has been exercised by hand. The CI legacy-pandoc job is intended to exercise
-# 2.0.6 but is unproven until the workflow has run. Raise the floor here if an older
-# release turns out to misbehave.
-MD2X_PANDOC_MIN_VERSION='2.0'
+# The oldest pandoc md2x supports, and why. md2x supports only the weasyprint PDF engine,
+# and weasyprint became pandoc's default HTML-to-PDF engine in pandoc 3.4. md2x relies on
+# that default, so 3.4 is the floor; an older pandoc would pick a different default engine.
+# The floor follows from the pandoc changelog, not from a test run on 3.4: only pandoc
+# 3.10.1 has been exercised by hand. Raise the floor here if a newer release is found to be
+# required.
+MD2X_PANDOC_MIN_VERSION='3.4'
 
 # md2x-version-at-least <found> <floor>
 # Returns 0 when dotted-numeric version <found> is greater than or equal to <floor>,

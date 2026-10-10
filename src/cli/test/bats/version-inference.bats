@@ -20,7 +20,7 @@ teardown() {
 
 # The oldest pandoc md2x accepts; keep in step with MD2X_PANDOC_MIN_VERSION in
 # 'src/cli/lib/preflight.sh'.
-PANDOC_FLOOR='2.0'
+PANDOC_FLOOR='3.4'
 
 require_git_and_jq() {
   PATH="${MD2X_TEST_ORIGINAL_PATH}" command -v git >/dev/null 2>&1 || skip "real 'git' not found"
@@ -193,18 +193,18 @@ make_repo() {
 
 @test "pandoc below the floor exits 3 with the version message" {
   md2x_write_doc 'report.md'
-  export MD2X_TEST_STUB_VERSION='pandoc 1.19.2.4'
+  export MD2X_TEST_STUB_VERSION='pandoc 2.19.2.4'
 
   md2x_run --output-format html --flatten-dirs --output-path . report.md
 
   assert_failure 3
-  assert_stderr_contains "md2x: pandoc 1.19.2.4 is too old; md2x requires pandoc >= ${PANDOC_FLOOR}"
+  assert_stderr_contains "md2x: pandoc 2.19.2.4 is too old; md2x requires pandoc >= ${PANDOC_FLOOR}"
   refute_stub_called pandoc
 }
 
 @test "pandoc just below the floor's last component exits 3" {
   md2x_write_doc 'report.md'
-  export MD2X_TEST_STUB_VERSION='pandoc 1.99.9'
+  export MD2X_TEST_STUB_VERSION='pandoc 3.3.9'
 
   md2x_run --output-format html --flatten-dirs --output-path . report.md
 

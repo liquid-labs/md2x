@@ -47,7 +47,7 @@ sudo apt install pandoc ghostscript pdftk-java python3 python3-venv
 | Dependency | When required | Notes |
 | --- | --- | --- |
 | bash 3.2 or later | Always | The macOS system `/bin/bash` (3.2) works. md2x exits `3` under an older bash or a non-bash shell. |
-| [`pandoc`](https://pandoc.org/installing.html) 2.0 or later | Always | md2x checks the version at startup and exits `3` for an older one. Only pandoc 3.10.1 has been exercised by hand; the floor is derived from the Pandoc changelogs. The CI workflow has a legacy-pandoc job intended to run the suite against a 2.x release, but it is unproven until the workflow has run. |
+| [`pandoc`](https://pandoc.org/installing.html) 3.4 or later | Always | md2x checks the version at startup and exits `3` for an older one. md2x supports only the weasyprint PDF engine, which pandoc made its default in 3.4. Only pandoc 3.10.1 has been exercised by hand. |
 | [Ghostscript](https://www.ghostscript.com/) (`gs`) | Always | Renders the PDF header/footer overlay. |
 | `pdftk` ([pdftk-java](https://gitlab.com/pdftk-java/pdftk)) | Always | Merges the overlay onto the PDF. |
 | [`python3`](https://www.python.org/) | Always | Runs the table-of-contents preprocessor and hosts WeasyPrint. |
@@ -252,7 +252,7 @@ Notes on the flags:
 | `0` | Success | Image warnings alone do not change the exit code. |
 | `1` | Runtime or conversion failure | A `pandoc`, `gs`, or `pdftk` failure; an unreadable search root; input that is not valid UTF-8 or contains NUL bytes. |
 | `2` | Usage error | An unknown option or a missing option value; `--toc` with `--no-toc`; an unsupported format; no arguments; empty stdin; a directory with no Markdown files; a title unusable as a file name; two inputs writing the same output; `-o` or `--to-stdout` with more than one output; `-` mixed with other inputs. |
-| `3` | Missing or unusable dependency | A required binary absent; GNU `getopt` not found; bash too old or not bash; pandoc below 2.0; a WeasyPrint bootstrap failure or lock timeout. |
+| `3` | Missing or unusable dependency | A required binary absent; GNU `getopt` not found; bash too old or not bash; pandoc below 3.4; a WeasyPrint bootstrap failure or lock timeout. |
 
 Every error is one line on stderr prefixed `md2x: ` (warnings are prefixed `md2x: warning: `), colored only when stderr is a terminal and `NO_COLOR` is unset.
 
@@ -261,7 +261,7 @@ Every error is one line on stderr prefixed `md2x: ` (warnings are prefixed `md2x
 | Message (abridged) | Exit | Cause and fix |
 | --- | --- | --- |
 | `Required executable 'gs' not found for 'md2x'. Add to 'PATH' or install.` | 3 | One of `gs`, `pandoc`, `pdftk`, or `python3` is missing from `PATH`. Install it as described in [Installation](#install-the-prerequisites). |
-| `pandoc 1.19.2 is too old; md2x requires pandoc >= 2.0` | 3 | Upgrade pandoc. |
+| `pandoc 3.3.1 is too old; md2x requires pandoc >= 3.4` | 3 | Upgrade pandoc. |
 | `GNU getopt is required but was not found ...` | 3 | On macOS, `brew install gnu-getopt` (or `port install getopt`), or set `MD2X_GETOPT` to a GNU `getopt`. On Linux, install util-linux. |
 | `MD2X_GETOPT is set to '...', which is not GNU getopt` | 3 | Unset `MD2X_GETOPT` or point it at a GNU `getopt`. |
 | `requires bash 3.2 or later` | 3 | Run md2x with bash 3.2 or newer, not `sh`. |
