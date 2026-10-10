@@ -5,6 +5,10 @@ SHELL=/bin/bash -o pipefail
 # Dev tools resolve only to the lockfile-pinned binaries installed by 'bun install'. They are
 # deliberately NOT run through 'bunx', which would fetch an unpinned latest version from the
 # registry when node_modules is missing; with node_modules absent these fail closed instead.
+# bash-rollup runs 'tput' unconditionally and aborts when TERM is unset (as on CI runners).
+# Default to 'xterm' ('dumb' lacks setaf, so tput still fails) so the build behaves the same with or without a terminal; a set TERM wins.
+export TERM ?= xterm
+
 BIN_DIR:=node_modules/.bin
 BASH_ROLLUP:=$(BIN_DIR)/bash-rollup
 BATS:=$(BIN_DIR)/bats
