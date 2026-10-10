@@ -37,8 +37,10 @@ brew install pandoc ghostscript pdftk-java gnu-getopt
 On Debian or Ubuntu:
 
 ```bash
-sudo apt install pandoc ghostscript pdftk-java python3 python3-venv
+sudo apt install ghostscript pdftk-java python3 python3-venv
 ```
+
+Do not install pandoc from the distribution package: it is often older than the required 3.4 (Ubuntu 24.04 ships 3.1.3), and md2x exits `3` on an older pandoc. Install a current pandoc from the [pandoc installation page](https://pandoc.org/installing.html) or the `.deb` on the [pandoc GitHub releases](https://github.com/jgm/pandoc/releases) page.
 
 `pdftk-java` is the maintained [pdftk-java](https://gitlab.com/pdftk-java/pdftk) port of `pdftk`; md2x needs a `pdftk` executable on `PATH`, and the `pdftk-java` package provides one. `python3` ships with macOS developer tools and most Linux distributions. On Debian-family systems the `venv` module is a separate package (`python3-venv`), which the WeasyPrint bootstrap needs.
 

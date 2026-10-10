@@ -6,7 +6,7 @@ This guide covers setting up a development environment for md2x, running its che
 
 ## Development setup
 
-Prerequisites match the [README installation list](./README.md#installation): `pandoc` (3.4 or later, the release that made weasyprint the default PDF engine; only 3.10.1 has been exercised by hand), Ghostscript (`gs`), `pdftk`, `python3`, and GNU `getopt` (on macOS, `brew install gnu-getopt`). `jq` and `git` are needed only for `--infer-version`. [Bun](https://bun.sh/) installs the Node dependencies and runs the Node tests.
+Prerequisites match the [README installation list](./README.md#installation): `pandoc` (3.4 or later, the release that made weasyprint the default PDF engine; only 3.10.1 has been exercised by hand), Ghostscript (`gs`), `pdftk`, `python3`, and GNU `getopt` (on macOS, `brew install gnu-getopt`). On Debian and Ubuntu the distro `pandoc` package is often older than 3.4 (Ubuntu 24.04 ships 3.1.3); install a current one from the [pandoc installation page](https://pandoc.org/installing.html) or the `.deb` on the [pandoc GitHub releases](https://github.com/jgm/pandoc/releases) page. `jq` and `git` are needed only for `--infer-version`. [Bun](https://bun.sh/) installs the Node dependencies and runs the Node tests.
 
 ```bash
 bun install
