@@ -140,7 +140,7 @@ const outputFiles = md2x({
 
 - **Dependency set.** md2x requires, for both the CLI and the Node library:
   - bash 3.2 or later (the macOS system `/bin/bash` works); under an older bash or a non-bash shell md2x exits `3`;
-  - `pandoc` at or above the floor version 3.4 (checked at startup, exit `3` below it; 3.4 is the release that made weasyprint the default PDF engine, and only pandoc 3.10.1 has been exercised by hand), Ghostscript (`gs`), `pdftk` (pdftk-java is fine), and `python3`, all on `PATH`;
+  - `pandoc` at or above the floor version 3.4 (checked at startup, exit `3` below it; 3.4 is the release that made weasyprint the default PDF engine, and CI runs the test suite against pandoc 3.4 and 3.10.1 and verifies that a real pandoc 3.3 is refused), Ghostscript (`gs`), `pdftk` (pdftk-java is fine), and `python3`, all on `PATH`;
   - GNU `getopt` on macOS (Linux util-linux provides it). md2x finds it by probing `MD2X_GETOPT`, the Homebrew (Apple Silicon and Intel) and MacPorts locations, then `PATH`, accepting a candidate only when `getopt --test` reports GNU; Homebrew is optional and md2x never runs `brew` to install anything (it consults `brew --prefix` only as a last-resort probe, and only when `brew` is on `PATH`). `--help` and `--version` work without GNU `getopt`;
   - `git` and `jq`, only when `--infer-version` is given (checked lazily, exit `3` when absent);
   - the standard POSIX utilities (`find`, `sort`, `mktemp`, and so on).

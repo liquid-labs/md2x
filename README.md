@@ -49,7 +49,7 @@ Do not install pandoc from the distribution package: it is often older than the 
 | Dependency | When required | Notes |
 | --- | --- | --- |
 | bash 3.2 or later | Always | The macOS system `/bin/bash` (3.2) works. md2x exits `3` under an older bash or a non-bash shell. |
-| [`pandoc`](https://pandoc.org/installing.html) 3.4 or later | Always | md2x checks the version at startup and exits `3` for an older one. md2x supports only the weasyprint PDF engine, which pandoc made its default in 3.4. Only pandoc 3.10.1 has been exercised by hand. |
+| [`pandoc`](https://pandoc.org/installing.html) 3.4 or later | Always | md2x checks the version at startup and exits `3` for an older one. md2x supports only the weasyprint PDF engine, which pandoc made its default in 3.4. CI runs the test suite against pandoc 3.4 and 3.10.1. |
 | [Ghostscript](https://www.ghostscript.com/) (`gs`) | Always | Renders the PDF header/footer overlay. |
 | `pdftk` ([pdftk-java](https://gitlab.com/pdftk-java/pdftk)) | Always | Merges the overlay onto the PDF. |
 | [`python3`](https://www.python.org/) | Always | Runs the table-of-contents preprocessor and hosts WeasyPrint. |
