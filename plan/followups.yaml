@@ -67,7 +67,7 @@ items:
         - type:documentation
         - priority:medium
         - effort:unspecified
-      text: 'Remaining pre-release confirmations: (1) run ''scripts/release.sh --dry-run prerelease'' on a clean main with credentials to confirm the publish-rehearsal ordering end to end (fresh and resume paths); (2) now that CI is green (ubuntu + macOS incl. the bash 3.2 step, run 38088043444), change the CHANGELOG CI wording from ''intended to run ... has not run yet'' to a plain statement and date the Unreleased heading at release; (3) optionally spot-check the README brew install line on a clean macOS and the python3-venv note on a clean Debian/Ubuntu (CI installs python3 and the PDF/bootstrap tests passed, so this is low risk). Done: private vulnerability reporting enabled 2026-10-10.'
+      text: 'Remaining pre-release confirmations: (1) run ''scripts/release.sh --dry-run prerelease'' on a clean main with credentials to confirm the publish-rehearsal ordering end to end (fresh and resume paths); (2) date the CHANGELOG Unreleased heading at release; (3) optionally spot-check the README brew install line on a clean macOS and the python3-venv note on a clean Debian/Ubuntu (CI installs python3 and the PDF/bootstrap tests pass there, so this is low risk). Done: private vulnerability reporting enabled; CI green on Ubuntu (pandoc 3.4 and 3.10.1), macOS (bash 3.2), Node 22/24/26 and the pandoc 3.3 refusal check (run 38090411203); CI-verified wording updated.'
     - title: 'CI: SHA-pin third-party actions'
       id: lRiW
       date: "2026-10-10"
