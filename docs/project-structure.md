@@ -167,7 +167,7 @@ Flow's per-session metadata (a `.flow/` directory) and local agent settings are 
 | `LICENSE.txt` | Apache License 2.0 text. |
 | `scripts/release.sh` | Automated release script; see [`RELEASING.md`](../RELEASING.md). |
 | `scripts/test-pack.sh` | Release-time packaging check run by `make test-pack`. |
-| `.github/workflows/ci.yml` | GitHub Actions workflow running `make qa` on Ubuntu and macOS, the CLI suite and under bash 3.2. |
+| `.github/workflows/ci.yml` | GitHub Actions workflow running `make qa` on Ubuntu and macOS, and the CLI suite under bash 3.2. |
 
 ## Related documents
 
