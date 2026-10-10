@@ -224,7 +224,7 @@ weasyprint_lock_assert_no_overlap() {
     END {
       n = 0
       for (id in start) {
-        if (!(id in end)) { next }
+        if (!(id in end)) { continue }
         ids[n] = id
         starts[n] = start[id]
         ends[n] = end[id]
