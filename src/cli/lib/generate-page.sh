@@ -98,7 +98,7 @@ generate-page() {
     }
 
   # Pandoc features the Lua filter relies on, with the earliest pandoc version that provides
-  # each (the version floor is set from this list):
+  # each (historical feature notes; the version floor itself is set in 'lib/preflight.sh'):
   #   --lua-filter and the 'Pandoc' filter function ........ pandoc 2.0 (Lua filters)
   #   pandoc.utils.stringify (reads the '-M' settings) ..... pandoc 2.0
   #   block:walk{Link=, Image=, RawBlock=} ................. pandoc 2.0 (element 'walk' method)

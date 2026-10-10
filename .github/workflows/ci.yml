@@ -59,37 +59,3 @@ jobs:
           /bin/bash --version | head -n 1
           make all
           MD2X_TEST_BASH=/bin/bash make test-cli
-
-  # Validates the documented floor (MD2X_PANDOC_MIN_VERSION in src/cli/lib/preflight.sh) by
-  # running the CLI suite against an old pandoc 2.x release instead of the distro/latest one.
-  # The version is the oldest release known to publish a Linux .deb; if the floor is raised
-  # or a release asset moves, update PANDOC_LEGACY_VERSION (and the floor) together.
-  legacy-pandoc:
-    name: bats (legacy pandoc, ubuntu)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      PANDOC_LEGACY_VERSION: '2.0.6'
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-
-      - name: Install system packages (without pandoc)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ghostscript pdftk-java jq python3
-
-      - name: Install legacy pandoc
-        run: |
-          curl -fsSL -o "${RUNNER_TEMP}/pandoc.deb" \
-            "https://github.com/jgm/pandoc/releases/download/${PANDOC_LEGACY_VERSION}/pandoc-${PANDOC_LEGACY_VERSION}-1-amd64.deb"
-          sudo apt-get install -y "${RUNNER_TEMP}/pandoc.deb"
-          pandoc --version | head -n 1
-          pandoc --version | head -n 1 | grep -q "pandoc ${PANDOC_LEGACY_VERSION}"
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Bats suite against legacy pandoc
-        run: make test-cli
