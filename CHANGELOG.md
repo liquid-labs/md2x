@@ -8,6 +8,7 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 
 ### Breaking changes
 
+- **Supported Node.js is now 22, 24, and 26 and later.** The `engines.node` range is `^22 || ^24 || >=26` (was `>=20`); Node 20 is end-of-life and Node 23 and 25 are not supported.
 - **Minimum pandoc is now 3.4.** md2x supports only the weasyprint PDF engine, which pandoc made its default in 3.4. A pandoc older than 3.4 exits `3` at startup. Only pandoc 3.10.1 has been exercised by hand.
 
 - **Exit codes.** A missing or unusable dependency (for example `pandoc` or GNU `getopt`) now exits `3` instead of `2`. The contract is now: `0` success, `1` runtime or conversion failure, `2` usage error, `3` missing or unusable dependency. Scripts that treated `2` as "dependency missing" must check for `3`.
@@ -51,6 +52,7 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - `github.css` no longer carries rules WeasyPrint does not support.
 - Docs: the Debian/Ubuntu install instructions no longer use the distro `pandoc` package, which is often older than 3.4; they point to the official pandoc releases instead.
 - `--infer-version` refuses a repository whose git directory, found from the input, differs from the one for its work tree top (for example a `core.worktree` redirect to another repository): md2x warns once and omits the version. A config key containing a control character is refused as unparseable. An existing but empty per-worktree config (with `extensions.worktreeConfig`) is accepted as holding no keys.
+- CI now builds and smoke-tests the Node package on Node 22, 24, and 26, runs `make qa` on Ubuntu against pandoc 3.4 and 3.10.1 (and on macOS against the current Homebrew pandoc), and checks on Linux that pandoc 3.3 is refused with exit `3`. Actions moved to `actions/checkout@v7`, which no longer targets the deprecated Node.js 20 runtime.
 - `md2xAsync` buffers at most 64 MiB each of the CLI's stdout and stderr, as the synchronous `md2x` does. Past that it kills the child and rejects with an error that has no `exitCode`, instead of growing without bound.
 
 ### Fixed

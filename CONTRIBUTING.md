@@ -40,6 +40,10 @@ MD2X_TEST_BASH=/bin/bash make test-cli   # macOS: runs the suite under /bin/bash
 
 `make smoke-test` converts a small fixture for real, opens each result, and waits for you. It is interactive, macOS-oriented, and not part of `make qa`.
 
+### Built-package check
+
+`make test-node-dist` loads the built package under the `node` on your `PATH` (CJS and ESM) and converts one file to html. It needs the CLI's tools (including pandoc 3.4 or later), so it is not part of `make qa`; CI runs it on Node 22, 24, and 26.
+
 ### Packaging check
 
 `make test-pack` packs the tarball and verifies ESM import, CJS `require`, and the TypeScript types. It can need the network, so it is not part of `make qa`.
@@ -57,4 +61,4 @@ JavaScript style is enforced by `make lint`. Markdown uses sentence-case heading
 
 ## Proposing changes
 
-Open an issue at [liquid-labs/md2x](https://github.com/liquid-labs/md2x/issues) to discuss larger changes, then open a pull request from a branch. Continuous integration runs the test suite on the pull request; address any failures it reports. To report a security problem, follow [SECURITY.md](./SECURITY.md) instead of opening a public issue.
+Open an issue at [liquid-labs/md2x](https://github.com/liquid-labs/md2x/issues) to discuss larger changes, then open a pull request from a branch. Continuous integration runs the test suite on the pull request (on Ubuntu and macOS, against pandoc 3.4 and 3.10.1, and the built package on Node 22, 24, and 26); address any failures it reports. To report a security problem, follow [SECURITY.md](./SECURITY.md) instead of opening a public issue.

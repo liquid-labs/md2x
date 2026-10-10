@@ -26,8 +26,11 @@ md2x/
 │   ├── md2x.cjs          # CJS entrypoint (package main), built from src/node/
 │   └── index.d.ts        # TypeScript declarations, copied from src/node/index.d.ts
 ├── .github/
+│   ├── actions/
+│   │   └── install-ubuntu-tools/
+│   │       └── action.yml  # Composite action: apt tools plus checksum-verified pandoc .deb
 │   └── workflows/
-│       └── ci.yml        # CI: make qa on Ubuntu and macOS, bash 3.2 suite
+│       └── ci.yml        # CI: make qa (Ubuntu pandoc 3.4 and 3.10.1, macOS), bash 3.2 suite, Node 22/24/26 smoke, pandoc 3.3 refusal
 ├── docs/                 # Project documentation
 │   ├── md2x-spec.md      # Specification
 │   ├── project-structure.md  # This file and directory layout reference
@@ -35,7 +38,9 @@ md2x/
 ├── plan/                 # Flow planning directory (followups, and the active plan while one runs)
 │   └── followups.yaml    # Small session-discovered follow-up items
 ├── scripts/
+│   ├── node-smoke.cjs    # Smoke test of the built package under the running node (`make test-node-dist`)
 │   ├── release.sh        # Release automation (see RELEASING.md)
+│   ├── test-pandoc-too-old.sh  # CI check that a pandoc below 3.4 makes md2x exit 3
 │   └── test-pack.sh      # Packs the tarball and checks ESM, CJS, and types (`make test-pack`)
 ├── src/                  # Source code
 │   ├── cli/              # Bash CLI, rolled up into bin/md2x
@@ -153,7 +158,7 @@ Flow's per-session metadata (a `.flow/` directory) and local agent settings are 
 
 | File | Purpose |
 | --- | --- |
-| `Makefile` | Build/test/lint driver invoked by the `package.json` scripts and run directly via `make` (`make all`, `make test` — which runs `make test-cli` and `make test-node` — `make lint`, `make qa`, `make test-pack`, `make clean`); also exposes the opt-in, interactive `make smoke-test` check. |
+| `Makefile` | Build/test/lint driver invoked by the `package.json` scripts and run directly via `make` (`make all`, `make test` — which runs `make test-cli` and `make test-node` — `make lint`, `make qa`, `make test-pack`, `make test-node-dist`, `make clean`); also exposes the opt-in, interactive `make smoke-test` check. |
 | `package.json` | npm package manifest (published to the npm registry; bun is the dev package manager); declares the `md2x` CLI bin entrypoint, the `exports` map for the ESM/CJS/types bundles, and delegates `build`/`test` scripts to `make`. |
 | `eslint.config.mjs` | ESLint 9 flat config used by `make lint`. |
 | `bun.lock` | bun dependency lockfile. |
@@ -167,7 +172,10 @@ Flow's per-session metadata (a `.flow/` directory) and local agent settings are 
 | `LICENSE.txt` | Apache License 2.0 text. |
 | `scripts/release.sh` | Automated release script; see [`RELEASING.md`](../RELEASING.md). |
 | `scripts/test-pack.sh` | Release-time packaging check run by `make test-pack`. |
-| `.github/workflows/ci.yml` | GitHub Actions workflow running `make qa` on Ubuntu and macOS, and the CLI suite under bash 3.2. |
+| `scripts/node-smoke.cjs` | Loads the built `dist/md2x.cjs` and `dist/md2x.mjs` under the running Node and runs one html conversion; run by `make test-node-dist`. |
+| `scripts/test-pandoc-too-old.sh` | CI check that md2x exits `3` with a "too old" message under pandoc 3.3. |
+| `.github/workflows/ci.yml` | GitHub Actions workflow: `make qa` on Ubuntu (pandoc 3.4 and 3.10.1) and macOS, the CLI suite under bash 3.2, the built package on Node 22, 24, and 26, and the pandoc 3.3 refusal check. |
+| `.github/actions/install-ubuntu-tools/action.yml` | Local composite action shared by the Ubuntu jobs: apt tools plus a sha256-verified pandoc `.deb`. |
 
 ## Related documents
 
