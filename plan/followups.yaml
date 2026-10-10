@@ -68,3 +68,11 @@ items:
         - priority:medium
         - effort:unspecified
       text: 'Pre-release maintainer confirmations left from FUld: (1) enable GitHub private vulnerability reporting for liquid-labs/md2x (SECURITY.md links to the advisory URL; it only works when enabled); (2) verify on a Linux host or the first CI run the apt/brew install lines and the README/Node README python3-venv claims; (3) run ''scripts/release.sh --dry-run prerelease'' on a clean main with credentials to confirm the new rehearsal ordering end to end (fresh and resume paths); (4) after pushing main, confirm the CI jobs (including the macOS bash 3.2 run) pass, then drop the ''intended to run'' wording in the CHANGELOG CI description.'
+    - title: 'CI: SHA-pin third-party actions'
+      id: lRiW
+      date: "2026-10-10"
+      tags:
+        - type:security
+        - priority:low
+        - effort:unspecified
+      text: .github/workflows/ci.yml pins third-party actions by tag (@v4, @v2) rather than by commit SHA. Pre-existing, CI-only, low risk. Pin them to commit SHAs. (An earlier companion item about checksumming the legacy pandoc .deb became moot when the legacy-pandoc job was removed.)
