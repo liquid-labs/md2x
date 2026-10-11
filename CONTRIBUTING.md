@@ -44,6 +44,10 @@ MD2X_TEST_BASH=/bin/bash make test-cli   # macOS: runs the suite under /bin/bash
 
 `make test-node-dist` loads the built package under the `node` on your `PATH` (CJS and ESM) and converts one file to html. It needs the CLI's tools (including pandoc 3.4 or later), so it is not part of `make qa`; CI runs it on Node 22, 24, and 26.
 
+### CI actions
+
+GitHub Actions in `.github/workflows/ci.yml` are pinned to full commit SHAs, with the version in a trailing comment (`uses: owner/repo@<sha> # vX.Y.Z`). Dependabot (`.github/dependabot.yml`) opens weekly PRs to bump them; review those rather than editing pins by hand, and keep the comment in step with the SHA.
+
 ### Packaging check
 
 `make test-pack` packs the tarball and verifies ESM import, CJS `require`, and the TypeScript types. It can need the network, so it is not part of `make qa`.

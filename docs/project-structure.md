@@ -26,6 +26,7 @@ md2x/
 │   ├── md2x.cjs          # CJS entrypoint (package main), built from src/node/
 │   └── index.d.ts        # TypeScript declarations, copied from src/node/index.d.ts
 ├── .github/
+│   ├── dependabot.yml    # Dependabot: weekly github-actions bumps, minor/patch grouped
 │   ├── actions/
 │   │   └── install-ubuntu-tools/
 │   │       └── action.yml  # Composite action: apt tools plus checksum-verified pandoc .deb
@@ -175,6 +176,7 @@ Flow's per-session metadata (a `.flow/` directory) and local agent settings are 
 | `scripts/node-smoke.cjs` | Loads the built `dist/md2x.cjs` and `dist/md2x.mjs` under the running Node and runs one html conversion; run by `make test-node-dist`. |
 | `scripts/test-pandoc-too-old.sh` | CI check that md2x exits `3` with a "too old" message under pandoc 3.3. |
 | `.github/workflows/ci.yml` | GitHub Actions workflow: `make qa` on Ubuntu (pandoc 3.4 and 3.10.1) and macOS, the CLI suite under bash 3.2, the built package on Node 22, 24, and 26, and the pandoc 3.3 refusal check. |
+| `.github/dependabot.yml` | Dependabot config: weekly `github-actions` updates, minor and patch bumps grouped into one PR. |
 | `.github/actions/install-ubuntu-tools/action.yml` | Local composite action shared by the Ubuntu jobs: apt tools plus a sha256-verified pandoc `.deb`. |
 
 ## Related documents
