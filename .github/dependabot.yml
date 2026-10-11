@@ -1,0 +1,18 @@
+# Actions in .github/workflows/ci.yml are pinned to full commit SHAs (the
+# version stays in a trailing comment). Dependabot bumps both together via
+# reviewed PRs. The local composite action under .github/actions has no
+# `uses:` of its own, so the root directory is enough.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for all minor and patch bumps; major bumps arrive separately
+      # so they get their own review.
+      github-actions-minor-patch:
+        update-types:
+          - minor
+          - patch
