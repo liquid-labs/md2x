@@ -60,11 +60,3 @@ items:
         - plan/phase:followup-polish
         - plan/slug:release-followups-polish
       text: 'src/cli/lib/input-discovery.sh lines ~125-139: md2x-resolve-inputs keeps SEEN_CANONICAL as one growing newline-delimited string and does a glob substring match per file (O(n^2)), plus one fork per file for md2x-canonical-path. Moved verbatim from md2x.sh, so not a regression. Reuse md2x-plan-key-hex / md2x-record-set / md2x-record-get (move them out of output-plan.sh''s planning section or load them first) for an O(1) lookup. Related remaining linear cost: per-file helper forks in planning. Optional micro-nits: md2x-percent-encode re-slices HEX per byte (iterate by offset); md2xAsync re-encodes chunks to count bytes. (efficiency review, suggestion)'
-    - title: Pre-release maintainer confirmations
-      id: T3Vi
-      date: "2026-10-09"
-      tags:
-        - type:documentation
-        - priority:medium
-        - effort:unspecified
-      text: 'Remaining pre-release confirmations: (1) run ''scripts/release.sh --dry-run prerelease'' on a clean main with credentials to confirm the publish-rehearsal ordering end to end (fresh and resume paths); (2) date the CHANGELOG Unreleased heading at release; (3) optionally spot-check the README brew install line on a clean macOS and the python3-venv note on a clean Debian/Ubuntu (CI installs python3 and the PDF/bootstrap tests pass there, so this is low risk). Done: private vulnerability reporting enabled; CI green on Ubuntu (pandoc 3.4 and 3.10.1), macOS (bash 3.2), Node 22/24/26 and the pandoc 3.3 refusal check (run 38090411203); CI-verified wording updated.'
