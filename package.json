@@ -1,6 +1,6 @@
 {
   "name": "@liquid-labs/md2x",
-  "version": "1.0.0-alpha.11",
+  "version": "1.0.0",
   "description": "A command line utility and Node.js library to convert Markdown documents to PDF, HTML, and DOCX.",
   "main": "dist/md2x.cjs",
   "types": "dist/index.d.ts",
