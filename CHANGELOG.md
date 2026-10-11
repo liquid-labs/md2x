@@ -2,15 +2,16 @@
 
 All notable changes to md2x are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and md2x adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [Unreleased]
 
-Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
+## [1.0.0] - 2026-10-11
+
+Changes are relative to `1.0.0-alpha.11`.
 
 ### Breaking changes
 
 - **Supported Node.js is now 22, 24, and 26 and later.** The `engines.node` range is `^22 || ^24 || >=26` (was `>=20`); Node 20 is end-of-life and Node 23 and 25 are not supported.
-- **Minimum pandoc is now 3.4.** md2x supports only the weasyprint PDF engine, which pandoc made its default in 3.4. A pandoc older than 3.4 exits `3` at startup. CI runs the full test suite against pandoc 3.4 and 3.10.1 and verifies that a real pandoc 3.3 is refused.
-
+- **Minimum pandoc is now 3.4.** md2x supports only the weasyprint PDF engine, which pandoc made its default in 3.4. A pandoc older than 3.4 exits `3` at startup.
 - **Exit codes.** A missing or unusable dependency (for example `pandoc` or GNU `getopt`) now exits `3` instead of `2`. The contract is now: `0` success, `1` runtime or conversion failure, `2` usage error, `3` missing or unusable dependency. Scripts that treated `2` as "dependency missing" must check for `3`.
 - **`-s` is `--to-stdout`.** In `1.0.0-alpha.11` the `-s` short flag was silently bound to `--single-page`, contrary to the documentation. It now means `--to-stdout`, as documented. Use the long `--single-page` for concatenation.
 - **Short flags are exactly `-D -F -h -o -p -s -t`.** The undocumented auto-generated shorts `-q`, `-l`, `-n`, and `-i` are removed and are now usage errors (exit `2`). Use `--quiet`, `--list-files`, `--no-toc`, and `--infer-title`.
@@ -26,7 +27,7 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - **HTML output inlines its CSS.** HTML output is now styled by an inlined stylesheet rather than shipping unstyled.
 - **Empty stdin is a usage error.** `md2x -` with no input exits `2` with a message instead of exiting silently.
 - **Output collisions are errors.** Two inputs that would write the same output file (compared case-insensitively), and an output target that is the same file as an input, are refused instead of one result silently overwriting another or the source.
-- **`--infer-version` trust model.** Version inference runs `git` only in a repository whose own config holds just an allowlist of harmless keys. A repository with any other key (for example one that can run commands, such as `remote.<name>.uploadpack` or `filter.*`) makes md2x warn on stderr, naming the key, and omit the version from the footer.
+- **`--infer-version` trust model.** Version inference runs `git` only in a repository whose own config holds just an allowlist of harmless keys. A repository with any other key (for example one that can run commands, such as `remote.<name>.uploadpack` or `filter.*`) makes md2x warn on stderr, naming the key, and omit the version from the footer. A repository whose git directory, found from the input, differs from the one for its work tree top (for example a `core.worktree` redirect to another repository) is refused the same way, with one warning. A config key containing a control character is refused as unparseable. An existing but empty per-worktree config (with `extensions.worktreeConfig`) is accepted as holding no keys.
 - **Dependencies.** GNU `getopt` is required (discovered without Homebrew; `MD2X_GETOPT` can point at it), `pandoc` 3.4 or later is required, and `jq` and `git` are needed only for `--infer-version`.
 
 ### Added
@@ -51,9 +52,7 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - Error messages go through one helper and follow the exit-code contract on every path.
 - `github.css` no longer carries rules WeasyPrint does not support.
 - Docs: the Debian/Ubuntu install instructions no longer use the distro `pandoc` package, which is often older than 3.4; they point to the official pandoc releases instead.
-- `--infer-version` refuses a repository whose git directory, found from the input, differs from the one for its work tree top (for example a `core.worktree` redirect to another repository): md2x warns once and omits the version. A config key containing a control character is refused as unparseable. An existing but empty per-worktree config (with `extensions.worktreeConfig`) is accepted as holding no keys.
-- CI now builds and smoke-tests the Node package on Node 22, 24, and 26, runs `make qa` on Ubuntu against pandoc 3.4 and 3.10.1 (and on macOS against the current Homebrew pandoc), and checks on Linux that pandoc 3.3 is refused with exit `3`. Actions moved to `actions/checkout@v7`, which no longer targets the deprecated Node.js 20 runtime.
-- `md2xAsync` buffers at most 64 MiB each of the CLI's stdout and stderr, as the synchronous `md2x` does. Past that it kills the child and rejects with an error that has no `exitCode`, instead of growing without bound.
+- `md2xAsync` buffers at most 64 MiB each of the CLI's stdout and stderr, as the synchronous `md2x` does. Past that it kills the child and rejects with an error that has no `exitCode`, instead of growing without bound; a child that ignores `SIGTERM` is then sent `SIGKILL`.
 
 ### Fixed
 
@@ -63,8 +62,6 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - Running under bash 3.2 no longer exits `0` silently without converting.
 - `-s` now means `--to-stdout` as documented, and the hidden auto-generated short flags are removed.
 - `--title` is sanitized in every sink: titles with non-ASCII characters or PostScript-special characters no longer break the PDF header overlay, and filenames and document metadata are made safe.
-- Output planning no longer trusts inherited environment variables shaped like its internal record tables (`MD2X_PLAN_INPUT_*`, `MD2X_PLAN_TARGET_*`); they are cleared first, so they cannot cause a false collision refusal.
-- The Node `md2xAsync` wrapper now sends `SIGKILL` to a child that is still running shortly after the output-cap kill, so a child that ignores `SIGTERM` cannot linger.
 - A spurious Pandoc `user-select` warning is filtered from PDF stderr.
 
 ### Removed
@@ -73,3 +70,6 @@ Targets `1.0.0`. Changes are relative to `1.0.0-alpha.11`.
 - The `perl` requirement and the `eval`-based link rewrite.
 - The `-q`, `-l`, `-n`, and `-i` short flags.
 - The `@liquid-labs/bash-toolkit` build dependency.
+
+[Unreleased]: https://github.com/liquid-labs/md2x/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/liquid-labs/md2x/releases/tag/v1.0.0
